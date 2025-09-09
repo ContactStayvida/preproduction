@@ -2,10 +2,13 @@ package com.stayvida.backend.controller;
 
 import com.stayvida.backend.model.Hotel;
 import com.stayvida.backend.repository.FeaturedListRepository;
+
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
+@CrossOrigin(origins = "*") // Allows all origins
 @RestController
 public class FeatureListController {
 

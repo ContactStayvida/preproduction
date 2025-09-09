@@ -15,6 +15,10 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
     public void registerUser(String email, String username, String rawPassword) {
         if (userRepository.findByEmail(email) != null) {
             throw new RuntimeException("Email already in use");

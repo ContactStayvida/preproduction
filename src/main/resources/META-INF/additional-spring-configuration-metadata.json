@@ -1,5 +1,19 @@
-{"properties": [{
-  "name": "jwt.secret",
-  "type": "java.lang.String",
-  "description": "A description for 'jwt.secret'"
-}]}
+{"properties": [
+  {
+    "name": "jwt.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.secret'"
+  },
+  {
+    "name": "google.client.id",
+    "type": "java.lang.String",
+    "description": "A description for 'google.client.id'"
+  }
+]} "description": "A description for 'jwt.secret'"
+  },
+  {
+    "name": "google.client.id",
+    "type": "java.lang.String",
+    "description": "A description for 'google.client.id'"
+  }
+]}

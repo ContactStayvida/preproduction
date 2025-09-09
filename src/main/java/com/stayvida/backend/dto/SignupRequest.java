@@ -18,9 +18,9 @@ public class SignupRequest {
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
-    // Constructors
-    public SignupRequest() {
-    }
+    // // Constructors
+    // public SignupRequest() {
+    // }
 
     public SignupRequest(String email, String username, String password) {
         this.email = email;
