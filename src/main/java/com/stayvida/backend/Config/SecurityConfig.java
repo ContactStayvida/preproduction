@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.config.Customizer;
+// import org.springframework.security.config.Customizer;
 
 @Configuration
 public class SecurityConfig {
@@ -30,21 +30,31 @@ public class SecurityConfig {
                     "/api/hotels/search",
                     "api/featurelist",
                     "/auth/google//callback",
-                    "/home",
                     "/testjson",
                     "/home/",
-                    "/me"
+                    "/me",
+                    "/login",
+                    "/logout-success"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
             .httpBasic(httpBasic -> httpBasic.disable()) // disable HTTP Basic auth
             .formLogin(form -> form.disable()) // disable form login
                .oauth2Login(oauth2 -> oauth2
-               .loginPage("/oauth2/authorization/google")
+            //    .loginPage("/oauth2/authorization/google")
+               .loginPage("/login")
+
                 // ✅ now use the injected bean
                 .successHandler(customOAuth2SuccessHandler)
             )
-          .logout(logout -> logout.logoutSuccessUrl("/").permitAll());
+          .logout(logout -> logout
+    .logoutUrl("/logout")
+    .logoutSuccessUrl("/logout-success?logout")
+    .invalidateHttpSession(true)
+    .clearAuthentication(true)
+    .deleteCookies("JSESSIONID")  // clear your app session cookie
+    .permitAll()
+);//switch this to home page/loginpage later
         return http.build();
     }
 }

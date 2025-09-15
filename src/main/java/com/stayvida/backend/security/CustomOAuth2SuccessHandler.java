@@ -26,11 +26,10 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
                                         Authentication authentication) throws IOException, ServletException {
 
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
-
         String email = oidcUser.getEmail();
         String name = oidcUser.getFullName();
 
-        // Store user if not exists
+        // Save user if not exists
         User existingUser = userRepository.findByEmail(email);
         if (existingUser == null) {
             User newUser = new User();
@@ -40,9 +39,7 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
             userRepository.save(newUser);
         }
 
-        // Redirect to your frontend / dashboard
-        // response.sendRedirect("http://localhost:3000/dashboard");
-        response.sendRedirect("https://youtu.be/dQw4w9WgXcQ?list=RDdQw4w9WgXcQ&t=7");
-
+        // Redirect after login
+        response.sendRedirect("https://www.instagram.com/tanaymithari21");//switch this to home page later
     }
 }
