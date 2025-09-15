@@ -3,17 +3,11 @@ package com.stayvida.backend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-// import com.stayvida.backend.dto.GoogleLoginRequest;
 import com.stayvida.backend.dto.LoginRequest;
 import com.stayvida.backend.dto.LoginResponse;
 
 import com.stayvida.backend.repository.LoginUserRepository;
 import com.stayvida.backend.service.JwtUtil;
-
-// import com.google.api.client.http.javanet.NetHttpTransport;
-
-import org.springframework.beans.factory.annotation.Value;
-
 
 
 @RestController
@@ -24,13 +18,6 @@ public class LoginController {
 
     @Autowired
     private JwtUtil jwtUtil;
-
-    @Value("${google.client.id}")
-    private String CLIENT_ID;
-
-    @Value("${google.client.secret}")
-    private String CLIENT_SECRET;
-    // private String CLIENT_ID;
 
 
    @PostMapping("/login")
