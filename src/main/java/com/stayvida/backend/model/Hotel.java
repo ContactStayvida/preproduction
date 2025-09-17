@@ -1,5 +1,7 @@
 package com.stayvida.backend.model;
 
+import java.util.List;
+
 // import org.springframework.security.access.method.P;
 
 public class Hotel {
@@ -41,4 +43,8 @@ public class Hotel {
 
     public double getRating() {return rating;}
     public void setRating(double rating) { this.rating = rating; }
+    
+    private List<String> amenities; // New field for amenities
+    public List<String> getAmenities() { return amenities; }
+    public void setAmenities(List<String> amenities) { this.amenities = amenities; }
 }

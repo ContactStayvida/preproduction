@@ -46,10 +46,24 @@ public class HotelRepository {
         for (Hotel hotel : hotels) {
             boolean isAvailable = isHotelAvailable(hotel.getId(), checkIn, checkOut);
             hotel.setAvailability(isAvailable);
+
+                // 👇 here you pass hotel.getId() to the method
+            List<String> amenities = getAmenitiesForHotel(hotel.getId());
+            hotel.setAmenities(amenities);
         }
 
         return hotels;
     }
+
+    public List<String> getAmenitiesForHotel(int hotelId) {
+    String sql = "SELECT A.name " +
+                 "FROM amenity AS A " +
+                 "INNER JOIN hotel_amenity AS B ON A.amenity_id = B.amenity_id " +
+                 "WHERE B.hotel_id = ?";
+
+    return jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString("name"), hotelId);
+}
+
 
     // Check if the hotel is available for the given dates
     public boolean isHotelAvailable(int hotelId, String checkIn, String checkOut) {

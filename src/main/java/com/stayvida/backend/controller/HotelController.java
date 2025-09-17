@@ -46,6 +46,7 @@ public class HotelController {
         map.put("price", hotel.getPrice());
         map.put("availability", hotel.isAvailability());
         map.put("rating", hotel.getRating());
+        map.put("amenities", hotel.getAmenities());
 
         return map;
     }).collect(Collectors.toList());
