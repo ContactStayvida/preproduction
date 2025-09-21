@@ -28,7 +28,7 @@ public class SecurityConfig {
                     "/api/login/google-auth",
                     "/google",
                     "/api/hotels/search",
-                    "api/featurelist",
+                    "/api/featurelist",
                     "/auth/google//callback",
                     "/testjson",
                     "/home/",
@@ -56,5 +56,5 @@ public class SecurityConfig {
     .permitAll()
 );//switch this to home page/loginpage later
         return http.build();
-    }
+    }   
 }

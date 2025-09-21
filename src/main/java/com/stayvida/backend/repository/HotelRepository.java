@@ -9,6 +9,7 @@ import com.stayvida.backend.model.Hotel;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -65,13 +66,16 @@ public class HotelRepository {
 }
 
 
-    // Check if the hotel is available for the given dates
-    public boolean isHotelAvailable(int hotelId, String checkIn, String checkOut) {
-        String sql = "SELECT COUNT(*) FROM bookings " +
-                     "WHERE hotel_id = ? AND (check_in_date < ? AND check_out_date > ?)";
+public boolean isHotelAvailable(int hotelId, String checkIn, String checkOut) {
+    String sql = "SELECT COUNT(*) FROM bookings " +
+                 "WHERE hotel_id = ? " +
+                 "AND check_in_date < ? " +
+                 "AND check_out_date > ?";
 
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, hotelId, checkOut, checkIn);
+    Integer count = jdbcTemplate.queryForObject(
+        sql, Integer.class, hotelId, checkOut, checkIn
+    );
 
-        return count == null || count == 0; // Available if no overlapping bookings
-    }
+    return count == null || count == 0;
+}
 }
