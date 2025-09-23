@@ -9,7 +9,7 @@ import com.stayvida.backend.model.Hotel;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
+// import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -28,14 +28,15 @@ public class HotelRepository {
             @Override
             public Hotel mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
                 Hotel hotel = new Hotel();
-                hotel.setId(rs.getInt("id"));
+                hotel.setId(rs.getInt("hotel_ID"));
                 hotel.setHotel(rs.getString("hotel"));
                 hotel.setLocation(rs.getString("location"));
                 hotel.setPrice(rs.getInt("price"));
                 hotel.setAdult(rs.getInt("max_adults"));
                 hotel.setchildren(rs.getInt("max_children"));
-                hotel.setImage(rs.getBytes("image")); // 👈 Set image blob 
+                hotel.setImagePath(rs.getString("image_url")); // ✅ Only filename, not blob
                 hotel.setRating(rs.getDouble("rating")); // Set rating
+                hotel.setdescription(rs.getString("description")); // Set description
 
                 return hotel;
             }

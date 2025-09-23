@@ -34,7 +34,9 @@ public class SecurityConfig {
                     "/home/",
                     "/me",
                     "/login",
-                    "/logout-success"
+                    "/logout-success",
+                    "/image/**",
+                    "/css/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
