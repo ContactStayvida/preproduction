@@ -14,7 +14,7 @@ target/
 .sts4-cache
 
 # .gitignore
-.env
+# .env
 
 ### IntelliJ IDEA ###
 .idea
