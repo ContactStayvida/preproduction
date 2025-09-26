@@ -79,16 +79,17 @@ public class HotelController {
     private RegisterRepository registerrepository;
 
     // Create new hotel (without image)
-    @PostMapping("/register")
-    public ResponseEntity<String> registerHotel(@RequestBody Register register) {
-        try {
-            registerrepository.saveHotel(register);
-            return ResponseEntity.ok("Hotel registered successfully!");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error registering hotel: " + e.getMessage());
-        }
+@PostMapping("/register")
+public ResponseEntity<?> registerHotel(@RequestBody Register register) {
+    try {
+        int newHotelId = registerrepository.saveHotel(register);
+        return ResponseEntity.ok("ID = " + newHotelId + "\nHotel registered successfully!");
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error registering hotel: " + e.getMessage());
     }
+}
+
 
     // Upload image for an existing hotel
     @PostMapping("/upload-image")

@@ -1,25 +1,19 @@
 package com.stayvida.backend.model;
 
 public class Register {
-    private int hotelId;
-    private String name;
+    private String hotel;
     private String location;
+    private int maxAdults;
+    private int maxChildren;
+    private int maxRoom;
     private String description;
-    private String imageUrl;
 
     // Getters & Setters
-    public int getHotelId() {
-        return hotelId;
+    public String getHotel() {
+        return hotel;
     }
-    public void setHotelId(int hotelId) {
-        this.hotelId = hotelId;
-    }
-
-    public String getName() {
-        return name;
-    }
-    public void setName(String name) {
-        this.name = name;
+    public void setHotel(String hotel) {
+        this.hotel = hotel;
     }
 
     public String getLocation() {
@@ -29,17 +23,31 @@ public class Register {
         this.location = location;
     }
 
+    public int getMaxAdults() {
+        return maxAdults;
+    }
+    public void setMaxAdults(int maxAdults) {
+        this.maxAdults = maxAdults;
+    }
+
+    public int getMaxChildren() {
+        return maxChildren;
+    }
+    public void setMaxChildren(int maxChildren) {
+        this.maxChildren = maxChildren;
+    }
+
+    public int getMaxRoom() {
+        return maxRoom;
+    }
+    public void setMaxRoom(int maxRoom) {
+        this.maxRoom = maxRoom;
+    }
+
     public String getDescription() {
         return description;
     }
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
     }
 }
