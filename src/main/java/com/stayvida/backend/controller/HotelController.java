@@ -3,12 +3,21 @@ package com.stayvida.backend.controller;
 import com.stayvida.backend.dto.HotelSearchRequest;
 import com.stayvida.backend.dto.RoomDTO;
 import com.stayvida.backend.model.Hotel;
+import com.stayvida.backend.model.Register;
 import com.stayvida.backend.repository.HotelRepository;
+import com.stayvida.backend.repository.RegisterRepository;
 import com.stayvida.backend.repository.RoomRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,6 +25,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/hotels")
 public class HotelController {
 
+    private final String uploadDir = "C:/uploaded_images";  // 📂 Folder for images
     @Autowired
     private HotelRepository hotelRepository;
     private RoomRepository roomRepository;
@@ -65,5 +75,47 @@ public class HotelController {
     }
 
 
+@Autowired
+    private RegisterRepository registerrepository;
 
+    // Create new hotel (without image)
+    @PostMapping("/register")
+    public ResponseEntity<String> registerHotel(@RequestBody Register register) {
+        try {
+            registerrepository.saveHotel(register);
+            return ResponseEntity.ok("Hotel registered successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error registering hotel: " + e.getMessage());
+        }
+    }
+
+    // Upload image for an existing hotel
+    @PostMapping("/upload-image")
+    public ResponseEntity<String> uploadHotelImage(
+            @RequestParam("hotelId") int hotelId,
+            @RequestParam("image") MultipartFile file) {
+
+        try {
+            // 1️⃣ Get original filename
+            String filename = file.getOriginalFilename();
+
+            // 2️⃣ Ensure folder exists
+            Path filePath = Paths.get(uploadDir, filename);
+            Files.createDirectories(filePath.getParent());
+
+            // 3️⃣ Save file
+            Files.write(filePath, file.getBytes());
+
+            // 4️⃣ Update DB
+            registerrepository.updateHotelImage(hotelId, filename);
+
+            return ResponseEntity.ok("Image uploaded successfully for hotel ID: " + hotelId);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error uploading image: " + e.getMessage());
+        }
+    }
 }

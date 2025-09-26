@@ -36,7 +36,9 @@ public class SecurityConfig {
                     "/login",
                     "/logout-success",
                     "/image/**",
-                    "/css/**"
+                    "/css/**",
+                    "/api/hotels/register",
+                    "/api/hotels/upload-image"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
