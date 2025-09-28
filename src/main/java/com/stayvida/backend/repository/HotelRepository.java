@@ -9,6 +9,8 @@ import com.stayvida.backend.model.Hotel;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 // import java.time.LocalDate;
 import java.util.List;
 
@@ -46,12 +48,14 @@ public class HotelRepository {
         destination // <-- this is passed as a vararg (instead of Object[])
 );
 
-        // Check availability for each hotel
+ // ✅ Parse the incoming strings to LocalDate once
+        LocalDate checkInDate = LocalDate.parse(checkIn, DateTimeFormatter.ISO_DATE);   // "2025-10-01"
+        LocalDate checkOutDate = LocalDate.parse(checkOut, DateTimeFormatter.ISO_DATE); // "2025-10-05"
+
         for (Hotel hotel : hotels) {
-            boolean isAvailable = isHotelAvailable(hotel.getId(), checkIn, checkOut);
+            boolean isAvailable = isHotelAvailable(hotel.getId(), checkInDate, checkOutDate);
             hotel.setAvailability(isAvailable);
 
-                // 👇 here you pass hotel.getId() to the method
             List<String> amenities = getAmenitiesForHotel(hotel.getId());
             hotel.setAmenities(amenities);
         }
@@ -69,18 +73,15 @@ public class HotelRepository {
 }
 
 
-public boolean isHotelAvailable(int hotelId, String checkIn, String checkOut) {
-    String sql = "SELECT COUNT(*) FROM bookings " +
-                 "WHERE hotel_id = ? " +
-                 "AND check_in_date < ? " +
-                 "AND check_out_date > ?";
+ public boolean isHotelAvailable(int hotelId, LocalDate checkIn, LocalDate checkOut) {
+        String sql = "SELECT COUNT(*) FROM bookings " +
+                     "WHERE hotel_id = ? " +
+                     "AND check_in_date < ? " +
+                     "AND check_out_date > ?";
 
-    Integer count = jdbcTemplate.queryForObject(
-        sql, Integer.class, hotelId, checkOut, checkIn
-    );
-
-    return count == null || count == 0;
-}
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, hotelId, checkOut, checkIn);
+        return count == null || count == 0;
+    }
 
 
 
