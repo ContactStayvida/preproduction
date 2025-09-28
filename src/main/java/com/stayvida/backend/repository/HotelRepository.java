@@ -20,8 +20,10 @@ public class HotelRepository {
 
     // Search hotels by location and check availability
     public List<Hotel> searchHotels(String destination, String checkIn, String checkOut, int adultCapacity, int childrenCapacity) {
-        String sql = "SELECT * FROM hotels WHERE location = ?";
-
+        String sql =  "SELECT h.*, " +
+            "   (SELECT MIN(price) FROM hotel_room r WHERE r.hotel_id = h.hotel_id) AS lowest_price " +
+            "FROM hotels h " +
+            "WHERE h.location = ?"+" AND h.varification_status = 'verified'";
         List<Hotel> hotels = jdbcTemplate.query(
     sql,
         new RowMapper<Hotel>() {

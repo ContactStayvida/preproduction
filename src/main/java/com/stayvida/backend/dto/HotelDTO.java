@@ -21,7 +21,7 @@ public class HotelDTO {
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
-    // public int getPrice() { return price; }
+    public int getPrice() { return price; }
     public void setPrice(int price) { this.price = price; }
 
     public int getAdults() { return adult;}
