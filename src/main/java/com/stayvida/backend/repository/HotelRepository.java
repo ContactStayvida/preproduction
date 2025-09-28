@@ -25,7 +25,7 @@ public class HotelRepository {
         String sql =  "SELECT h.*, " +
             "   (SELECT MIN(price) FROM hotel_room r WHERE r.hotel_id = h.hotel_id) AS lowest_price " +
             "FROM hotels h " +
-            "WHERE h.location = ?"+" AND h.varification_status = 'verified'";
+            "WHERE h.location = ?"+" AND h.varification_status = 'Verified'";
         List<Hotel> hotels = jdbcTemplate.query(
     sql,
         new RowMapper<Hotel>() {
