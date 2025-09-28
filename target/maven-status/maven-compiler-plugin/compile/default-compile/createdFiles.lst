@@ -13,6 +13,7 @@ com\stayvida\backend\repository\RoomRepository.class
 com\stayvida\backend\repository\RoomImageRepository.class
 com\stayvida\backend\dto\HotelSearchRequest.class
 com\stayvida\backend\dto\LoginResponse.class
+com\stayvida\backend\repository\RoomRepository$1.class
 com\stayvida\backend\controller\SignupController.class
 com\stayvida\backend\service\UserService.class
 com\stayvida\backend\dto\HotelDTO.class

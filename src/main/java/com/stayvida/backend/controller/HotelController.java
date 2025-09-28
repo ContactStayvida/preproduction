@@ -1,6 +1,7 @@
 package com.stayvida.backend.controller;
 
 import com.stayvida.backend.dto.HotelSearchRequest;
+import com.stayvida.backend.dto.HotelVerificationUpdate;
 import com.stayvida.backend.dto.RoomDTO;
 import com.stayvida.backend.model.Hotel;
 import com.stayvida.backend.model.Register;
@@ -120,4 +121,25 @@ public ResponseEntity<?> registerHotel(@RequestBody Register register) {
                     .body("Error uploading image: " + e.getMessage());
         }
     }
+
+
+
+     @PutMapping("/update-verification")
+    public ResponseEntity<?> updateVerificationStatus(@RequestBody HotelVerificationUpdate request) {
+        try {
+            int rows = hotelRepository.updateVerificationStatus(request.getHotelId(), request.getStatus());
+            if (rows > 0) {
+                return ResponseEntity.ok("Hotel verification status updated successfully!");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Hotel not found");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating verification status: " + e.getMessage());
+        }
+    }
+
+
+
+
 }

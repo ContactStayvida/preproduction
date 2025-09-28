@@ -79,4 +79,12 @@ public boolean isHotelAvailable(int hotelId, String checkIn, String checkOut) {
 
     return count == null || count == 0;
 }
+
+
+
+
+    public int updateVerificationStatus(int hotelId, String status) {
+        String sql = "UPDATE hotels SET varification_status = ? WHERE hotel_id = ?";
+        return jdbcTemplate.update(sql, status, hotelId);
+    }
 }
