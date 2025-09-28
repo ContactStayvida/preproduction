@@ -28,6 +28,7 @@ public class HotelController {
     private final String uploadDir = "C:/uploaded_images";  // 📂 Folder for images
     @Autowired
     private HotelRepository hotelRepository;
+    @Autowired
     private RoomRepository roomRepository;
 
 
@@ -58,7 +59,7 @@ public class HotelController {
         map.put("hotel", hotel.getHotel());
         map.put("max_adults", hotel.getAdults());
         map.put("max_children", hotel.getchildren());
-        map.put("price", hotel.getPrice());
+        // map.put("price", hotel.getPrice());
         map.put("availability", hotel.isAvailability());
         map.put("rating", hotel.getRating());
         map.put("amenities", hotel.getAmenities());

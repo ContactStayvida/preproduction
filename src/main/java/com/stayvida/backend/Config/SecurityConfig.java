@@ -38,7 +38,9 @@ public class SecurityConfig {
                     "/image/**",
                     "/css/**",
                     "/api/hotels/register",
-                    "/api/hotels/upload-image"
+                    "/api/hotels/upload-image",
+                    "/api/hotels/*/rooms",
+                    "/api/hotels/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
