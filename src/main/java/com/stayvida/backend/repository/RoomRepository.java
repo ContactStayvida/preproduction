@@ -17,7 +17,7 @@ public class RoomRepository  {
 
     public List<RoomDTO> getRoomsByHotelId(int hotelId) {
         String sql = "SELECT hotel_ID, room_ID, adults_MAX, children_MAX, type, price " +
-                     "FROM stayvida.dbo.hotel_Room WHERE hotel_ID = ?";
+                     "FROM hotel_Room WHERE hotel_ID = ?";
 
         return jdbcTemplate.query(sql, new Object[]{hotelId}, new RowMapper<RoomDTO>() {
             @Override
