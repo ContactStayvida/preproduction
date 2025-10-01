@@ -41,8 +41,7 @@ public class SecurityConfig {
                     "/api/hotels/upload-image",
                     "/api/hotels/*/rooms",
                     "/api/hotels/**",
-                    "/api/hotels/udate-verification",
-                     "/image/**"
+                    "/api/hotels/udate-verification"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
