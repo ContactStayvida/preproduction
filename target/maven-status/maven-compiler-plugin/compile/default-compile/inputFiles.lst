@@ -2,6 +2,7 @@ D:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\BackendApplication
 D:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\Config\AppConfig.java
 D:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\Config\PasswordConfig.java
 D:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\Config\SecurityConfig.java
+D:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\Config\WebConfig.java
 D:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\controller\FeatureListController.java
 D:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\controller\GoogleLoginController.java
 D:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\controller\HotelController.java

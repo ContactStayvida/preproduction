@@ -7,6 +7,7 @@ com\stayvida\backend\controller\FeatureListController.class
 com\stayvida\backend\model\Register.class
 com\stayvida\backend\Config\PasswordConfig.class
 com\stayvida\backend\security\CustomOAuth2SuccessHandler.class
+com\stayvida\backend\Config\WebConfig.class
 com\stayvida\backend\dto\HotelAvailabilityDTO.class
 com\stayvida\backend\repository\HotelRepository.class
 com\stayvida\backend\repository\RoomRepository.class
