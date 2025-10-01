@@ -50,7 +50,7 @@ String baseUrl = "https://sv-website-backend-1.onrender.com";  // ✅ Render bac
     return hotels.stream().map(hotel -> {
         Map<String, Object> map = new LinkedHashMap<>(); // ✅ Keeps key order
 
-        // ✅ Insert keys in the exact order you want in JSON
+        // ✅ Insert keys in the exact order you want in JSON   
         if (hotel.getImagePath() != null) {
             map.put("imageUrl", baseUrl + "/image/" + hotel.getImagePath());
 
