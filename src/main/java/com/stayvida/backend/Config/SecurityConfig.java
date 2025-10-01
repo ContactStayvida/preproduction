@@ -4,6 +4,7 @@ import com.stayvida.backend.security.CustomOAuth2SuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
 // import org.springframework.security.config.Customizer;
 
@@ -63,5 +64,16 @@ public class SecurityConfig {
     .permitAll()
 );//switch this to home page/loginpage later
         return http.build();
-    }   
+    }  
+    
+    
+// ✅ Add this bean in the same class
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring()
+            .requestMatchers("/image/**", "/css/**", "/js/**");
+    }
+
+
+
 }
