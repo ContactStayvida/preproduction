@@ -26,13 +26,15 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/hotels")
 public class HotelController {
 
-    private final String uploadDir = "C:/uploaded_images";  // 📂 Folder for images
+    // private final String uploadDir = "C:/uploaded_images";  // 📂 Folder for images
+    private final String uploadDir = "/tmp/uploads";  // ✅ works on Render free plan
+
     @Autowired
     private HotelRepository hotelRepository;
     @Autowired
     private RoomRepository roomRepository;
 
-
+String baseUrl = "https://sv-website-backend-1.onrender.com";  // ✅ Render backend URL
 
     @PostMapping("/search")
     public List<Map<String, Object>> searchHotels(@RequestBody HotelSearchRequest request) {
@@ -50,7 +52,8 @@ public class HotelController {
 
         // ✅ Insert keys in the exact order you want in JSON
         if (hotel.getImagePath() != null) {
-            map.put("imageUrl", "http://localhost:8080/image/" + hotel.getImagePath());
+            map.put("imageUrl", baseUrl + "/image/" + hotel.getImagePath());
+
         } else {
             map.put("imageUrl", null);
         }
