@@ -1,5 +1,7 @@
 package com.stayvida.backend.model;
 
+import java.util.List;
+
 public class Register {
     private String hotel;
     private String location;
@@ -7,6 +9,8 @@ public class Register {
     private int maxChildren;
     private int maxRoom;
     private String description;
+    private List<String> Amenities;  // ✅ multiple amenities
+
 
     // Getters & Setters
     public String getHotel() {
@@ -50,4 +54,8 @@ public class Register {
     public void setDescription(String description) {
         this.description = description;
     }
+   // Getters and setters...
+    public List<String> getAmenities() { return Amenities; }
+    public void setAmenities(List<String> Amenities) { this.Amenities = Amenities; }
+
 }

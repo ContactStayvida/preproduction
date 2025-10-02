@@ -2,12 +2,15 @@ package com.stayvida.backend.controller;
 
 import com.stayvida.backend.dto.HotelSearchRequest;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
+import com.stayvida.backend.dto.RegisterRoom;
 import com.stayvida.backend.dto.RoomDTO;
 import com.stayvida.backend.model.Hotel;
 import com.stayvida.backend.model.Register;
 import com.stayvida.backend.repository.HotelRepository;
 import com.stayvida.backend.repository.RegisterRepository;
+import com.stayvida.backend.repository.RoomImageRepository;
 import com.stayvida.backend.repository.RoomRepository;
+import com.stayvida.backend.repository.RoomregisterRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,6 +34,10 @@ public class HotelController {
     private HotelRepository hotelRepository;
     @Autowired
     private RoomRepository roomRepository;
+    @Autowired
+    private RoomImageRepository roomImageRepository;
+    @Autowired
+    private RoomregisterRepository registerroomrepository;
 
 String baseUrl = "https://sv-website-backend-1.onrender.com";  // ✅ Render backend URL
 
@@ -60,7 +67,7 @@ String baseUrl = "https://sv-website-backend-1.onrender.com";  // ✅ Render bac
         map.put("hotel", hotel.getHotel());
         map.put("max_adults", hotel.getAdults());
         map.put("max_children", hotel.getchildren());
-        // map.put("price", hotel.getPrice());
+        map.put("price", hotel.getPrice());
         map.put("availability", hotel.isAvailability());
         map.put("rating", hotel.getRating());
         map.put("amenities", hotel.getAmenities());
@@ -122,6 +129,52 @@ public ResponseEntity<?> registerHotel(@RequestBody Register register) {
         }
     }
 
+       // Upload multiple images for an existing hotel room
+@PostMapping("/upload-room-images")
+public ResponseEntity<String> uploadRoomImages(
+        @RequestParam("hotelId") int hotelId,
+        @RequestParam("roomId") int roomId,
+        @RequestParam("images") List<MultipartFile> files) {
+
+    try {
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) continue;
+
+            // 1️⃣ Get original filename
+            String filename = file.getOriginalFilename();
+
+            // 2️⃣ Ensure folder exists
+            Path filePath = Paths.get(uploadDir, filename);
+            Files.createDirectories(filePath.getParent());
+
+            // 3️⃣ Save file
+            Files.write(filePath, file.getBytes());
+
+            // 4️⃣ Insert into DB
+            roomImageRepository.insertRoomImage(hotelId, roomId, filename);
+        }
+
+        return ResponseEntity.ok("Uploaded " + files.size() + " images for hotel ID: " 
+                                 + hotelId + ", room ID: " + roomId);
+
+    } catch (IOException e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error uploading images: " + e.getMessage());
+    }
+}
+
+
+     @PostMapping("/register_room")
+    public ResponseEntity<?> registerRoom(@RequestBody RegisterRoom registerRoom) {
+        try {
+            int newRoomId = registerroomrepository.saveRoom(registerRoom);
+            return ResponseEntity.ok("Room ID = " + newRoomId + "\nRoom registered successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error registering room: " + e.getMessage());
+        }
+    }
 
 
      @PutMapping("/update-verification")

@@ -35,7 +35,7 @@ public class HotelRepository {
                 hotel.setId(rs.getInt("hotel_ID"));
                 hotel.setHotel(rs.getString("hotel"));
                 hotel.setLocation(rs.getString("location"));
-                // hotel.setPrice(rs.getInt("price"));
+                hotel.setPrice(rs.getInt("lowest_price")); // Use the lowest price from subquery
                 hotel.setAdult(rs.getInt("max_adults"));
                 hotel.setchildren(rs.getInt("max_children"));
                 hotel.setImagePath(rs.getString("image_url")); // ✅ Only filename, not blob
