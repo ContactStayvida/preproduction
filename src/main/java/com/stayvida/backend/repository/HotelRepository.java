@@ -2,16 +2,18 @@ package com.stayvida.backend.repository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
+// import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import org.springframework.lang.NonNull;
+// import org.springframework.lang.NonNull;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.model.Hotel;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+// import java.sql.ResultSet;
+// import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-// import java.time.LocalDate;
+// import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Repository
@@ -20,74 +22,100 @@ public class HotelRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // Search hotels by location and check availability
+
+    // Main search method with availability check
     public List<Hotel> searchHotels(String destination, String checkIn, String checkOut, int adultCapacity, int childrenCapacity) {
-        String sql =  "SELECT h.*, " +
-            "   (SELECT MIN(price) FROM hotel_room r WHERE r.hotel_id = h.hotel_id) AS lowest_price " +
-            "FROM hotels h " +
-            "WHERE h.location = ?"+" AND h.varification_status = 'Verified'";
-        List<Hotel> hotels = jdbcTemplate.query(
-    sql,
-        new RowMapper<Hotel>() {
-            @Override
-            public Hotel mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
-                Hotel hotel = new Hotel();
-                hotel.setId(rs.getInt("hotel_ID"));
-                hotel.setHotel(rs.getString("hotel"));
-                hotel.setLocation(rs.getString("location"));
-                hotel.setPrice(rs.getInt("lowest_price")); // Use the lowest price from subquery
-                hotel.setAdult(rs.getInt("max_adults"));
-                hotel.setchildren(rs.getInt("max_children"));
-                hotel.setImagePath(rs.getString("image_url")); // ✅ Only filename, not blob
-                hotel.setRating(rs.getDouble("rating")); // Set rating
-                hotel.setdescription(rs.getString("description")); // Set description
+        String sql = """
+            SELECT h.*, 
+                   (SELECT MIN(price) FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price 
+            FROM hotels h 
+            WHERE h.destination = ? AND h.status = 'Verified'
+        """;
 
-                return hotel;
+        // Parse dates once
+        LocalDate checkInDate = LocalDate.parse(checkIn);
+        LocalDate checkOutDate = LocalDate.parse(checkOut);
+
+        // Fetch all hotels matching destination
+        List<Hotel> allHotels = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Hotel hotel = new Hotel();
+            hotel.setId(rs.getInt("hotel_ID"));
+            hotel.setName(rs.getString("name"));
+            hotel.setType(rs.getString("type"));
+            hotel.setDestination(rs.getString("destination"));
+            hotel.setRating(rs.getDouble("rating"));
+            hotel.setForEvent(rs.getBoolean("isForEvent"));
+            hotel.setPrice(rs.getDouble("lowest_price"));
+            hotel.setImage(rs.getString("images"));
+            hotel.setAmenities(parseJsonArray(rs.getString("amenities")));
+            return hotel;
+        }, destination);
+
+        // Filter only available hotels
+        List<Hotel> availableHotels = new ArrayList<>();
+        for (Hotel hotel : allHotels) {
+            if (isHotelAvailable(hotel.getId(), checkInDate, checkOutDate)) {
+                availableHotels.add(hotel);
             }
-        },
-        destination // <-- this is passed as a vararg (instead of Object[])
-);
-
- // ✅ Parse the incoming strings to LocalDate once
-        LocalDate checkInDate = LocalDate.parse(checkIn, DateTimeFormatter.ISO_DATE);   // "2025-10-01"
-        LocalDate checkOutDate = LocalDate.parse(checkOut, DateTimeFormatter.ISO_DATE); // "2025-10-05"
-
-        for (Hotel hotel : hotels) {
-            boolean isAvailable = isHotelAvailable(hotel.getId(), checkInDate, checkOutDate);
-            hotel.setAvailability(isAvailable);
-
-            List<String> amenities = getAmenitiesForHotel(hotel.getId());
-            hotel.setAmenities(amenities);
         }
 
-        return hotels;
+        return availableHotels;
+        // return allHotels;
     }
 
-    public List<String> getAmenitiesForHotel(int hotelId) {
-    String sql = "SELECT A.name " +
-                 "FROM amenity AS A " +
-                 "INNER JOIN hotel_amenity AS B ON A.amenity_id = B.amenity_id " +
-                 "WHERE B.hotel_id = ?";
+    // Helper to parse JSON string to List<String>
+    private List<String> parseJsonArray(String json) {
+        if (json == null || json.isEmpty()) return new ArrayList<>();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
 
-    return jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString("name"), hotelId);
+    public boolean isHotelAvailable(int hotelId, LocalDate checkIn, LocalDate checkOut) {
+    String sql = """
+        SELECT COUNT(*) 
+        FROM rooms r
+        WHERE r.hotel_ID = ?
+        AND (
+            -- Case 1: Room has no active overlapping booking
+            NOT EXISTS (
+                SELECT 1 
+                FROM bookings b
+                WHERE b.room_ID = r.room_ID
+                  AND b.booking_Status <> 'Cancelled'
+                  AND b.checkIn < ? 
+                  AND b.checkOut > ?
+            )
+            -- Case 2: Room has a cancelled booking in that range (can be reused)
+            OR EXISTS (
+                SELECT 1 
+                FROM bookings b
+                WHERE b.room_ID = r.room_ID
+                  AND b.booking_Status = 'Cancelled'
+                  AND b.checkIn < ? 
+                  AND b.checkOut > ?
+            )
+        )
+    """;
+
+    Integer availableRoomCount = jdbcTemplate.queryForObject(
+        sql,
+        Integer.class,
+        hotelId,
+        checkOut, checkIn,   // for NOT EXISTS
+        checkOut, checkIn    // for EXISTS (cancelled)
+    );
+
+    return availableRoomCount != null && availableRoomCount > 0;
 }
 
 
- public boolean isHotelAvailable(int hotelId, LocalDate checkIn, LocalDate checkOut) {
-        String sql = "SELECT COUNT(*) FROM bookings " +
-                     "WHERE hotel_id = ? " +
-                     "AND check_in_date < ? " +
-                     "AND check_out_date > ?";
-
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, hotelId, checkOut, checkIn);
-        return count == null || count == 0;
-    }
-
-
-
-
-    public int updateVerificationStatus(int hotelId, String status) {
-        String sql = "UPDATE hotels SET varification_status = ? WHERE hotel_id = ?";
-        return jdbcTemplate.update(sql, status, hotelId);
+    public int updateVerificationStatus(int hotelId, String status, String remark) {
+        String sql = "UPDATE hotels SET status = ?, remark = ? WHERE hotel_ID = ?";
+        return jdbcTemplate.update(sql, status, remark, hotelId);
     }
 }

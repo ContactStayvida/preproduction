@@ -17,6 +17,8 @@ public class SignupController {
 
     @Autowired
     private UserService userService;
+    // @Autowired
+    // private SignupRequest signupRequest;
 
     @PostMapping
     public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
@@ -24,7 +26,8 @@ public class SignupController {
             userService.registerUser(
                 request.getEmail(),
                 request.getUsername(),
-                request.getPassword()
+                request.getPassword(),
+                request.getRole()
             );
             return ResponseEntity.ok("Signup successful");
         } catch (RuntimeException e) {

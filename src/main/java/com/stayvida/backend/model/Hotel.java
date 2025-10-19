@@ -2,56 +2,78 @@ package com.stayvida.backend.model;
 
 import java.util.List;
 
-// import org.springframework.security.access.method.P;
-
 public class Hotel {
-    private int id;
-    private String hotel;
-    private String location;
-    private int price;
-    private int adult;
-    private int children;
-    private boolean availability; // <- add this
-    // private byte[] image; // 👈 Store raw image as byte array
-    private String imagePath;// New field for image path
-    private double rating; // New field for rating
-    private String description; // New field for description
+    private int id; // hotel_ID
+    // private int ownerId;
+    private String name;
+    private String type; // 'Hotel','Resort','Villa','Guest House'
+    private String destination;
+    private double rating;
+    private boolean isForEvent;
+    private double price;
+    // private String description;
+    // private String phoneNo;
+    // private List<String> tags; // JSON array
+    private String image; // single file name
+    private List<String> amenities; // JSON array
+    // private String longitude;
+    // private String latitude;
+    // private String status; // 'Pending','Verified','Rejected'
+    // private boolean onArrivalPayment;
+    // private String remark;
 
     // Getters and Setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
-    public String getHotel() { return hotel; }
-    public void setHotel(String hotel) { this.hotel = hotel; }
+    // public int getOwnerId() { return ownerId; }
+    // public void setOwnerId(int ownerId) { this.ownerId = ownerId; }
 
-    public String getLocation() { return location; }
-    public void setLocation(String location) { this.location = location; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public int getPrice() { return price; }
-    public void setPrice(int price) { this.price = price; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
-    public int getAdults() { return adult; }
-    public void setAdult(int adult) { this.adult = adult; }
+    public String getDestination() { return destination; }
+    public void setDestination(String destination) { this.destination = destination; }
 
-    public int getchildren() { return children; }
-    public void setchildren(int children) { this.children = children; }
-
-
-    public boolean isAvailability() { return availability; }
-    public void setAvailability(boolean availability) { this.availability = availability; }
-
-    // public byte[] getImage() { return image; }
-    // public void setImage(byte[] image) { this.image = image; }
-
-    public String getImagePath() { return imagePath; }
-    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
-
-    public double getRating() {return rating;}
+    public double getRating() { return rating; }
     public void setRating(double rating) { this.rating = rating; }
-    public String getdescription() { return description; }
-    public void setdescription(String description) { this.description = description; }
-    
-    private List<String> amenities; // New field for amenities
+
+    public boolean isForEvent() { return isForEvent; }
+    public void setForEvent(boolean forEvent) { isForEvent = forEvent; }
+
+    // public String getDescription() { return description; }
+    // public void setDescription(String description) { this.description = description; }
+
+    // public String getPhoneNo() { return phoneNo; }
+    // public void setPhoneNo(String phoneNo) { this.phoneNo = phoneNo; }
+
+    // public List<String> getTags() { return tags; }
+    // public void setTags(List<String> tags) { this.tags = tags; }
+
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
+
     public List<String> getAmenities() { return amenities; }
     public void setAmenities(List<String> amenities) { this.amenities = amenities; }
+    
+    public double getPrice() { return price; }
+    public void setPrice(double price) { this.price = price; }
+
+//     public String getLongitude() { return longitude; }
+//     public void setLongitude(String longitude) { this.longitude = longitude; }
+
+//     public String getLatitude() { return latitude; }
+//     public void setLatitude(String latitude) { this.latitude = latitude; }
+
+//     public String getStatus() { return status; }
+//     public void setStatus(String status) { this.status = status; }
+
+//     public boolean isOnArrivalPayment() { return onArrivalPayment; }
+//     public void setOnArrivalPayment(boolean onArrivalPayment) { this.onArrivalPayment = onArrivalPayment; }
+
+//     public String getRemark() { return remark; }
+//     public void setRemark(String remark) { this.remark = remark; }
 }

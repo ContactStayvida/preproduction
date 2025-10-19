@@ -1,5 +1,6 @@
 package com.stayvida.backend.repository;
 
+// import com.stayvida.backend.dto.SignupRequest;
 import com.stayvida.backend.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -30,8 +31,8 @@ public class UserRepository {
         }
     }
 
-    public void save(User user) {
-        String sql = "INSERT INTO users (email, username, password) VALUES (?, ?, ?)";
-        jdbcTemplate.update(sql, user.getEmail(), user.getUsername(), user.getPassword());
+    public void save(User newUser) {
+        String sql = "INSERT INTO users (email, username, password,role,createdAT,updatedAt) VALUES (?, ?, ?, ?, ?, ?)";
+        jdbcTemplate.update(sql,newUser.getEmail(), newUser.getUsername(), newUser.getPassword(),newUser.getRole(),java.time.LocalDateTime.now(),java.time.LocalDateTime.now());
     }
 }

@@ -18,15 +18,21 @@ public class User {
 
     @Column(nullable = false)
     private String username;
+    // @Column(nullable = false)
+    // private String name;
+    @Column(nullable = false)
+    private String role;
+
 
     // Constructors
     public User() {
     }
 
-    public User(String email, String password, String username) {
+    public User(String email, String password, String username, String role) {
         this.email = email;
         this.password = password;
         this.username = username;
+        this.role = role;
     }
 
     // Getters & Setters
@@ -62,4 +68,17 @@ public class User {
     public void setUsername(String username) {
         this.username = username;
     }
+    // public String getName() {
+    //     return name;
+    // }
+    // public void setName(String name) {
+    //     this.name = name;
+    // }
+    public String getRole() {
+        return role;
+    }
+    public void setRole(String role) {
+        this.role = role;
+    }
+
 }

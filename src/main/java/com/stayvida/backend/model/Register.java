@@ -2,60 +2,79 @@ package com.stayvida.backend.model;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Register {
-    private String hotel;
-    private String location;
-    private int maxAdults;
-    private int maxChildren;
-    private int maxRoom;
+    private String hotel_ID;       // PK - generated in DB
+    private int owner_ID;
+    private String name;
+    private String type;           // Enum('Hotel','Resort','Villa','Guest House')
+    private String destination;
+    private Double rating;
+    @JsonProperty("isForEvent")
+
+    private boolean isForEvent;
     private String description;
-    private List<String> Amenities;  // ✅ multiple amenities
+    private String phone_NO;
+    private List<String> tags;     // stored as JSON
+    private List<String> amenities; // stored as JSON
+    private String images;         // comma-separated URLs or JSON
+    private String longitude;
+    private String latitude;
+    private String status;         // Enum('Pending','Verified','Rejected')
+    private boolean onArrivalPayment;
+    private String remark;
 
+    // Getters and Setters
+    public String getHotel_ID() { return hotel_ID; }
+    public void setHotel_ID(String hotel_ID) { this.hotel_ID = hotel_ID; }
 
-    // Getters & Setters
-    public String getHotel() {
-        return hotel;
-    }
-    public void setHotel(String hotel) {
-        this.hotel = hotel;
-    }
+    public int getOwner_ID() { return owner_ID; }
+    public void setOwner_ID(int owner_ID) { this.owner_ID = owner_ID; }
 
-    public String getLocation() {
-        return location;
-    }
-    public void setLocation(String location) {
-        this.location = location;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public int getMaxAdults() {
-        return maxAdults;
-    }
-    public void setMaxAdults(int maxAdults) {
-        this.maxAdults = maxAdults;
-    }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
-    public int getMaxChildren() {
-        return maxChildren;
-    }
-    public void setMaxChildren(int maxChildren) {
-        this.maxChildren = maxChildren;
-    }
+    public String getDestination() { return destination; }
+    public void setDestination(String destination) { this.destination = destination; }
 
-    public int getMaxRoom() {
-        return maxRoom;
-    }
-    public void setMaxRoom(int maxRoom) {
-        this.maxRoom = maxRoom;
-    }
+    public Double getRating() { return rating; }
+    public void setRating(Double rating) { this.rating = rating; }
 
-    public String getDescription() {
-        return description;
-    }
-    public void setDescription(String description) {
-        this.description = description;
-    }
-   // Getters and setters...
-    public List<String> getAmenities() { return Amenities; }
-    public void setAmenities(List<String> Amenities) { this.Amenities = Amenities; }
+    public boolean isForEvent() { return isForEvent; }
+     @JsonProperty("isForEvent")
+    public void setForEvent(boolean forEvent) { isForEvent = forEvent; }
 
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getPhone_NO() { return phone_NO; }
+    public void setPhone_NO(String phone_NO) { this.phone_NO = phone_NO; }
+
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
+
+    public List<String> getAmenities() { return amenities; }
+    public void setAmenities(List<String> amenities) { this.amenities = amenities; }
+
+    public String getImages() { return images; }
+    public void setImages(String images) { this.images = images; }
+
+    public String getLongitude() { return longitude; }
+    public void setLongitude(String longitude) { this.longitude = longitude; }
+
+    public String getLatitude() { return latitude; }
+    public void setLatitude(String latitude) { this.latitude = latitude; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public boolean isOnArrivalPayment() { return onArrivalPayment; }
+    public void setOnArrivalPayment(boolean onArrivalPayment) { this.onArrivalPayment = onArrivalPayment; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
 }

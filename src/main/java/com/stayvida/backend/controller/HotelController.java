@@ -1,19 +1,22 @@
 package com.stayvida.backend.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stayvida.backend.dto.HotelDTO;
 import com.stayvida.backend.dto.HotelSearchRequest;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
-import com.stayvida.backend.dto.RegisterRoom;
-import com.stayvida.backend.dto.RoomDTO;
+// import com.stayvida.backend.dto.RegisterRoom;
+// import com.stayvida.backend.dto.RoomDTO;
 import com.stayvida.backend.model.Hotel;
 import com.stayvida.backend.model.Register;
 import com.stayvida.backend.repository.HotelRepository;
 import com.stayvida.backend.repository.RegisterRepository;
-import com.stayvida.backend.repository.RoomImageRepository;
+// import com.stayvida.backend.repository.RoomImageRepository;
 import com.stayvida.backend.repository.RoomRepository;
 import com.stayvida.backend.repository.RoomregisterRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,164 +37,166 @@ public class HotelController {
     private HotelRepository hotelRepository;
     @Autowired
     private RoomRepository roomRepository;
-    @Autowired
-    private RoomImageRepository roomImageRepository;
-    @Autowired
-    private RoomregisterRepository registerroomrepository;
+    // @Autowired
+    // private RoomImageRepository roomImageRepository;
+   @Autowired
+    private RoomregisterRepository roomRegisterRepository; // 🔹 inject here
 
-String baseUrl = "https://sv-website-backend-1.onrender.com";  // ✅ Render backend URL
+String baseUrl = "http://localhost:8080/image/";  // ✅ Render backend URL
 
     @PostMapping("/search")
-    public List<Map<String, Object>> searchHotels(@RequestBody HotelSearchRequest request) {
-        List<Hotel> hotels = hotelRepository.searchHotels(  // ✅ Declare `hotels` here
-                request.getLocation(),
-                request.getCheckIn(),
-                request.getCheckOut(),
-                request.getAdults(),
-                request.getChildren()
-        );
+public List<Map<String, Object>> searchHotels(@RequestBody HotelSearchRequest request) {
+    List<Hotel> hotels = hotelRepository.searchHotels(
+            request.getLocation(),
+            request.getCheckIn(),
+            request.getCheckOut(),
+            request.getAdults(),
+            request.getChildren()
+    );
 
-        // Convert to a JSON-safe list with base64 image string
+    if (hotels.isEmpty()) {
+        Map<String, Object> msg = new LinkedHashMap<>();
+        msg.put("message", "No hotels available");
+        return List.of(msg);
+    }
+
     return hotels.stream().map(hotel -> {
-        Map<String, Object> map = new LinkedHashMap<>(); // ✅ Keeps key order
-
-        // ✅ Insert keys in the exact order you want in JSON
-        if (hotel.getImagePath() != null) {
-            map.put("imageUrl", "http://localhost:8080/image/" + hotel.getImagePath());
-        } else {
-            map.put("imageUrl", null);
-        }
-
+        Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", hotel.getId());
-        map.put("location", hotel.getLocation());
-        map.put("hotel", hotel.getHotel());
-        map.put("max_adults", hotel.getAdults());
-        map.put("max_children", hotel.getchildren());
-        map.put("price", hotel.getPrice());
-        map.put("availability", hotel.isAvailability());
+        map.put("name", hotel.getName());
+        map.put("type", hotel.getType());
+        map.put("destination", hotel.getDestination());
         map.put("rating", hotel.getRating());
+        // map.put("description", hotel.getDescription());
+        // map.put("phoneNo", hotel.getPhoneNo());
+        // map.put("tags", hotel.getTags());
         map.put("amenities", hotel.getAmenities());
-        map.put("description", hotel.getdescription());
-
+        map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
+        // map.put("longitude", hotel.getLongitude());
+        // map.put("latitude", hotel.getLatitude());
+        map.put("isForEvent", hotel.isForEvent());
+        map.put("price", hotel.getPrice());
+        // map.put("onArrivalPayment", hotel.isOnArrivalPayment());
+        // map.put("status", hotel.getStatus());
+        // map.put("remark", hotel.getRemark());
         return map;
     }).collect(Collectors.toList());
 }
 
+
     
     @GetMapping("/{hotelId}/rooms")
-    public List<RoomDTO> getRooms(@PathVariable int hotelId) {
-        return roomRepository.getRoomsByHotelId(hotelId);
-    }
+public HotelDTO getHotelWithRooms(@PathVariable int hotelId) {
+    return roomRepository.getRoomsByHotelId(hotelId);
+}
 
 
 @Autowired
-    private RegisterRepository registerrepository;
-
-    // Create new hotel (without image)
-@PostMapping("/register")
-public ResponseEntity<?> registerHotel(@RequestBody Register register) {
-    try {
-        int newHotelId = registerrepository.saveHotel(register);
-        return ResponseEntity.ok("ID = " + newHotelId + "\nHotel registered successfully!");
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error registering hotel: " + e.getMessage());
-    }
-}
+    private RegisterRepository registerRepository;;
 
 
-    // Upload image for an existing hotel
-    @PostMapping("/upload-image")
-    public ResponseEntity<String> uploadHotelImage(
-            @RequestParam("hotelId") int hotelId,
-            @RequestParam("image") MultipartFile file) {
+
+    // ✅ Create new hotel
+    // ✅ Register hotel with image upload
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> registerHotel(
+            @RequestPart("data") String hotelJson,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile) {
 
         try {
-            // 1️⃣ Get original filename
-            String filename = file.getOriginalFilename();
+            // 🧩 Convert JSON to Register object
+            ObjectMapper mapper = new ObjectMapper();
+            Register register = mapper.readValue(hotelJson, Register.class);
 
-            // 2️⃣ Ensure folder exists
-            Path filePath = Paths.get(uploadDir, filename);
-            Files.createDirectories(filePath.getParent());
+            String imageFileName = null;
 
-            // 3️⃣ Save file
-            Files.write(filePath, file.getBytes());
+            // 🖼️ If image is provided, save it
+            if (imageFile != null && !imageFile.isEmpty()) {
+                imageFileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
+                Path filePath = Paths.get(uploadDir, imageFileName);
+                Files.createDirectories(filePath.getParent());
+                Files.write(filePath, imageFile.getBytes());
+                register.setImages(imageFileName); // store filename in DB
+            }
 
-            // 4️⃣ Update DB
-            registerrepository.updateHotelImage(hotelId, filename);
+            // 💾 Save hotel details (and image filename)
+            int newHotelId = registerRepository.saveHotel(register);
 
-            return ResponseEntity.ok("Image uploaded successfully for hotel ID: " + hotelId);
+            return ResponseEntity.ok("Hotel registered successfully with ID: " + newHotelId);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid JSON or file: " + e.getMessage());
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error uploading image: " + e.getMessage());
+                    .body("Error registering hotel: " + e.getMessage());
         }
     }
+    // ✅ Register room with multiple images
 
-       // Upload multiple images for an existing hotel room
-@PostMapping("/upload-room-images")
-public ResponseEntity<String> uploadRoomImages(
+
+@PostMapping("/register_room_with_images")
+public ResponseEntity<?> registerRoomWithImages(
         @RequestParam("hotelId") int hotelId,
-        @RequestParam("roomId") int roomId,
-        @RequestParam("images") List<MultipartFile> files) {
-
+        @RequestParam("roomType") String roomType,
+        @RequestParam("features") String featuresJson, // comma-separated or JSON string
+        @RequestParam("maxAdults") int maxAdults,
+        @RequestParam("maxChildren") int maxChildren,
+        @RequestParam("bedCount") int bedCount,
+        @RequestParam("price") int price,
+        @RequestParam("images") MultipartFile[] files
+) {
     try {
+        // 1️⃣ Save images to server and collect filenames
+        List<String> imageFilenames = new ArrayList<>();
+        String uploadDir = "C:/uploaded_images";
+        Files.createDirectories(Paths.get(uploadDir));
+
         for (MultipartFile file : files) {
-            if (file.isEmpty()) continue;
-
-            // 1️⃣ Get original filename
-            String filename = file.getOriginalFilename();
-
-            // 2️⃣ Ensure folder exists
-            Path filePath = Paths.get(uploadDir, filename);
-            Files.createDirectories(filePath.getParent());
-
-            // 3️⃣ Save file
-            Files.write(filePath, file.getBytes());
-
-            // 4️⃣ Insert into DB
-            roomImageRepository.insertRoomImage(hotelId, roomId, filename);
+            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            Path path = Paths.get(uploadDir, filename);
+            Files.write(path, file.getBytes());
+            imageFilenames.add(filename);
         }
 
-        return ResponseEntity.ok("Uploaded " + files.size() + " images for hotel ID: " 
-                                 + hotelId + ", room ID: " + roomId);
+        // 2️⃣ Convert features and filenames to JSON
+        ObjectMapper mapper = new ObjectMapper();
+        String featuresJsonStr = featuresJson; // if already JSON string
+        String imagesJsonStr = mapper.writeValueAsString(imageFilenames);
 
-    } catch (IOException e) {
-        e.printStackTrace();
+        // 3️⃣ Save to DB
+        String roomId = roomRegisterRepository.saveRoomWithJson(
+                hotelId, roomType, featuresJsonStr, imagesJsonStr,
+                price, maxAdults, maxChildren, bedCount
+        );
+
+        return ResponseEntity.ok("Room ID = " + roomId + "\nRoom registered successfully!");
+    } catch (Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error uploading images: " + e.getMessage());
+                .body("Error registering room: " + e.getMessage());
     }
 }
 
-
-     @PostMapping("/register_room")
-    public ResponseEntity<?> registerRoom(@RequestBody RegisterRoom registerRoom) {
-        try {
-            int newRoomId = registerroomrepository.saveRoom(registerRoom);
-            return ResponseEntity.ok("Room ID = " + newRoomId + "\nRoom registered successfully!");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error registering room: " + e.getMessage());
-        }
-    }
 
 
      @PutMapping("/update-verification")
-    public ResponseEntity<?> updateVerificationStatus(@RequestBody HotelVerificationUpdate request) {
-        try {
-            int rows = hotelRepository.updateVerificationStatus(request.getHotelId(), request.getStatus());
-            if (rows > 0) {
-                return ResponseEntity.ok("Hotel verification status updated successfully!");
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Hotel not found");
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error updating verification status: " + e.getMessage());
+public ResponseEntity<?> updateVerificationStatus(@RequestBody HotelVerificationUpdate request) {
+    try {
+        int rows = hotelRepository.updateVerificationStatus(
+                request.getHotelId(),
+                request.getStatus(),
+                request.getRemark() // pass remark
+        );
+        if (rows > 0) {
+            return ResponseEntity.ok("Hotel verification status updated successfully!");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Hotel not found");
         }
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error updating verification status: " + e.getMessage());
     }
-
+}
 
 
 

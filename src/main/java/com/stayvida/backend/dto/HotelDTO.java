@@ -1,36 +1,49 @@
-// src/main/java/com/stayvida/backend/dto/HotelDTO.java
 package com.stayvida.backend.dto;
 
+import java.util.List;
+// import java.util.Map;
+
 public class HotelDTO {
-    private int id;
-    private String hotel;
-    private String location;
-    private int price;
-    private boolean availability;
-    private int adult;
-    private int children;
+    private int hotelId;
+    private String name;
+    private String description;
+    private double rating;
+    private String destination;
+    private boolean onArrivalPayment;
+    private boolean isForEvent;
+    private List<String> images;
+    private List<String> tags;
 
+    private List<RoomDTO> rooms; // List of all rooms for this hotel
 
-    // Getters and setters
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    // Getters & Setters
+    public int getHotelId() { return hotelId; }
+    public void setHotelId(int hotelId) { this.hotelId = hotelId; }
 
-    public String getHotel() { return hotel; }
-    public void setHotel(String hotel) { this.hotel = hotel; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getLocation() { return location; }
-    public void setLocation(String location) { this.location = location; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public int getPrice() { return price; }
-    public void setPrice(int price) { this.price = price; }
+    public double getRating() { return rating; }
+    public void setRating(double rating) { this.rating = rating; }
 
-    public int getAdults() { return adult;}
-    public void setAdult(int adult){this.adult = adult;} 
-    
-    public int getchildren() { return children;}
-    public void setchildren(int children){this.children = children;} 
+    public String getDestination() { return destination; }
+    public void setDestination(String destination) { this.destination = destination; }
 
-    public boolean isAvailability() { return availability; }
-    public void setAvailability(boolean availability) { this.availability = availability; }
+    public boolean isOnArrivalPayment() { return onArrivalPayment; }
+    public void setOnArrivalPayment(boolean onArrivalPayment) { this.onArrivalPayment = onArrivalPayment; }
 
+    public boolean isForEvent() { return isForEvent; }
+    public void setForEvent(boolean forEvent) { isForEvent = forEvent; }
+
+    public List<String> getImages() { return images; }
+    public void setImages(List<String> images) { this.images = images; }
+
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
+
+    public List<RoomDTO> getRooms() { return rooms; }
+    public void setRooms(List<RoomDTO> rooms) { this.rooms = rooms; }
 }

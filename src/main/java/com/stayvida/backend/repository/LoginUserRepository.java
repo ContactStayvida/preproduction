@@ -17,14 +17,19 @@ public class LoginUserRepository {
 
         public String findUserNameIfValid(String email, String rawPassword) {
         try {
-            String sql = "SELECT username, password FROM users WHERE email = ?";
+            String sql = "SELECT * FROM users WHERE email = ?";
 
             return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
                 String hashedPassword = rs.getString("password");
                 String username = rs.getString("username");
+                String emailFromDb = rs.getString("email");
+                String role = rs.getString("role");
 
                 if (passwordEncoder.matches(rawPassword, hashedPassword)) {
-                    return username;
+                    // return username
+                    return username + "," + emailFromDb + "," + role;
+                    
+
                 } else {
                     return null; // Password mismatch
                 }
