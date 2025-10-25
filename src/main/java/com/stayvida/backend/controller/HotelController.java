@@ -85,9 +85,15 @@ public List<Map<String, Object>> searchHotels(@RequestBody HotelSearchRequest re
 
 
     
-    @GetMapping("/{hotelId}/rooms")
-public HotelDTO getHotelWithRooms(@PathVariable int hotelId) {
-    return roomRepository.getRoomsByHotelId(hotelId);
+@GetMapping("/{hotelId}/rooms") //e.g : http://localhost:8080/api/hotels/5/rooms?checkIn=2025-11-01&checkOut=2025-11-05
+//e.g : /api/hotels/5/rooms?checkIn=2025-11-01&checkOut=2025-11-05
+
+public HotelDTO getHotelWithAvailableRooms(
+        @PathVariable int hotelId,
+        @RequestParam String checkIn,
+        @RequestParam String checkOut
+) {
+    return roomRepository.getRoomsByHotelId(hotelId, checkIn, checkOut);
 }
 
 
