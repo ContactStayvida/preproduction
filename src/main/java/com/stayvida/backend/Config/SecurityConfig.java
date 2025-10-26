@@ -37,7 +37,7 @@ public class SecurityConfig {
                     "/api/login/google-auth",
                     "/google",
                     "/api/hotels/search",
-                    "/api/featurelist",
+                    "/api/hotels/featurelist",
                     "/auth/google/callback",
                     "/testjson",
                     "/home/**",
@@ -80,11 +80,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",  // frontend
-                "http://localhost:3000",  // optional other frontend
-                "https://yourdomain.com"  // production site
-        ));
+        configuration.setAllowedOriginPatterns(List.of(
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175"
+    ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

@@ -2,7 +2,10 @@ package com.stayvida.backend.model;
 
 import java.util.List;
 
+
+
 public class Hotel {
+
     private int id; // hotel_ID
     // private int ownerId;
     private String name;

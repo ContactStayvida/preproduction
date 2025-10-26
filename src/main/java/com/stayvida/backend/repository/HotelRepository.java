@@ -118,4 +118,26 @@ public class HotelRepository {
         String sql = "UPDATE hotels SET status = ?, remark = ? WHERE hotel_ID = ?";
         return jdbcTemplate.update(sql, status, remark, hotelId);
     }
+
+    // Add this method to get top 3 hotels by rating
+    public List<Hotel> getTop3HotelsByRating() {
+        String sql = "SELECT h.*, (SELECT MIN(r.price)     FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price FROM hotels h ORDER BY h.rating DESC LIMIT 3";
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Hotel hotel = new Hotel();
+            hotel.setId(rs.getInt("hotel_ID"));
+            hotel.setName(rs.getString("name"));
+            hotel.setType(rs.getString("type"));
+            hotel.setDestination(rs.getString("destination"));
+            hotel.setRating(rs.getDouble("rating"));
+            hotel.setForEvent(rs.getBoolean("isForEvent"));
+            hotel.setPrice(rs.getDouble("lowest_price")); // adjust if column name differs
+            hotel.setImage(rs.getString("images"));
+            hotel.setAmenities(parseJsonArray(rs.getString("amenities")));
+            return hotel;
+        });
+    }
+
+
+
 }

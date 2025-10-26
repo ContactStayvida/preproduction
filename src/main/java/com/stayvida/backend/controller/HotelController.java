@@ -83,7 +83,30 @@ public List<Map<String, Object>> searchHotels(@RequestBody HotelSearchRequest re
     }).collect(Collectors.toList());
 }
 
+    @GetMapping("/featurelist")
+public List<Map<String, Object>> featureList() {
+    List<Hotel> hotels = hotelRepository.getTop3HotelsByRating();
 
+    if (hotels.isEmpty()) {
+        Map<String, Object> msg = new LinkedHashMap<>();
+        msg.put("message", "No hotels available");
+        return List.of(msg);
+    }
+
+    return hotels.stream().map(hotel -> {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", hotel.getId());
+        map.put("name", hotel.getName());
+        map.put("type", hotel.getType());
+        map.put("destination", hotel.getDestination());
+        map.put("rating", hotel.getRating());
+        map.put("amenities", hotel.getAmenities());
+        map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
+        map.put("isForEvent", hotel.isForEvent());
+        map.put("price", hotel.getPrice());
+        return map;
+    }).collect(Collectors.toList());
+}
     
 @GetMapping("/{hotelId}/rooms") //e.g : http://localhost:8080/api/hotels/5/rooms?checkIn=2025-11-01&checkOut=2025-11-05
 //e.g : /api/hotels/5/rooms?checkIn=2025-11-01&checkOut=2025-11-05

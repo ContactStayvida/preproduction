@@ -20,18 +20,22 @@ public class SignupController {
     // @Autowired
     // private SignupRequest signupRequest;
 
-    @PostMapping
-    public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
-        try {
-            userService.registerUser(
-                request.getEmail(),
-                request.getUsername(),
-                request.getPassword(),
-                request.getRole()
-            );
-            return ResponseEntity.ok("Signup successful");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+   @PostMapping
+public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
+    try {
+        userService.registerUser(
+            request.getEmail(),
+            request.getUsername(),
+            request.getPassword(),
+            request.getRole()
+        );
+        return ResponseEntity.ok("Signup successful");
+    } catch (RuntimeException e) {
+        if ("USER_ALREADY_EXISTS".equals(e.getMessage())) {
+            return ResponseEntity.badRequest().body("User already exists");
         }
+        return ResponseEntity.badRequest().body(e.getMessage());
     }
+}
+
 }
