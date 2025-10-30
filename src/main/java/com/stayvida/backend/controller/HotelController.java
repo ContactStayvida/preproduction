@@ -13,9 +13,10 @@ import com.stayvida.backend.repository.RegisterRepository;
 // import com.stayvida.backend.repository.RoomImageRepository;
 import com.stayvida.backend.repository.RoomRepository;
 import com.stayvida.backend.repository.RoomregisterRepository;
+import com.stayvida.backend.security.ApiResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+// import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -44,131 +45,164 @@ public class HotelController {
 
 String baseUrl = "http://localhost:8080/image/";  // ✅ Render backend URL
 
-    @PostMapping("/search")
-public List<Map<String, Object>> searchHotels(@RequestBody HotelSearchRequest request) {
-    List<Hotel> hotels = hotelRepository.searchHotels(
-            request.getLocation(),
-            request.getCheckIn(),
-            request.getCheckOut(),
-            request.getAdults(),
-            request.getChildren()
-    );
+  @PostMapping("/search")
+public ResponseEntity<Map<String, Object>> searchHotels(
+        @RequestBody(required = false) HotelSearchRequest request) {
+    try {
+        // 🧩 Check if body itself is missing
+        if (request == null) {
+            return ApiResponse.badRequest("Request body is missing");
+        }
 
-    if (hotels.isEmpty()) {
-        Map<String, Object> msg = new LinkedHashMap<>();
-        msg.put("message", "No hotels available");
-        return List.of(msg);
+        // 🧩 Validate missing or empty fields safely
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("location", request.getLocation());
+        fields.put("checkIn", request.getCheckIn());
+        fields.put("checkOut", request.getCheckOut());
+        fields.put("adults", request.getAdults());
+        fields.put("children", request.getChildren());
+
+        for (Map.Entry<String, Object> entry : fields.entrySet()) {
+            Object value = entry.getValue();
+            if (value == null ||
+                (value instanceof String && ((String) value).trim().isEmpty())) {
+                return ApiResponse.badRequest("Missing required field: " + entry.getKey());
+            }
+        }
+
+        // ✅ Fetch hotels from repository
+        List<Hotel> hotels = hotelRepository.searchHotels(
+                request.getLocation(),
+                request.getCheckIn(),
+                request.getCheckOut(),
+                request.getAdults(),
+                request.getChildren()
+        );
+
+        if (hotels == null || hotels.isEmpty()) {
+            return ApiResponse.success(List.of(), "No hotels found for the given criteria");
+        }
+
+        return ApiResponse.success(hotels, "Hotels fetched successfully");
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ApiResponse.serverError("An unexpected error occurred: " + e.getMessage());
     }
-
-    return hotels.stream().map(hotel -> {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", hotel.getId());
-        map.put("name", hotel.getName());
-        map.put("type", hotel.getType());
-        map.put("destination", hotel.getDestination());
-        map.put("rating", hotel.getRating());
-        // map.put("description", hotel.getDescription());
-        // map.put("phoneNo", hotel.getPhoneNo());
-        // map.put("tags", hotel.getTags());
-        map.put("amenities", hotel.getAmenities());
-        map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
-        // map.put("longitude", hotel.getLongitude());
-        // map.put("latitude", hotel.getLatitude());
-        map.put("isForEvent", hotel.isForEvent());
-        map.put("price", hotel.getPrice());
-        // map.put("onArrivalPayment", hotel.isOnArrivalPayment());
-        // map.put("status", hotel.getStatus());
-        // map.put("remark", hotel.getRemark());
-        return map;
-    }).collect(Collectors.toList());
 }
 
-    @GetMapping("/featurelist")
-public List<Map<String, Object>> featureList() {
-    List<Hotel> hotels = hotelRepository.getTop3HotelsByRating();
 
-    if (hotels.isEmpty()) {
-        Map<String, Object> msg = new LinkedHashMap<>();
-        msg.put("message", "No hotels available");
-        return List.of(msg);
+
+
+
+@GetMapping("/featurelist")
+public ResponseEntity<?> featureList() {
+    try {
+        List<Hotel> hotels = hotelRepository.getTop3HotelsByRating();
+
+        // 🟡 No hotels found
+        if (hotels.isEmpty()) {
+            Map<String, Object> msg = new LinkedHashMap<>();
+            msg.put("message", "No hotels available");
+            return ApiResponse.success(msg, "No featured hotels found");
+        }
+
+        // 🟢 Map hotel data
+        List<Map<String, Object>> result = hotels.stream().map(hotel -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("id", hotel.getId());
+            map.put("name", hotel.getName());
+            map.put("type", hotel.getType());
+            map.put("destination", hotel.getDestination());
+            map.put("rating", hotel.getRating());
+            map.put("amenities", hotel.getAmenities());
+            map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
+            map.put("isForEvent", hotel.isForEvent());
+            map.put("price", hotel.getPrice());
+            return map;
+        }).collect(Collectors.toList());
+
+        // 🟢 Return 200 OK with list
+        return ApiResponse.success(result, "Top featured hotels fetched successfully");
+
+    } catch (IllegalArgumentException e) {
+        // 🔴 Input or invalid arguments
+        return ApiResponse.badRequest("Invalid request: " + e.getMessage());
+    } catch (Exception e) {
+        // 🔴 Any server error (DB, runtime, etc.)
+        return ApiResponse.serverError("Failed to fetch featured hotels: " + e.getMessage());
     }
-
-    return hotels.stream().map(hotel -> {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", hotel.getId());
-        map.put("name", hotel.getName());
-        map.put("type", hotel.getType());
-        map.put("destination", hotel.getDestination());
-        map.put("rating", hotel.getRating());
-        map.put("amenities", hotel.getAmenities());
-        map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
-        map.put("isForEvent", hotel.isForEvent());
-        map.put("price", hotel.getPrice());
-        return map;
-    }).collect(Collectors.toList());
 }
+
     
-@GetMapping("/{hotelId}/rooms") //e.g : http://localhost:8080/api/hotels/5/rooms?checkIn=2025-11-01&checkOut=2025-11-05
-//e.g : /api/hotels/5/rooms?checkIn=2025-11-01&checkOut=2025-11-05
-
-public HotelDTO getHotelWithAvailableRooms(
+@GetMapping("/{hotelId}/rooms")
+public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
         @PathVariable int hotelId,
-        @RequestParam String checkIn,
-        @RequestParam String checkOut
+        @RequestParam(required = false) String checkIn,
+        @RequestParam(required = false) String checkOut
 ) {
-    return roomRepository.getRoomsByHotelId(hotelId, checkIn, checkOut);
+    if (checkIn == null || checkIn.isEmpty()) {
+        return ApiResponse.badRequest("Missing required parameter: checkIn");
+    }
+    if (checkOut == null || checkOut.isEmpty()) {
+        return ApiResponse.badRequest("Missing required parameter: checkOut");
+    }
+
+    try {
+        HotelDTO result = roomRepository.getRoomsByHotelId(hotelId, checkIn, checkOut);
+        return ApiResponse.success(result, "Hotel rooms fetched successfully");
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ApiResponse.serverError("Unable to fetch rooms: " + e.getMessage());
+    }
 }
+
+
 
 
 @Autowired
-    private RegisterRepository registerRepository;;
+private RegisterRepository registerRepository;
 
+// ✅ Create new hotel
+// ✅ Register hotel with image upload
+@PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+public ResponseEntity<Map<String, Object>> registerHotel(
+        @RequestPart("data") String hotelJson,
+        @RequestPart(value = "image", required = false) MultipartFile imageFile) {
 
+    try {
+        ObjectMapper mapper = new ObjectMapper();
+        Register register = mapper.readValue(hotelJson, Register.class);
 
-    // ✅ Create new hotel
-    // ✅ Register hotel with image upload
-    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> registerHotel(
-            @RequestPart("data") String hotelJson,
-            @RequestPart(value = "image", required = false) MultipartFile imageFile) {
+        String imageFileName = null;
 
-        try {
-            // 🧩 Convert JSON to Register object
-            ObjectMapper mapper = new ObjectMapper();
-            Register register = mapper.readValue(hotelJson, Register.class);
-
-            String imageFileName = null;
-
-            // 🖼️ If image is provided, save it
-            if (imageFile != null && !imageFile.isEmpty()) {
-                imageFileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
-                Path filePath = Paths.get(uploadDir, imageFileName);
-                Files.createDirectories(filePath.getParent());
-                Files.write(filePath, imageFile.getBytes());
-                register.setImages(imageFileName); // store filename in DB
-            }
-
-            // 💾 Save hotel details (and image filename)
-            int newHotelId = registerRepository.saveHotel(register);
-
-            return ResponseEntity.ok("Hotel registered successfully with ID: " + newHotelId);
-
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Invalid JSON or file: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error registering hotel: " + e.getMessage());
+        if (imageFile != null && !imageFile.isEmpty()) {
+            imageFileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
+            Path filePath = Paths.get(uploadDir, imageFileName);
+            Files.createDirectories(filePath.getParent());
+            Files.write(filePath, imageFile.getBytes());
+            register.setImages(imageFileName);
         }
+
+        int newHotelId = registerRepository.saveHotel(register);
+
+        return ApiResponse.created(Map.of("hotelId", newHotelId), "Hotel registered successfully");
+
+    } catch (IOException e) {
+        return ApiResponse.badRequest("Invalid JSON or image file: " + e.getMessage());
+    } catch (SecurityException e) {
+        return ApiResponse.unauthorized("Unauthorized access");
+    } catch (Exception e) {
+        return ApiResponse.serverError("Error registering hotel: " + e.getMessage());
     }
-    // ✅ Register room with multiple images
+}
 
 
 @PostMapping("/register_room_with_images")
-public ResponseEntity<?> registerRoomWithImages(
+public ResponseEntity<Map<String, Object>> registerRoomWithImages(
         @RequestParam("hotelId") int hotelId,
         @RequestParam("roomType") String roomType,
-        @RequestParam("features") String featuresJson, // comma-separated or JSON string
+        @RequestParam("features") String featuresJson, // JSON or comma-separated string
         @RequestParam("maxAdults") int maxAdults,
         @RequestParam("maxChildren") int maxChildren,
         @RequestParam("bedCount") int bedCount,
@@ -176,56 +210,93 @@ public ResponseEntity<?> registerRoomWithImages(
         @RequestParam("images") MultipartFile[] files
 ) {
     try {
-        // 1️⃣ Save images to server and collect filenames
+        // 1️⃣ Validate input
+        if (files == null || files.length == 0) {
+            return ApiResponse.badRequest("At least one image file is required");
+        }
+
+        // 2️⃣ Save images to server
         List<String> imageFilenames = new ArrayList<>();
         String uploadDir = "C:/uploaded_images";
         Files.createDirectories(Paths.get(uploadDir));
 
         for (MultipartFile file : files) {
+            if (file.isEmpty()) continue;
             String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
             Path path = Paths.get(uploadDir, filename);
             Files.write(path, file.getBytes());
             imageFilenames.add(filename);
         }
 
-        // 2️⃣ Convert features and filenames to JSON
-        ObjectMapper mapper = new ObjectMapper();
-        String featuresJsonStr = featuresJson; // if already JSON string
-        String imagesJsonStr = mapper.writeValueAsString(imageFilenames);
+        if (imageFilenames.isEmpty()) {
+            return ApiResponse.badRequest("No valid images uploaded");
+        }
 
-        // 3️⃣ Save to DB
+        // 3️⃣ Convert image list and features to JSON
+        ObjectMapper mapper = new ObjectMapper();
+        String imagesJsonStr = mapper.writeValueAsString(imageFilenames);
+        String featuresJsonStr = featuresJson;
+
+        // 4️⃣ Save room details in DB
         String roomId = roomRegisterRepository.saveRoomWithJson(
                 hotelId, roomType, featuresJsonStr, imagesJsonStr,
                 price, maxAdults, maxChildren, bedCount
         );
 
-        return ResponseEntity.ok("Room ID = " + roomId + "\nRoom registered successfully!");
+        // ✅ Return success directly
+        return ApiResponse.created(
+                Map.of(
+                        "roomId", roomId,
+                        "hotelId", hotelId,
+                        "uploadedImages", imageFilenames
+                ),
+                "Room registered successfully"
+        );
+
+    } catch (IOException e) {
+        return ApiResponse.badRequest("Invalid image file: " + e.getMessage());
+    } catch (SecurityException e) {
+        return ApiResponse.unauthorized("Unauthorized access");
     } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error registering room: " + e.getMessage());
+        return ApiResponse.serverError("Error registering room: " + e.getMessage());
     }
 }
+
 
 
 
      @PutMapping("/update-verification")
 public ResponseEntity<?> updateVerificationStatus(@RequestBody HotelVerificationUpdate request) {
     try {
+        if (request.getHotelId() <= 0 || request.getStatus() == null || request.getStatus().isEmpty()) {
+            return ApiResponse.badRequest("Invalid input: hotelId and status are required");
+        }
+
         int rows = hotelRepository.updateVerificationStatus(
                 request.getHotelId(),
                 request.getStatus(),
-                request.getRemark() // pass remark
+                request.getRemark()
         );
+
         if (rows > 0) {
-            return ResponseEntity.ok("Hotel verification status updated successfully!");
+            return ApiResponse.success(Map.of(
+                    "hotelId", request.getHotelId(),
+                    "status", request.getStatus(),
+                    "remark", request.getRemark()
+            ), "Hotel verification status updated successfully!");
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Hotel not found");
+            return ApiResponse.badRequest("Hotel not found"); // or make a notFound() if you like
         }
+
+    } catch (IllegalArgumentException e) {
+        return ApiResponse.badRequest("Invalid data format: " + e.getMessage());
+    } catch (SecurityException e) {
+        return ApiResponse.unauthorized("Unauthorized to update verification status");
     } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error updating verification status: " + e.getMessage());
+        return ApiResponse.serverError("Error updating verification status: " + e.getMessage());
     }
 }
+
 
 
 

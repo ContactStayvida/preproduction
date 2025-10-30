@@ -1,7 +1,11 @@
 package com.stayvida.backend.Config;
 
+import com.stayvida.backend.security.CustomAuthEntryPoint;
 import com.stayvida.backend.security.CustomOAuth2SuccessHandler;
 import com.stayvida.backend.security.JwtAuthFilter;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +33,8 @@ public class SecurityConfig {
         this.customOAuth2SuccessHandler = customOAuth2SuccessHandler;
         this.jwtAuthFilter = jwtAuthFilter;
     }
+    @Autowired
+    private CustomAuthEntryPoint customAuthEntryPoint;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -72,6 +78,17 @@ public class SecurityConfig {
             // ✅ Disable default login types
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(form -> form.disable())
+
+             // ✅ Add this line — handles 401s without redirecting
+        .exceptionHandling(ex -> ex
+    .authenticationEntryPoint(customAuthEntryPoint)
+    .accessDeniedHandler((request, response, accessDeniedException) -> {
+        response.setContentType("application/json");
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.getWriter().write("{\"error\": \"Access denied.\"}");
+    })
+)
+
 
             // ✅ Enable OAuth2 login (Google)
             .oauth2Login(oauth2 -> oauth2
