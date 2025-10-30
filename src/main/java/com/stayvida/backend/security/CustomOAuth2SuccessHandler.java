@@ -2,6 +2,7 @@ package com.stayvida.backend.security;
 
 import com.stayvida.backend.model.User;
 import com.stayvida.backend.repository.UserRepository;
+import com.stayvida.backend.service.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,15 +12,17 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Component
 public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
 
-    public CustomOAuth2SuccessHandler(UserRepository userRepository) {
+    public CustomOAuth2SuccessHandler(UserRepository userRepository, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -28,21 +31,33 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
-        String name = oidcUser.getFullName();
+        String firstName = oidcUser.getGivenName();
+        String lastName = oidcUser.getFamilyName();
+        String username = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
 
-        // Save user if not exists
-        User existingUser = userRepository.findByEmail(email);
-        if (existingUser == null) {
-            User newUser = new User();
-            newUser.setEmail(email);
-            newUser.setUsername(name != null ? name : email);
-            String password = UUID.randomUUID() + name;
-            newUser.setPassword(password); // placeholder
-            newUser.setRole("USER"); // default role
-            userRepository.save(newUser);
-        }
+        // 🧾 Create or update user
+        User user = new User();
+        user.setEmail(email);
+        user.setUsername(username.trim());
+        user.setPassword("GOOGLE_LOGIN");
+        user.setRole("user"); // only used on first insert
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
 
-        // Redirect after login
-        response.sendRedirect("https://www.instagram.com/tanaymithari21");//switch this to home page later
+        // ✅ Save or update user (auto handles duplicates)
+        userRepository.saveOrUpdate(user);
+
+        // 🧾 Generate JWT token
+        String token = jwtUtil.generateToken(email);
+
+        // 🎯 Return JSON response instead of redirect
+        String jsonResponse = String.format(
+            "{\"success\":true,\"token\":\"%s\",\"username\":\"%s\",\"email\":\"%s\",\"role\":\"%s\"}",
+            token, user.getUsername(), user.getEmail(), user.getRole()
+        );
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(jsonResponse);
     }
 }

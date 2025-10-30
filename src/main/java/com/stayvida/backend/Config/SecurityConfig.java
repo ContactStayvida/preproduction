@@ -1,43 +1,56 @@
 package com.stayvida.backend.Config;
 
 import com.stayvida.backend.security.CustomOAuth2SuccessHandler;
-
-import java.util.List;
-
+import com.stayvida.backend.security.JwtAuthFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-// import org.springframework.security.config.Customizer;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.List;
+
 @Configuration
 public class SecurityConfig {
 
-
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
+    private final JwtAuthFilter jwtAuthFilter;
 
-    // ✅ Spring will inject your @Component success handler
-    public SecurityConfig(CustomOAuth2SuccessHandler customOAuth2SuccessHandler) {
+    @Autowired
+    public SecurityConfig(CustomOAuth2SuccessHandler customOAuth2SuccessHandler,
+                          JwtAuthFilter jwtAuthFilter) {
         this.customOAuth2SuccessHandler = customOAuth2SuccessHandler;
+        this.jwtAuthFilter = jwtAuthFilter;
     }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(Customizer.withDefaults()) // ✅ modern way
+            // ✅ Enable CORS and disable CSRF
+            .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
+
+            // ✅ Stateless — no sessions stored
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // ✅ Define accessible endpoints
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                    "/api/get-otp",
+                    "/api/verify-otp",
                     "/api/signup",
                     "/api/login",
                     "/api/login/google-auth",
                     "/google",
-                    "/api/hotels/search",
-                    "/api/hotels/featurelist",
+                    // "/api/hotels/search",
+                    // "/api/hotels/featurelist",
                     "/auth/google/callback",
                     "/testjson",
                     "/home/**",
@@ -46,45 +59,52 @@ public class SecurityConfig {
                     "/logout-success",
                     "/image/**",
                     "/css/**",
-                    "/api/hotels/register",
-                    "/api/hotels/upload-image",
-                    "/api/hotels/*/rooms",
-                    "/api/hotels/**",
-                    "/api/hotels/udate-verification"
+                    // "/api/hotels/register",
+                    // "/api/hotels/upload-image",
+                    // "/api/hotels/*/rooms",
+                    // "/api/hotels/**",
+                    // "/api/hotels/udate-verification",
+                    "/otplogin/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            .httpBasic(httpBasic -> httpBasic.disable()) // disable HTTP Basic auth
-            .formLogin(form -> form.disable()) // disable form login
-               .oauth2Login(oauth2 -> oauth2
-            //    .loginPage("/oauth2/authorization/google")
-               .loginPage("/login")
 
-                // ✅ now use the injected bean
+            // ✅ Disable default login types
+            .httpBasic(httpBasic -> httpBasic.disable())
+            .formLogin(form -> form.disable())
+
+            // ✅ Enable OAuth2 login (Google)
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
                 .successHandler(customOAuth2SuccessHandler)
             )
-          .logout(logout -> logout
-    .logoutUrl("/logout")
-    .logoutSuccessUrl("/logout-success?logout")
-    .invalidateHttpSession(true)
-    .clearAuthentication(true)
-    .deleteCookies("JSESSIONID")  // clear your app session cookie
-    .permitAll()
-);//switch this to home page/loginpage later
+
+            // ✅ Add JWT filter BEFORE username/password filter
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+            // ✅ Logout handler
+            // .logout(logout -> logout
+            //     .logoutUrl("/logout")
+            //     .logoutSuccessUrl("/logout-success?logout")
+            //     .invalidateHttpSession(true)
+            //     .clearAuthentication(true)
+            //     .deleteCookies("JSESSIONID")
+            //     .permitAll()
+            // )
+            ;
+
         return http.build();
-    }  
+    }
 
-
-
-     // ✅ Define CORS policy here (modern approach)
+    // ✅ CORS policy
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175"
-    ));
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
@@ -94,15 +114,10 @@ public class SecurityConfig {
         return source;
     }
 
-    
-    
-// ✅ Add this bean in the same class
+    // ✅ Static files ignored from security
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring()
             .requestMatchers("/image/**", "/css/**", "/js/**");
     }
-
-
-
 }

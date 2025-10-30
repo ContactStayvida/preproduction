@@ -1,5 +1,9 @@
 package com.stayvida.backend.model;
 
+import java.time.LocalDateTime;
+
+import org.checkerframework.checker.units.qual.C;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -22,17 +26,24 @@ public class User {
     // private String name;
     @Column(nullable = false)
     private String role;
+    @Column
+    private LocalDateTime createdAt;
+    @Column
+    private LocalDateTime updatedAt;
 
 
     // Constructors
     public User() {
     }
 
-    public User(String email, String password, String username, String role) {
+    public User(String email, String password, String username, String role ,LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.email = email;
         this.password = password;
         this.username = username;
         this.role = role;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+
     }
 
     // Getters & Setters
@@ -80,5 +91,18 @@ public class User {
     public void setRole(String role) {
         this.role = role;
     }
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
 
 }
