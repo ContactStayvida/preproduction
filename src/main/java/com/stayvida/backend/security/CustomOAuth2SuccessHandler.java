@@ -52,8 +52,8 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
         // 🎯 Return JSON response instead of redirect
         String jsonResponse = String.format(
-            "{\"success\":true,\"token\":\"%s\",\"username\":\"%s\",\"email\":\"%s\",\"role\":\"%s\"}",
-            token, user.getUsername(), user.getEmail(), user.getRole()
+            "{\"success\":true,\"token\":\"%s\",\"user id\":\"%s\",\"username\":\"%s\",\"email\":\"%s\",\"role\":\"%s\"}",
+            token,user.getuserID() ,user.getUsername(), user.getEmail(), user.getRole()
         );
 
         response.setContentType("application/json");

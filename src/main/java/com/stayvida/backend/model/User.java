@@ -2,7 +2,7 @@ package com.stayvida.backend.model;
 
 import java.time.LocalDateTime;
 
-import org.checkerframework.checker.units.qual.C;
+// import org.checkerframework.checker.units.qual.C;
 
 import jakarta.persistence.*;
 
@@ -48,7 +48,7 @@ public class User {
 
     // Getters & Setters
 
-    public Long getId() {
+    public Long getuserID() {
         return id;
     }
 

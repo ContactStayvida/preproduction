@@ -19,7 +19,7 @@ public class LoginController {
     @Autowired private OtpService otpService;
     @Autowired private EmailService emailService;
     @Autowired private JwtUtil jwtUtil;
-
+    Long nullId = null;
     // Step 1️⃣: Generate and send OTP
     @PostMapping("/get-otp")
     public ResponseEntity<?> sendOtp(@RequestBody LoginRequest request) {
@@ -43,16 +43,23 @@ public class LoginController {
         String otp = request.getOtp();
 
         // ❌ Invalid OTP
-        if (!otpService.validateOtp(email, otp)) {
-            return ResponseEntity.badRequest().body(
-                new LoginResponse(false, null, null, email, null, "Invalid or expired OTP")
-            );
-        }
+        // ❌ Invalid OTP
+if (!otpService.validateOtp(email, otp)) {
+    
+
+return ResponseEntity
+        .badRequest()
+        .<LoginResponse>body(
+            new LoginResponse(false, null, nullId, null, email, null, "Invalid or expired OTP")
+        );
+
+}
+
 
         // 🔍 Check existing user
         User user = userRepo.findByEmail(email);
         boolean isNew = (user == null);
-
+        user = userRepo.findByEmail(email);
         if (isNew) {
             user = new User();
             user.setEmail(email);
@@ -64,8 +71,8 @@ public class LoginController {
         user.setRole("user");
 
         userRepo.saveOrUpdate(user);
+        user = userRepo.findByEmail(email);
 
-        System.out.println(isNew ? "✅ New user created: " + email : "✅ Existing user updated: " + email);
 
         // 🧾 Generate JWT
         String token = jwtUtil.generateToken(email);
@@ -74,6 +81,7 @@ public class LoginController {
         return ResponseEntity.ok(new LoginResponse(
                 true,
                 token,
+                user.getuserID(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
