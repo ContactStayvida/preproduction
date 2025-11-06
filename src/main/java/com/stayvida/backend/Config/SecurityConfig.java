@@ -61,7 +61,7 @@ public class SecurityConfig {
                     "/api/login",
                     "/api/login/google-auth",
                     "/google",
-                    // "/api/hotels/search",
+                    "/api/hotels/search",
                     "/api/hotels/featurelist",
                     "/auth/google/callback",
                     "/testjson",
@@ -71,11 +71,12 @@ public class SecurityConfig {
                     "/logout-success",
                     "/image/**",
                     "/css/**",
-                    // "/api/hotels/register",
-                    // "/api/hotels/upload-image",
+                    "/api/hotels/register",
+                    "/api/hotels/upload-image",
+                    "/api/hotel/*/rooms",
                     "/api/hotels/*/rooms",
-                    // "/api/hotels/**",
-                    // "/api/hotels/udate-verification",
+                    "/api/hotels/**",
+                    "/api/hotels/update-verification",
                     "/otplogin/**"
                 ).permitAll()
                 .anyRequest().authenticated()

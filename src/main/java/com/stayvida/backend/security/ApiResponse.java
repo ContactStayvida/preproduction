@@ -39,6 +39,13 @@ public class ApiResponse {
         response.put("message", message);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
+    public static ResponseEntity<Map<String, Object>> notFound(String message) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", 404);
+        response.put("error", "Unauthorized");
+        response.put("message", message);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
 
     public static ResponseEntity<Map<String, Object>> serverError(String message) {
         Map<String, Object> response = new HashMap<>();

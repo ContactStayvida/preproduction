@@ -19,7 +19,6 @@ public class RoomRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    private static final String BASE_URL = "http://localhost:8080/image/";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public HotelDTO getRoomsByHotelId(int hotelId, String checkIn, String checkOut) {
@@ -68,7 +67,6 @@ public class RoomRepository {
                 }
                 imgs = imgs.stream()
                         .filter(img -> img != null && !img.isEmpty())
-                        .map(img -> BASE_URL + img)
                         .toList();
                 dto.setImages(imgs);
             }
@@ -132,7 +130,6 @@ public class RoomRepository {
                             List<String> imgs = objectMapper.readValue(roomImagesJson, new TypeReference<List<String>>() {});
                             imgs = imgs.stream()
                                     .filter(img -> img != null && !img.isEmpty())
-                                    .map(img -> BASE_URL + img)
                                     .toList();
                             room.setRoomImages(imgs);
                         } catch (Exception e) {
