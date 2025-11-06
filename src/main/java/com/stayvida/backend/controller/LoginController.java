@@ -36,56 +36,55 @@ public class LoginController {
     }
 
     // Step 2️⃣: Verify OTP and login / signup
-    @PostMapping("/verify-otp")
-    public ResponseEntity<LoginResponse> verifyOtp(@RequestBody LoginRequest request) {
-        String email = request.getEmail();
-        String username = request.getUsername();
-        String otp = request.getOtp();
+@PostMapping("/verify-otp")
+public ResponseEntity<LoginResponse> verifyOtp(@RequestBody LoginRequest request) {
+    String email = request.getEmail();
+    String username = request.getUsername();
+    String otp = request.getOtp();
 
-        // ❌ Invalid OTP
-        // ❌ Invalid OTP
-if (!otpService.validateOtp(email, otp)) {
-    
+    // ❌ Invalid OTP
+    if (!otpService.validateOtp(email, otp)) {
+        return ResponseEntity.badRequest().body(new LoginResponse(
+                false,
+                null,
+                null,
+                null,
+                email,
+                null,
+                "Invalid or expired OTP"
+        ));
+    }
 
-return ResponseEntity
-        .badRequest()
-        .<LoginResponse>body(
-            new LoginResponse(false, null, nullId, null, email, null, "Invalid or expired OTP")
-        );
+    // 🔍 Check if user exists
+    User user = userRepo.findByEmail(email);
+    boolean isNew = (user == null);
 
-}
-
-
-        // 🔍 Check existing user
-        User user = userRepo.findByEmail(email);
-        boolean isNew = (user == null);
-        user = userRepo.findByEmail(email);
-        if (isNew) {
-            user = new User();
-            user.setEmail(email);
-        }
-
-        // ✅ Always update latest info
+    // 🆕 Insert new user only if not exists
+    if (isNew) {
+        user = new User();
+        user.setEmail(email);
         user.setUsername(username);
         user.setPassword("OTP_LOGIN");
         user.setRole("user");
-
-        userRepo.saveOrUpdate(user);
-        user = userRepo.findByEmail(email);
-
-
-        // 🧾 Generate JWT
-        String token = jwtUtil.generateToken(email);
-
-        // 🎯 Return success response
-        return ResponseEntity.ok(new LoginResponse(
-                true,
-                token,
-                user.getuserID(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getRole(),
-                "Login successful!"
-        ));
+        userRepo.saveOrUpdate(user); // Only inserts if new
+    } else {
+        // ✅ Existing user — no update or overwrite
+        System.out.println("Existing user login: " + email);
     }
+
+    // 🧾 Generate JWT
+    String token = jwtUtil.generateToken(email);
+
+    // 🎯 Return success response
+    return ResponseEntity.ok(new LoginResponse(
+            true,
+            token,
+            user.getuserID(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getRole(),
+            isNew ? "Signup successful!" : "Login successful!"
+    ));
+}
+
 }

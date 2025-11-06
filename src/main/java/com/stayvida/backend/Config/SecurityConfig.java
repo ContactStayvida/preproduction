@@ -3,6 +3,7 @@ package com.stayvida.backend.Config;
 import com.stayvida.backend.security.CustomAuthEntryPoint;
 import com.stayvida.backend.security.CustomOAuth2SuccessHandler;
 import com.stayvida.backend.security.JwtAuthFilter;
+import com.stayvida.backend.security.SupabaseJwtFilter;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -26,6 +27,8 @@ public class SecurityConfig {
 
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
     private final JwtAuthFilter jwtAuthFilter;
+    // private final SupabaseJwtFilter supabaseJwtFilter;
+    
 
     @Autowired
     public SecurityConfig(CustomOAuth2SuccessHandler customOAuth2SuccessHandler,
@@ -35,6 +38,8 @@ public class SecurityConfig {
     }
     @Autowired
     private CustomAuthEntryPoint customAuthEntryPoint;
+    @Autowired
+    private SupabaseJwtFilter supabaseJwtFilter; // 🟦 For admin dashboard
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -56,7 +61,7 @@ public class SecurityConfig {
                     "/api/login",
                     "/api/login/google-auth",
                     "/google",
-                    "/api/hotels/search",
+                    // "/api/hotels/search",
                     "/api/hotels/featurelist",
                     "/auth/google/callback",
                     "/testjson",
@@ -99,6 +104,7 @@ public class SecurityConfig {
 
             // ✅ Add JWT filter BEFORE username/password filter
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(supabaseJwtFilter, JwtAuthFilter.class);
 
             // ✅ Logout handler
             // .logout(logout -> logout

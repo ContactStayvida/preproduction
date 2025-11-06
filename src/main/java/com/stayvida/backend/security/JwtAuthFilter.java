@@ -25,6 +25,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
                                     throws ServletException, IOException {
+                                        
+        String path = request.getRequestURI();
+
+        // ✅ Skip this filter for Supabase-admin routes
+        if (path.startsWith("/api/admin")) {
+            filterChain.doFilter(request, response);
+            return;
+            
+        }
+        System.out.println("JwtAuthFilter triggered for: " + path);
+
+
 
         String authHeader = request.getHeader("Authorization");
 

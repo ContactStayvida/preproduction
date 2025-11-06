@@ -39,16 +39,23 @@ public class UserRepository {
     }
 
     public void saveOrUpdate(User user) {
-    String sql = """
+    // Check if user already exists
+    User existingUser = findByEmail(user.getEmail());
+
+    if (existingUser != null) {
+        // 🚫 User already exists → don’t insert or update
+        System.out.println("ℹ️ User already exists: " + user.getEmail());
+        user.setId(existingUser.getuserID());
+        return;
+    }
+
+    // ➕ Insert new user
+    String insertSql = """
         INSERT INTO users (username, email, password, role, createdAt, updatedAt)
         VALUES (?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-            username = VALUES(username),
-            password = VALUES(password),
-            updatedAt = VALUES(updatedAt)
         """;
 
-    jdbcTemplate.update(sql,
+    jdbcTemplate.update(insertSql,
             user.getUsername(),
             user.getEmail(),
             user.getPassword(),
@@ -56,13 +63,12 @@ public class UserRepository {
             java.time.LocalDateTime.now(),
             java.time.LocalDateTime.now());
 
-    // ✅ Fetch latest record after saving (ensures correct ID)
+    // ✅ Fetch the inserted record to update user ID
     User savedUser = findByEmail(user.getEmail());
     if (savedUser != null) {
         user.setId(savedUser.getuserID());
-    } else {
-        System.out.println("⚠️ User not found after saveOrUpdate: " + user.getEmail());
     }
 }
+
 
 }
