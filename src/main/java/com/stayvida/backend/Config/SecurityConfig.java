@@ -56,7 +56,7 @@ public class SecurityConfig {
                     "/api/login",
                     "/api/login/google-auth",
                     "/google",
-                    "/api/hotels/search",
+                    //"/api/hotels/search",
                     "/api/hotels/featurelist",
                     "/auth/google/callback",
                     "/testjson",
