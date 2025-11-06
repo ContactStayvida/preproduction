@@ -121,7 +121,7 @@ public class HotelRepository {
 
     // Add this method to get top 3 hotels by rating
     public List<Hotel> getTop3HotelsByRating() {
-        String sql = "SELECT h.*, (SELECT MIN(r.price)     FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price FROM hotels h ORDER BY h.rating DESC LIMIT 3";
+        String sql = "SELECT h.*, (SELECT MIN(r.price)     FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price FROM hotels h ORDER BY h.rating DESC LIMIT 3 WHERE h.status = 'Verified'";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Hotel hotel = new Hotel();
