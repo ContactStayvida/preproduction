@@ -129,7 +129,7 @@ public ResponseEntity<?> featureList() {
             map.put("destination", hotel.getDestination());
             map.put("rating", hotel.getRating());
             map.put("amenities", hotel.getAmenities());
-            map.put("imageBase64", hotel.getImage() != null ? encodeImageToBase64(hotel.getImage()) : null);
+            map.put("imageBase64", hotel.getImage() != null ? "data:image/jpeg;base64," + encodeImageToBase64(hotel.getImage()) : null);
             map.put("isForEvent", hotel.isForEvent());
             map.put("price", hotel.getPrice());
             return map;
