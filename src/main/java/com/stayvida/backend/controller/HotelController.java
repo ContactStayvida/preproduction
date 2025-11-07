@@ -17,6 +17,7 @@ import com.stayvida.backend.repository.RoomregisterRepository;
 import com.stayvida.backend.security.ApiResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 // import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +35,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/hotels")
 public class HotelController {
 
-    private final String uploadDir = "C:/uploaded_images";  // 📂 Folder for images
+   @Value("${app.upload.dir}")
+    private String uploadDir;  // 📂 Folder for images
+
+    @Value("${app.base.url}")
+    private String baseUrl;    // ✅ Base URL for image access
+
     @Autowired
     private HotelRepository hotelRepository;
     @Autowired
@@ -44,7 +50,6 @@ public class HotelController {
    @Autowired
     private RoomregisterRepository roomRegisterRepository; // 🔹 inject here
 
-// String baseUrl = "http://localhost:8080/image/";  // ✅ Render backend URL
 
   @PostMapping("/search")
 public ResponseEntity<Map<String, Object>> searchHotels(
@@ -83,19 +88,24 @@ public ResponseEntity<Map<String, Object>> searchHotels(
         if (hotels == null || hotels.isEmpty()) {
             return ApiResponse.success(List.of(), "No hotels found for the given criteria");
         }
-            // 🖼 Convert image filenames to Base64
-        for (Hotel hotel : hotels) {
-            if (hotel.getImage() != null) {
-                String base64Image = encodeImageToBase64(hotel.getImage());
-                // Optional: include MIME type for frontend <img src="">
-                if (base64Image != null) {
-                    hotel.setImage("data:image/jpeg;base64," + base64Image);
-                }
-            }
-        }
 
-        // ✅ Return response with Base64 images
-        return ApiResponse.success(hotels, "Hotels fetched successfully");
+        // 🧩 Add prefix (baseUrl) to image URLs
+        List<Map<String, Object>> responseHotels = hotels.stream().map(hotel -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("id", hotel.getId());
+            map.put("name", hotel.getName());
+            map.put("type", hotel.getType());
+            map.put("destination", hotel.getDestination());
+            map.put("rating", hotel.getRating());
+            map.put("amenities", hotel.getAmenities());
+            map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
+            map.put("isForEvent", hotel.isForEvent());
+            map.put("price", hotel.getPrice());
+            return map;
+        }).collect(Collectors.toList());
+
+        // ✅ Return hotels with prefixed image URLs
+        return ApiResponse.success(responseHotels, "Hotels fetched successfully");
 
 
     } catch (Exception e) {
@@ -129,7 +139,7 @@ public ResponseEntity<?> featureList() {
             map.put("destination", hotel.getDestination());
             map.put("rating", hotel.getRating());
             map.put("amenities", hotel.getAmenities());
-            map.put("imageBase64", hotel.getImage() != null ? "data:image/jpeg;base64," + encodeImageToBase64(hotel.getImage()) : null);
+            map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
             map.put("isForEvent", hotel.isForEvent());
             map.put("price", hotel.getPrice());
             return map;
@@ -146,8 +156,6 @@ public ResponseEntity<?> featureList() {
         return ApiResponse.serverError("Failed to fetch featured hotels: " + e.getMessage());
     }
 }
-
-    
 @GetMapping("/{hotelId}/rooms")
 public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
         @PathVariable int hotelId,
@@ -165,31 +173,31 @@ public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
         HotelDTO result = roomRepository.getRoomsByHotelId(hotelId, checkIn, checkOut);
 
         if (result == null) {
-            return ApiResponse.notFound("Hotel not found with ID: " + hotelId);
+            return ApiResponse.badRequest("Hotel not found");
         }
 
-        // 🖼 Convert hotel images to Base64
+        // 🟩 Add prefix to hotel images
         if (result.getImages() != null && !result.getImages().isEmpty()) {
-            List<String> base64Images = result.getImages().stream()
-                    .map(this::encodeImageToBase64)
-                    .filter(Objects::nonNull)
-                    .map(base64 -> "data:image/jpeg;base64," + base64)
-                    .toList();
-            result.setImages(base64Images);
+            result.setImages(
+                result.getImages().stream()
+                        .filter(img -> img != null && !img.isEmpty())
+                        .map(img -> img.startsWith("http") ? img : baseUrl + img)
+                        .toList()
+            );
         }
 
-        // 🏠 Convert each room’s image(s) to Base64 (if you have room images)
+        // 🟩 Add prefix to each room image
         if (result.getRooms() != null && !result.getRooms().isEmpty()) {
-            for (RoomDTO room : result.getRooms()) {
+            result.getRooms().forEach(room -> {
                 if (room.getRoomImages() != null && !room.getRoomImages().isEmpty()) {
-                    List<String> base64RoomImages = room.getRoomImages().stream()
-                            .map(this::encodeImageToBase64)
-                            .filter(Objects::nonNull)
-                            .map(base64 -> "data:image/jpeg;base64," + base64)
-                            .toList();
-                    room.setRoomImages(base64RoomImages);
+                    room.setRoomImages(
+                        room.getRoomImages().stream()
+                                .filter(img -> img != null && !img.isEmpty())
+                                .map(img -> img.startsWith("http") ? img : baseUrl + img)
+                                .toList()
+                    );
                 }
-            }
+            });
         }
 
         return ApiResponse.success(result, "Hotel rooms fetched successfully");
@@ -199,6 +207,7 @@ public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
         return ApiResponse.serverError("Unable to fetch rooms: " + e.getMessage());
     }
 }
+
 
 
 
@@ -218,10 +227,14 @@ public ResponseEntity<Map<String, Object>> registerHotel(
         ObjectMapper mapper = new ObjectMapper();
         Register register = mapper.readValue(hotelJson, Register.class);
 
+        String imageFileName = null;
+
         if (imageFile != null && !imageFile.isEmpty()) {
-            // Convert image to Base64
-            String base64Image = Base64.getEncoder().encodeToString(imageFile.getBytes());
-            register.setImages(base64Image);
+            imageFileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
+            Path filePath = Paths.get(uploadDir, imageFileName);
+            Files.createDirectories(filePath.getParent());
+            Files.write(filePath, imageFile.getBytes());
+            register.setImages(imageFileName);
         }
 
         int newHotelId = registerRepository.saveHotel(register);
@@ -238,12 +251,11 @@ public ResponseEntity<Map<String, Object>> registerHotel(
 }
 
 
-
 @PostMapping("/register_room_with_images")
 public ResponseEntity<Map<String, Object>> registerRoomWithImages(
         @RequestParam("hotelId") int hotelId,
         @RequestParam("roomType") String roomType,
-        @RequestParam("features") String featuresJson,
+        @RequestParam("features") String featuresJson, // JSON or comma-separated string
         @RequestParam("maxAdults") int maxAdults,
         @RequestParam("maxChildren") int maxChildren,
         @RequestParam("bedCount") int bedCount,
@@ -251,35 +263,45 @@ public ResponseEntity<Map<String, Object>> registerRoomWithImages(
         @RequestParam("images") MultipartFile[] files
 ) {
     try {
+        // 1️⃣ Validate input
         if (files == null || files.length == 0) {
             return ApiResponse.badRequest("At least one image file is required");
         }
 
-        // Convert each image to Base64
-        List<String> base64Images = new ArrayList<>();
+        // 2️⃣ Save images to server
+        List<String> imageFilenames = new ArrayList<>();
+        // String uploadDir = "C:/uploaded_images";
+        Files.createDirectories(Paths.get(uploadDir));
+
         for (MultipartFile file : files) {
-            if (!file.isEmpty()) {
-                base64Images.add(Base64.getEncoder().encodeToString(file.getBytes()));
-            }
+            if (file.isEmpty()) continue;
+            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            Path path = Paths.get(uploadDir, filename);
+            Files.write(path, file.getBytes());
+            imageFilenames.add(filename);
         }
 
-        if (base64Images.isEmpty()) {
+        if (imageFilenames.isEmpty()) {
             return ApiResponse.badRequest("No valid images uploaded");
         }
 
+        // 3️⃣ Convert image list and features to JSON
         ObjectMapper mapper = new ObjectMapper();
-        String imagesJsonStr = mapper.writeValueAsString(base64Images);
+        String imagesJsonStr = mapper.writeValueAsString(imageFilenames);
+        String featuresJsonStr = featuresJson;
 
+        // 4️⃣ Save room details in DB
         String roomId = roomRegisterRepository.saveRoomWithJson(
-                hotelId, roomType, featuresJson, imagesJsonStr,
+                hotelId, roomType, featuresJsonStr, imagesJsonStr,
                 price, maxAdults, maxChildren, bedCount
         );
 
+        // ✅ Return success directly
         return ApiResponse.created(
                 Map.of(
                         "roomId", roomId,
                         "hotelId", hotelId,
-                        "imageCount", base64Images.size()
+                        "uploadedImages", imageFilenames
                 ),
                 "Room registered successfully"
         );
@@ -292,7 +314,6 @@ public ResponseEntity<Map<String, Object>> registerRoomWithImages(
         return ApiResponse.serverError("Error registering room: " + e.getMessage());
     }
 }
-
 
 
 
@@ -326,24 +347,6 @@ public ResponseEntity<?> updateVerificationStatus(@RequestBody HotelVerification
     } catch (Exception e) {
         return ApiResponse.serverError("Error updating verification status: " + e.getMessage());
     }
-}
-private String encodeImageToBase64(String imageBase64) {
-    if (imageBase64 == null || imageBase64.isEmpty()) {
-        return null;
-    }
-
-    // If it already looks like a base64 string, just return it
-    if (imageBase64.startsWith("data:image")) {
-        return imageBase64; // already formatted
-    }
-
-    // If it looks like raw base64 (not a file path or URL)
-    if (!imageBase64.contains("/") && imageBase64.length() > 100) {
-        return "data:image/jpeg;base64," + imageBase64;
-    }
-
-    // Otherwise, treat it as a URL and return as-is
-    return imageBase64;
 }
 
 

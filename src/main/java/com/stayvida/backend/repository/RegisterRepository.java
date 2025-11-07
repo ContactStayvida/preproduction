@@ -23,9 +23,9 @@ public class RegisterRepository {
     // Insert new hotel record
     public int saveHotel(Register register) {
         String sql = "INSERT INTO hotels (" +
-                "owner_ID, name, type, destination, rating, isForEvent, description, phone_NO, tags, " +
+                "owner_ID, name, type, destination,isForEvent, description, phone_NO, tags, " +
                 "amenities, images, longitude, latitude, status, onArrivalPayment, remark, createdAt, updatedAt" +
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -35,24 +35,24 @@ public class RegisterRepository {
             ps.setString(2, register.getName());
             ps.setString(3, register.getType());
             ps.setString(4, register.getDestination());
-            ps.setObject(5, register.getRating());
-            ps.setBoolean(6, register.isForEvent());
-            ps.setString(7, register.getDescription());
-            ps.setString(8, register.getPhone_NO());
+            // ps.setObject(5, register.getRating());
+            ps.setBoolean(5, register.isForEvent());
+            ps.setString(6, register.getDescription());
+            ps.setString(7, register.getPhone_NO());
 
             try {
-                ps.setString(9, objectMapper.writeValueAsString(register.getTags()));
-                ps.setString(10, objectMapper.writeValueAsString(register.getAmenities()));
+                ps.setString(8, objectMapper.writeValueAsString(register.getTags()));
+                ps.setString(9, objectMapper.writeValueAsString(register.getAmenities()));
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Error converting JSON", e);
             }
 
-            ps.setString(11, register.getImages());
-            ps.setString(12, register.getLongitude());
-            ps.setString(13, register.getLatitude());
-            ps.setString(14, register.getStatus() != null ? register.getStatus() : "Pending");
-            ps.setBoolean(15, register.isOnArrivalPayment());
-            ps.setString(16, register.getRemark());
+            ps.setString(10, register.getImages());
+            ps.setString(11, register.getLongitude());
+            ps.setString(12, register.getLatitude());
+            ps.setString(13, register.getStatus() != null ? register.getStatus() : "Pending");
+            ps.setBoolean(14, register.isOnArrivalPayment());
+            ps.setString(15, register.getRemark());
 
             return ps;
         }, keyHolder);

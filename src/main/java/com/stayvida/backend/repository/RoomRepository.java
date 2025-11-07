@@ -27,10 +27,10 @@ public class RoomRepository {
 
         // --- Fetch Hotel Info ---
         String hotelSql = """
-                SELECT hotel_ID, name, description, rating, destination,
-                       onArrivalPayment, isForEvent, tags, images
-                FROM hotels
-                WHERE hotel_ID = ?
+                SELECT h.hotel_ID, h.name, h.description,  (SELECT AVG(rt.rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating, h.destination,
+                       h.onArrivalPayment, h.isForEvent, h.tags, h.images
+                FROM hotels h
+                WHERE h.hotel_ID = ?
                 """;
 
         HotelDTO hotel = jdbcTemplate.queryForObject(hotelSql, new Object[]{hotelId}, (ResultSet rs, int rowNum) -> {
@@ -38,7 +38,7 @@ public class RoomRepository {
             dto.setHotelId(rs.getInt("hotel_ID"));
             dto.setName(rs.getString("name"));
             dto.setDescription(rs.getString("description"));
-            dto.setRating(rs.getDouble("rating"));
+            dto.setRating(rs.getDouble("avg_rating"));
             dto.setDestination(rs.getString("destination"));
             dto.setOnArrivalPayment(rs.getBoolean("onArrivalPayment"));
             dto.setForEvent(rs.getBoolean("isForEvent"));
