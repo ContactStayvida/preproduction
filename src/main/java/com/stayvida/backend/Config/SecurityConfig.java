@@ -79,7 +79,8 @@ public class SecurityConfig {
                     "/api/hotels/update-verification",
                     "/otplogin/**",
                     "/api/rating/create",
-                    "/api/rating/hotel/**"
+                    "/api/rating/hotel/**",
+                    "/api/locations/list"
                 ).permitAll()
                 .anyRequest().authenticated()
                 
