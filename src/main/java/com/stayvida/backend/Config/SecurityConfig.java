@@ -80,7 +80,8 @@ public class SecurityConfig {
                     "/otplogin/**",
                     "/api/rating/create",
                     "/api/rating/hotel/**",
-                    "/api/locations/list"
+                    "/api/locations/list",
+                    "/api/events/add"
                 ).permitAll()
                 .anyRequest().authenticated()
                 
