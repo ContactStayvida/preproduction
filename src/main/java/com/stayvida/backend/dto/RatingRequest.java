@@ -1,11 +1,14 @@
 package com.stayvida.backend.dto;
 
+import java.time.LocalDateTime;
+
 public class RatingRequest {
     private String bookingId;
     private Long hotelId;
     private Long userId;
     private Double ratingValue;
     private String comment;
+    private LocalDateTime rated_at;
 
     // Getters and setters
     public String getBookingId() { return bookingId; }
@@ -22,4 +25,7 @@ public class RatingRequest {
 
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }
+
+      public LocalDateTime getRated_at() { return rated_at; }
+    public void setRated_at(LocalDateTime rated_at) { this.rated_at = rated_at; }
 }

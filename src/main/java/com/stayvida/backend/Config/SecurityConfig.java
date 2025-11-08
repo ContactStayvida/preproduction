@@ -78,9 +78,11 @@ public class SecurityConfig {
                     "/api/hotels/**",
                     "/api/hotels/update-verification",
                     "/otplogin/**",
-                    "/api/rating/create"
+                    "/api/rating/create",
+                    "/api/rating/hotel/**"
                 ).permitAll()
                 .anyRequest().authenticated()
+                
             )
 
             // ✅ Disable default login types
@@ -120,6 +122,7 @@ public class SecurityConfig {
             ;
 
         return http.build();
+        
     }
 
     // ✅ CORS policy

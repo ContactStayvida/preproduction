@@ -1,12 +1,17 @@
 package com.stayvida.backend.controller;
 
+import com.stayvida.backend.model.Rating;
+import com.stayvida.backend.repository.RatingRepository;
 import com.stayvida.backend.security.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -15,6 +20,8 @@ public class RatingController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    RatingRepository ratingRepository;
 
     @PostMapping("/create")
     public Object createRating(@RequestBody Map<String, Object> body) {
@@ -53,4 +60,20 @@ public class RatingController {
             return ApiResponse.serverError("Error creating rating: " + e.getMessage());
         }
     }
+
+    @GetMapping("/hotel/{hotelId}")
+    public ResponseEntity<?> getRatingsByHotel(@PathVariable int hotelId) {
+        List<Rating> ratings = ratingRepository.findAllByHotelId(hotelId);
+        Double avgRating = ratingRepository.findAverageRatingByHotelId(hotelId);
+        if (avgRating == null) avgRating = 0.0;
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("ratings", ratings);
+        response.put("averageRating", avgRating);
+
+        return ResponseEntity.ok(response);
+    }
+
+
+
 }
