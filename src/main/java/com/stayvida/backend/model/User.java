@@ -20,8 +20,6 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
-    private String username;
     // @Column(nullable = false)
     // private String name;
     @Column(nullable = false)
@@ -36,10 +34,10 @@ public class User {
     public User() {
     }
 
-    public User(String email, String password, String username, String role ,LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public User(String email, String password,String role ,LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.email = email;
         this.password = password;
-        this.username = username;
+    
         this.role = role;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -72,13 +70,6 @@ public class User {
         this.password = password;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
     // public String getName() {
     //     return name;
     // }

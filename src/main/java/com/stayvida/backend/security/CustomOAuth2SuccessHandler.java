@@ -25,35 +25,40 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         this.jwtUtil = jwtUtil;
     }
 
-    @Override
+     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException {
 
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
-        String firstName = oidcUser.getGivenName();
-        String lastName = oidcUser.getFamilyName();
-        String username = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
 
-        // 🧾 Create or update user
-        User user = new User();
-        user.setEmail(email);
-        user.setUsername(username.trim());
-        user.setPassword("GOOGLE_LOGIN");
-        user.setRole("user"); // only used on first insert
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
+        // 🔍 Check if user exists in DB
+        User existingUser = userRepository.findByEmail(email);
 
-        // ✅ Save or update user (auto handles duplicates)
-        userRepository.saveOrUpdate(user);
+        User user;
+        if (existingUser != null) {
+            // ✅ Existing user → use DB values
+            user = existingUser;
+            System.out.println("Existing user login: " + email);
+        } else {
+            // 🆕 New user → create and insert
+            user = new User();
+            user.setEmail(email);
+            user.setPassword("GOOGLE_LOGIN");
+            user.setRole("user");
+            user.setCreatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
+
+            userRepository.saveOrUpdate(user);
+        }
 
         // 🧾 Generate JWT token
         String token = jwtUtil.generateToken(email);
 
-        // 🎯 Return JSON response instead of redirect
+        // 🎯 Return JSON response
         String jsonResponse = String.format(
-            "{\"success\":true,\"token\":\"%s\",\"user id\":\"%s\",\"username\":\"%s\",\"email\":\"%s\",\"role\":\"%s\"}",
-            token,user.getuserID() ,user.getUsername(), user.getEmail(), user.getRole()
+            "{\"success\":true,\"token\":\"%s\",\"userId\":\"%s\",\"email\":\"%s\",\"role\":\"%s\"}",
+            token, user.getuserID(), user.getEmail(), user.getRole()
         );
 
         response.setContentType("application/json");

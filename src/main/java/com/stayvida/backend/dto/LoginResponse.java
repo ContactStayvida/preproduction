@@ -4,7 +4,6 @@ public class LoginResponse {
     private boolean success;
     private String token;
     private Long id;
-    private String username;
     private String email;
     private String role;
     private String message;
@@ -13,11 +12,10 @@ public class LoginResponse {
     public LoginResponse() {
     }
 
-    public LoginResponse(boolean success, String token, Long id ,String username, String email,  String role, String message) {
+    public LoginResponse(boolean success, String token, Long id , String email,  String role, String message) {
         this.success = success;
         this.token = token;
         this.id = id;
-        this.username = username;
         this.email = email;
         this.role = role;
         this.message = message;
@@ -35,9 +33,6 @@ public class LoginResponse {
         return id;
     }
 
-    public String getUsername() {
-        return username;
-    }
 
     public String getEmail() {
         return email;

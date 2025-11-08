@@ -24,10 +24,9 @@ public class LoginController {
     @PostMapping("/get-otp")
     public ResponseEntity<?> sendOtp(@RequestBody LoginRequest request) {
         String email = request.getEmail();
-        String username = request.getUsername();
 
-        if (email == null || username == null) {
-            return ResponseEntity.badRequest().body("Email and Username are required");
+        if (email == null) {
+            return ResponseEntity.badRequest().body("Email is required");
         }
 
         String otp = otpService.generateOtp(email);
@@ -39,14 +38,12 @@ public class LoginController {
 @PostMapping("/verify-otp")
 public ResponseEntity<LoginResponse> verifyOtp(@RequestBody LoginRequest request) {
     String email = request.getEmail();
-    String username = request.getUsername();
     String otp = request.getOtp();
 
     // ❌ Invalid OTP
     if (!otpService.validateOtp(email, otp)) {
         return ResponseEntity.badRequest().body(new LoginResponse(
                 false,
-                null,
                 null,
                 null,
                 email,
@@ -63,7 +60,6 @@ public ResponseEntity<LoginResponse> verifyOtp(@RequestBody LoginRequest request
     if (isNew) {
         user = new User();
         user.setEmail(email);
-        user.setUsername(username);
         user.setPassword("OTP_LOGIN");
         user.setRole("user");
         userRepo.saveOrUpdate(user); // Only inserts if new
@@ -80,7 +76,6 @@ public ResponseEntity<LoginResponse> verifyOtp(@RequestBody LoginRequest request
             true,
             token,
             user.getuserID(),
-            user.getUsername(),
             user.getEmail(),
             user.getRole(),
             isNew ? "Signup successful!" : "Login successful!"

@@ -17,7 +17,6 @@ public class UserRepository {
         // ✅ Make sure this matches your actual DB column name
         user.setId(rs.getLong("user_ID")); 
         user.setEmail(rs.getString("email"));
-        user.setUsername(rs.getString("username"));
         user.setPassword(rs.getString("password"));
         user.setRole(rs.getString("role"));
         return user;
@@ -51,12 +50,11 @@ public class UserRepository {
 
     // ➕ Insert new user
     String insertSql = """
-        INSERT INTO users (username, email, password, role, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO users (email, password, role, createdAt, updatedAt)
+        VALUES ( ?, ?, ?, ?, ?)
         """;
 
     jdbcTemplate.update(insertSql,
-            user.getUsername(),
             user.getEmail(),
             user.getPassword(),
             user.getRole(),
