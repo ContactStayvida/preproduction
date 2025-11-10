@@ -82,7 +82,10 @@ public class SecurityConfig {
                     "/api/rating/hotel/**",
                     "/api/locations/list",
                     "/api/events/add",
-                    "/api/events/search"
+                    "/api/events/search",
+                    "/api/contact/submit",
+                    "/api/contact/all",
+                    "/api/events/list"
                 ).permitAll()
                 .anyRequest().authenticated()
                 

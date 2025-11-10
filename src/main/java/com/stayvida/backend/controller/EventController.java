@@ -153,4 +153,4 @@ public Object searchEvents(@RequestBody Map<String, Object> body) {
         return ApiResponse.serverError("Error while searching events: " + e.getMessage());
     }
 }
-}
+}       

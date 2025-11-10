@@ -25,3 +25,4 @@
 //         };
 //     }
 // }
+//commented because CORS is now configured in SecurityConfig.java

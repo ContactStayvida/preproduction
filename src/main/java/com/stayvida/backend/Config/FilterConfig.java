@@ -16,7 +16,9 @@ public class FilterConfig {
     public FilterRegistrationBean<ApiKeyFilter> apiKeyFilterRegistration() {
         FilterRegistrationBean<ApiKeyFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(apiKeyFilter);
-        registration.addUrlPatterns("/otplogin/*"
+        registration.addUrlPatterns("/otplogin/*",
+
+                                     "/api/contact/*"
                                     // "/login"
                                     ); // Apply to only  endpoints
         return registration;
