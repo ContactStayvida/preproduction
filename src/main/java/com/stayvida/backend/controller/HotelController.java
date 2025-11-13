@@ -97,7 +97,7 @@ public ResponseEntity<Map<String, Object>> searchHotels(
             map.put("type", hotel.getType());
             map.put("destination", hotel.getDestination());
             map.put("rating", hotel.getRating());
-            map.put("amenities", hotel.getAmenities());
+            // map.put("amenities", hotel.getAmenities());
             map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
             map.put("isForEvent", hotel.isForEvent());
             map.put("price", hotel.getPrice());

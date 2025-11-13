@@ -7,6 +7,7 @@ public class HotelDTO {
     private int hotelId;
     private String name;
     private String description;
+    private List<String> amenities;
     private double rating;
     private String destination;
     private boolean onArrivalPayment;
@@ -46,4 +47,8 @@ public class HotelDTO {
 
     public List<RoomDTO> getRooms() { return rooms; }
     public void setRooms(List<RoomDTO> rooms) { this.rooms = rooms; }
+    
+    public List<String> getAmenities() {return amenities;}
+    public void setAmenities(List<String> amenities) {this.amenities = amenities;}
+
 }

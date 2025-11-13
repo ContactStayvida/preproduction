@@ -27,8 +27,10 @@ public class RoomRepository {
 
         // --- Fetch Hotel Info ---
         String hotelSql = """
-                SELECT h.hotel_ID, h.name, h.description,  (SELECT AVG(rt.rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating, h.destination,
-                       h.onArrivalPayment, h.isForEvent, h.tags, h.images
+                SELECT h.hotel_ID, h.name, h.description,
+                       (SELECT AVG(rt.rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating,
+                       h.destination, h.onArrivalPayment, h.isForEvent,
+                       h.tags, h.images, h.amenities
                 FROM hotels h
                 WHERE h.hotel_ID = ?
                 """;
@@ -70,6 +72,24 @@ public class RoomRepository {
                         .toList();
                 dto.setImages(imgs);
             }
+
+            // --- Parse amenities ---
+            String amenitiesJson = rs.getString("amenities");
+            if (amenitiesJson != null && !amenitiesJson.isEmpty()) {
+                try {
+                    List<String> amenities = objectMapper.readValue(amenitiesJson, new TypeReference<List<String>>() {});
+                    dto.setAmenities(amenities);
+                } catch (Exception e) {
+                    // If amenities are stored as comma-separated text
+                    String[] parts = amenitiesJson.split("\\s*,\\s*");
+                    List<String> amenitiesList = new ArrayList<>();
+                    for (String a : parts) {
+                        if (!a.isEmpty()) amenitiesList.add(a);
+                    }
+                    dto.setAmenities(amenitiesList);
+                }
+            }
+
             return dto;
         });
 
@@ -80,7 +100,6 @@ public class RoomRepository {
             FROM rooms r
             WHERE r.hotel_ID = ?
               AND (
-                  -- Available if no active overlapping booking
                   NOT EXISTS (
                       SELECT 1 FROM bookings b
                       WHERE b.room_ID = r.room_ID
@@ -88,7 +107,6 @@ public class RoomRepository {
                         AND b.checkIn < ?
                         AND b.checkOut > ?
                   )
-                  -- Or booking is cancelled within the range
                   OR EXISTS (
                       SELECT 1 FROM bookings b
                       WHERE b.room_ID = r.room_ID
