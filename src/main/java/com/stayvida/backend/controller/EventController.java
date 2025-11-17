@@ -200,20 +200,20 @@ public Object getEventDetails(@RequestParam String eventID, @RequestParam Intege
         // Hotel data
         Map<String, Object> hotelData = new HashMap<>();
         hotelData.put("hotel_ID", row.get("hotel_ID"));
-        hotelData.put("owner_ID", row.get("owner_ID"));
+        // hotelData.put("owner_ID", row.get("owner_ID"));
         hotelData.put("name", row.get("hotel_name"));
         hotelData.put("type", row.get("hotel_type"));
         hotelData.put("destination", row.get("destination"));
         hotelData.put("isForEvent", row.get("isForEvent"));
         hotelData.put("description", row.get("description"));
-        hotelData.put("phone_NO", row.get("phone_NO"));
+        // hotelData.put("phone_NO", row.get("phone_NO"));
         hotelData.put("longitude", row.get("longitude"));
         hotelData.put("latitude", row.get("latitude"));
-        hotelData.put("status", row.get("status"));
-        hotelData.put("onArrivalPayment", row.get("onArrivalPayment"));
-        hotelData.put("remark", row.get("remark"));
-        hotelData.put("createdAt", row.get("hotelCreatedAt"));
-        hotelData.put("updatedAt", row.get("hotelUpdatedAt"));
+        // hotelData.put("status", row.get("status"));
+        // hotelData.put("onArrivalPayment", row.get("onArrivalPayment"));
+        // hotelData.put("remark", row.get("remark"));
+        // hotelData.put("createdAt", row.get("hotelCreatedAt"));
+        // hotelData.put("updatedAt", row.get("hotelUpdatedAt"));
 
         // Parse hotel tags
         try {
