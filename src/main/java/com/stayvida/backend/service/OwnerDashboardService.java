@@ -1,11 +1,11 @@
 package com.stayvida.backend.service;
+
 import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.stayvida.backend.repository.OwnerDashboardRepository;
-
 
 @Service
 public class OwnerDashboardService {
@@ -21,6 +21,7 @@ public class OwnerDashboardService {
 
         List<Map<String, Object>> hotelWiseList = new ArrayList<>();
         int totalMonthlyBookings = 0;
+        int totalGuests = 0;
 
         for (Map<String, Object> hotel : hotels) {
             int hotelId = (int) hotel.get("hotel_ID");
@@ -29,6 +30,10 @@ public class OwnerDashboardService {
             // Hotel monthly bookings
             int hotelBookings = repo.getMonthlyBookingCount(hotelId);
             totalMonthlyBookings += hotelBookings;
+
+            // Total guests for this hotel
+            int hotelGuests = repo.getTotalGuestsForMonth(hotelId); // you need to add this method
+            totalGuests += hotelGuests;
 
             // Fetch rooms
             List<Map<String, Object>> rooms = repo.getRoomsByHotelId(hotelId);
@@ -53,12 +58,18 @@ public class OwnerDashboardService {
             hotelData.put("hotelId", hotelId);
             hotelData.put("hotelName", hotelName);
             hotelData.put("monthlyBookings", hotelBookings);
+            hotelData.put("totalGuests", hotelGuests);
             hotelData.put("rooms", roomWiseList);
 
             hotelWiseList.add(hotelData);
         }
 
+        // Total revenue for all hotels of this owner
+        double totalRevenue = repo.getMonthlyRevenueForOwner(ownerId); // add method in repo
+
         response.put("totalMonthlyBookings", totalMonthlyBookings);
+        response.put("totalGuests", totalGuests);
+        response.put("totalRevenue", totalRevenue);
         response.put("hotelWiseBookings", hotelWiseList);
 
         return response;

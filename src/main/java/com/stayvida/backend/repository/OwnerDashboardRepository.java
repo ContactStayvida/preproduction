@@ -57,4 +57,37 @@ public class OwnerDashboardRepository {
 
         return jdbcTemplate.queryForObject(sql, Integer.class, roomId);
     }
+
+    // Total guests for a hotel this month (check-in only)
+    public int getTotalGuestsForMonth(int hotelId) {
+        String sql = """
+            SELECT COALESCE(SUM(adults + children),0)
+            FROM bookings
+            WHERE hotel_ID = ?
+            AND MONTH(checkIn) = MONTH(CURRENT_DATE())
+            AND YEAR(checkIn) = YEAR(CURRENT_DATE())
+            AND booking_Status <> 'Cancelled'
+        """;
+        return jdbcTemplate.queryForObject(sql, Integer.class, hotelId);
+    }
+
+public double getMonthlyRevenueForOwner(int ownerId) {
+    String sql = """
+        SELECT COALESCE(SUM(
+            b.payment_amount 
+            - ((b.totalAmount - b.tax_amount - b.platformFee) * 0.2) 
+            - b.platformFee 
+            - b.tax_amount
+        ), 0)
+        FROM bookings b
+        JOIN hotels h ON b.hotel_ID = h.hotel_ID
+        WHERE h.owner_ID = ?
+          AND h.status = 'Verified'
+          AND MONTH(b.checkIn) = MONTH(CURRENT_DATE())
+          AND YEAR(b.checkIn) = YEAR(CURRENT_DATE())
+          AND b.booking_Status <> 'Cancelled'
+    """;
+
+    return jdbcTemplate.queryForObject(sql, Double.class, ownerId);
+}
 }
