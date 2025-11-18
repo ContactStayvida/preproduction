@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.dto.HotelDTO;
 import com.stayvida.backend.dto.HotelSearchRequest;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
-import com.stayvida.backend.dto.RoomDTO;
+// import com.stayvida.backend.dto.RoomDTO;
 // import com.stayvida.backend.dto.RegisterRoom;
 // import com.stayvida.backend.dto.RoomDTO;
 import com.stayvida.backend.model.Hotel;
@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -98,7 +100,7 @@ public ResponseEntity<Map<String, Object>> searchHotels(
             map.put("destination", hotel.getDestination());
             map.put("rating", hotel.getRating());
             // map.put("amenities", hotel.getAmenities());
-            map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
+            map.put("imageUrl", hotel.getImage() != null ? baseUrl + encodeURL(hotel.getImage()) : null);
             map.put("isForEvent", hotel.isForEvent());
             map.put("price", hotel.getPrice());
             return map;
@@ -139,7 +141,7 @@ public ResponseEntity<?> featureList() {
             map.put("destination", hotel.getDestination());
             map.put("rating", hotel.getRating());
             map.put("amenities", hotel.getAmenities());
-            map.put("imageUrl", hotel.getImage() != null ? baseUrl + hotel.getImage() : null);
+            map.put("imageUrl", hotel.getImage() != null ? baseUrl + encodeURL(hotel.getImage()) : null);
             map.put("isForEvent", hotel.isForEvent());
             map.put("price", hotel.getPrice());
             return map;
@@ -181,7 +183,7 @@ public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
             result.setImages(
                 result.getImages().stream()
                         .filter(img -> img != null && !img.isEmpty())
-                        .map(img -> img.startsWith("http") ? img : baseUrl + img)
+                        .map(img -> img.startsWith("http") ? img : baseUrl + encodePath(img))
                         .toList()
             );
         }
@@ -193,7 +195,7 @@ public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
                     room.setRoomImages(
                         room.getRoomImages().stream()
                                 .filter(img -> img != null && !img.isEmpty())
-                                .map(img -> img.startsWith("http") ? img : baseUrl + img)
+                                .map(img -> img.startsWith("http") ? img : baseUrl + encodePath(img))
                                 .toList()
                     );
                 }
@@ -349,6 +351,24 @@ public ResponseEntity<?> updateVerificationStatus(@RequestBody HotelVerification
     }
 }
 
+
+private String encodeURL(String urlPath) {
+    try {
+        return URLEncoder.encode(urlPath, StandardCharsets.UTF_8.toString())
+                .replace("+", "%20"); // fix space encoding
+    } catch (Exception e) {
+        return urlPath;
+    }
+}   
+
+private String encodePath(String path) {
+    try {
+        return URLEncoder.encode(path, StandardCharsets.UTF_8.toString())
+                .replace("+", "%20");
+    } catch (Exception e) {
+        return path;
+    }
+}
 
 
 

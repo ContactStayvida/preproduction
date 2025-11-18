@@ -86,7 +86,8 @@ public class SecurityConfig {
                     "/api/contact/submit",
                     "/api/contact/all",
                     "/api/events/list",
-                    "/api/events/details"
+                    "/api/events/details",
+                    "/owner/dashboard/**"
                 ).permitAll()
                 .anyRequest().authenticated()
                 

@@ -22,6 +22,7 @@ public class RegisterRepository {
 
     // Insert new hotel record
     public int saveHotel(Register register) {
+         updateUserRoleIfNeeded(register.getOwner_ID());
         String sql = "INSERT INTO hotels (" +
                 "owner_ID, name, type, destination,isForEvent, description, phone_NO, tags, " +
                 "amenities, images, longitude, latitude, status, onArrivalPayment, remark, createdAt, updatedAt" +
@@ -59,6 +60,28 @@ public class RegisterRepository {
 
         return keyHolder.getKey().intValue();
     }
+
+     // --- NEW METHOD ---
+    private void updateUserRoleIfNeeded(int ownerId) {
+        String sqlCheck = "SELECT role FROM users WHERE user_ID = ?";
+
+        String role = jdbcTemplate.query(sqlCheck, rs -> {
+            if (rs.next()) {
+                return rs.getString("role");
+            }
+            return null;
+        }, ownerId);
+
+        if (role == null) return; // user not found, ignore
+
+        if (role.equalsIgnoreCase("user")) {
+            String sqlUpdate = "UPDATE users SET role = 'hotel_owner' WHERE user_ID = ?";
+            jdbcTemplate.update(sqlUpdate, ownerId);
+        }
+    }
+
+
+
 
     // Update hotel image
     public void updateHotelImage(int hotelId, String imageUrl) {
