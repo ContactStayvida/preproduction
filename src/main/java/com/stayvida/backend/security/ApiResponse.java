@@ -42,7 +42,7 @@
         public static ResponseEntity<Map<String, Object>> notFound(String message) {
             Map<String, Object> response = new HashMap<>();
             response.put("status", 404);
-            response.put("error", "Unauthorized");
+            response.put("error", "Not Found");
             response.put("message", message);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }

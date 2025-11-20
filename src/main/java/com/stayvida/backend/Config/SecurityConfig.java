@@ -30,7 +30,7 @@ public class SecurityConfig {
     // private final SupabaseJwtFilter supabaseJwtFilter;
     
 
-    @Autowired
+    // @Autowired
     public SecurityConfig(CustomOAuth2SuccessHandler customOAuth2SuccessHandler,
                           JwtAuthFilter jwtAuthFilter) {
         this.customOAuth2SuccessHandler = customOAuth2SuccessHandler;
@@ -87,7 +87,8 @@ public class SecurityConfig {
                     "/api/contact/all",
                     "/api/events/list",
                     "/api/events/details",
-                    "/owner/dashboard/**"
+                    "/owner/dashboard/**",
+                    "/api/profile/**"
                 ).permitAll()
                 .anyRequest().authenticated()
                 
