@@ -1,31 +1,36 @@
 package com.stayvida.backend.model;
 
 import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Register {
-    private String hotel_ID;       // PK - generated in DB
+
+    private String hotel_ID;
     private int owner_ID;
     private String name;
-    private String type;           // Enum('Hotel','Resort','Villa','Guest House')
+    private String type;
     private String destination;
     private Double rating;
-    @JsonProperty("isForEvent")
 
+    @JsonProperty("isForEvent")
     private boolean isForEvent;
+
     private String description;
     private String phone_NO;
-    private List<String> tags;     // stored as JSON
-    private List<String> amenities; // stored as JSON
-    private String images;         // comma-separated URLs or JSON
+
+    private List<String> tags;
+    private List<String> amenities;
+
+    private String images;
     private String longitude;
     private String latitude;
-    private String status;         // Enum('Pending','Verified','Rejected')
-    private boolean onArrivalPayment;
-    private String remark;
 
-    // Getters and Setters
+    // Removed from request:
+    // private String status;         
+    // private boolean onArrivalPayment;
+    // private String remark;
+
+    // Getters / Setters
     public String getHotel_ID() { return hotel_ID; }
     public void setHotel_ID(String hotel_ID) { this.hotel_ID = hotel_ID; }
 
@@ -45,8 +50,9 @@ public class Register {
     public void setRating(Double rating) { this.rating = rating; }
 
     public boolean isForEvent() { return isForEvent; }
-     @JsonProperty("isForEvent")
-    public void setForEvent(boolean forEvent) { isForEvent = forEvent; }
+
+    @JsonProperty("isForEvent")
+    public void setForEvent(boolean forEvent) { this.isForEvent = forEvent; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
@@ -68,13 +74,4 @@ public class Register {
 
     public String getLatitude() { return latitude; }
     public void setLatitude(String latitude) { this.latitude = latitude; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public boolean isOnArrivalPayment() { return onArrivalPayment; }
-    public void setOnArrivalPayment(boolean onArrivalPayment) { this.onArrivalPayment = onArrivalPayment; }
-
-    public String getRemark() { return remark; }
-    public void setRemark(String remark) { this.remark = remark; }
 }

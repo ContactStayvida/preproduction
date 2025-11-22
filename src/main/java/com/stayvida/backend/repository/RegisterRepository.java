@@ -20,23 +20,27 @@ public class RegisterRepository {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+
     // Insert new hotel record
     public int saveHotel(Register register) {
-         updateUserRoleIfNeeded(register.getOwner_ID());
+
+        updateUserRoleIfNeeded(register.getOwner_ID());
+
         String sql = "INSERT INTO hotels (" +
-                "owner_ID, name, type, destination,isForEvent, description, phone_NO, tags, " +
-                "amenities, images, longitude, latitude, status, onArrivalPayment, remark, createdAt, updatedAt" +
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+        "owner_ID, name, type, destination, isForEvent, description, phone_NO, tags, " +
+        "amenities, images, longitude, latitude, status, onArrivalPayment, remark, createdAt, updatedAt" +
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+
             ps.setInt(1, register.getOwner_ID());
             ps.setString(2, register.getName());
             ps.setString(3, register.getType());
             ps.setString(4, register.getDestination());
-            // ps.setObject(5, register.getRating());
             ps.setBoolean(5, register.isForEvent());
             ps.setString(6, register.getDescription());
             ps.setString(7, register.getPhone_NO());
@@ -51,9 +55,11 @@ public class RegisterRepository {
             ps.setString(10, register.getImages());
             ps.setString(11, register.getLongitude());
             ps.setString(12, register.getLatitude());
-            ps.setString(13, register.getStatus() != null ? register.getStatus() : "Pending");
-            ps.setBoolean(14, register.isOnArrivalPayment());
-            ps.setString(15, register.getRemark());
+        //  ---- default valuse applied for the following fields ----
+            ps.setString(13, "Pending");      // default status
+            ps.setBoolean(14, false);         // default onArrivalPayment
+            ps.setString(15, "New hotel added"); // default remark
+
 
             return ps;
         }, keyHolder);
@@ -61,7 +67,7 @@ public class RegisterRepository {
         return keyHolder.getKey().intValue();
     }
 
-     // --- NEW METHOD ---
+
     private void updateUserRoleIfNeeded(int ownerId) {
         String sqlCheck = "SELECT role FROM users WHERE user_ID = ?";
 
@@ -72,7 +78,7 @@ public class RegisterRepository {
             return null;
         }, ownerId);
 
-        if (role == null) return; // user not found, ignore
+        if (role == null) return;
 
         if (role.equalsIgnoreCase("user")) {
             String sqlUpdate = "UPDATE users SET role = 'hotel_owner' WHERE user_ID = ?";
@@ -81,9 +87,6 @@ public class RegisterRepository {
     }
 
 
-
-
-    // Update hotel image
     public void updateHotelImage(int hotelId, String imageUrl) {
         String sql = "UPDATE hotels SET images = ?, updatedAt = NOW() WHERE hotel_ID = ?";
         jdbcTemplate.update(sql, imageUrl, hotelId);

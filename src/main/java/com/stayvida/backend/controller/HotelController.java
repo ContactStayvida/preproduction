@@ -15,6 +15,7 @@ import com.stayvida.backend.repository.RegisterRepository;
 import com.stayvida.backend.repository.RoomRepository;
 import com.stayvida.backend.repository.RoomregisterRepository;
 import com.stayvida.backend.security.ApiResponse;
+import com.stayvida.backend.service.CloudinaryService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +43,10 @@ public class HotelController {
 
     @Value("${app.base.url}")
     private String baseUrl;    // ✅ Base URL for image access
+
+    @Value("${cloudinary.urlPrefix}")
+    private String cloudinaryPrefix; // Cloudinary URL prefix
+
 
     @Autowired
     private HotelRepository hotelRepository;
@@ -100,7 +105,7 @@ public ResponseEntity<Map<String, Object>> searchHotels(
             map.put("destination", hotel.getDestination());
             map.put("rating", hotel.getRating());
             // map.put("amenities", hotel.getAmenities());
-            map.put("imageUrl", hotel.getImage() != null ? baseUrl + encodeURL(hotel.getImage()) : null);
+            map.put("imageUrl", hotel.getImage() != null ? cloudinaryPrefix + encodeURL(hotel.getImage()) : null);
             map.put("isForEvent", hotel.isForEvent());
             map.put("price", hotel.getPrice());
             return map;
@@ -141,7 +146,7 @@ public ResponseEntity<?> featureList() {
             map.put("destination", hotel.getDestination());
             map.put("rating", hotel.getRating());
             map.put("amenities", hotel.getAmenities());
-            map.put("imageUrl", hotel.getImage() != null ? baseUrl + encodeURL(hotel.getImage()) : null);
+            map.put("imageUrl", hotel.getImage() != null ? cloudinaryPrefix + encodeURL(hotel.getImage()) : null);
             map.put("isForEvent", hotel.isForEvent());
             map.put("price", hotel.getPrice());
             return map;
@@ -183,7 +188,7 @@ public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
             result.setImages(
                 result.getImages().stream()
                         .filter(img -> img != null && !img.isEmpty())
-                        .map(img -> img.startsWith("http") ? img : baseUrl + encodePath(img))
+                        .map(img -> img.startsWith("http") ? img : cloudinaryPrefix + encodePath(img))
                         .toList()
             );
         }
@@ -195,7 +200,7 @@ public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
                     room.setRoomImages(
                         room.getRoomImages().stream()
                                 .filter(img -> img != null && !img.isEmpty())
-                                .map(img -> img.startsWith("http") ? img : baseUrl + encodePath(img))
+                                .map(img -> img.startsWith("http") ? img : cloudinaryPrefix + encodePath(img))
                                 .toList()
                     );
                 }
@@ -216,10 +221,11 @@ public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
 
 
 @Autowired
+private CloudinaryService cloudinaryService;
+
+@Autowired
 private RegisterRepository registerRepository;
 
-// ✅ Create new hotel
-// ✅ Register hotel with image upload
 @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 public ResponseEntity<Map<String, Object>> registerHotel(
         @RequestPart("data") String hotelJson,
@@ -230,34 +236,44 @@ public ResponseEntity<Map<String, Object>> registerHotel(
         Register register = mapper.readValue(hotelJson, Register.class);
 
         String imageFileName = null;
+        String cloudinaryUrl = null;
 
         if (imageFile != null && !imageFile.isEmpty()) {
+
             imageFileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
-            Path filePath = Paths.get(uploadDir, imageFileName);
-            Files.createDirectories(filePath.getParent());
-            Files.write(filePath, imageFile.getBytes());
+
+            // Upload image to cloudinary
+            Map uploadResult =
+                    cloudinaryService.uploadImage(imageFile, imageFileName);
+
+            cloudinaryUrl = uploadResult.get("secure_url").toString();
+
+            // Store ONLY image name in DB
             register.setImages(imageFileName);
         }
 
         int newHotelId = registerRepository.saveHotel(register);
 
-        return ApiResponse.created(Map.of("hotelId", newHotelId), "Hotel registered successfully");
+        // Add Cloudinary URL to response
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("hotelId", newHotelId);
+        responseBody.put("imageName", imageFileName);
+        responseBody.put("imageUrl", cloudinaryUrl);
 
-    } catch (IOException e) {
-        return ApiResponse.badRequest("Invalid JSON or image file: " + e.getMessage());
-    } catch (SecurityException e) {
-        return ApiResponse.unauthorized("Unauthorized access");
+        return ApiResponse.created(responseBody, "Hotel registered successfully");
+
     } catch (Exception e) {
         return ApiResponse.serverError("Error registering hotel: " + e.getMessage());
     }
 }
 
 
+
 @PostMapping("/register_room_with_images")
 public ResponseEntity<Map<String, Object>> registerRoomWithImages(
         @RequestParam("hotelId") int hotelId,
         @RequestParam("roomType") String roomType,
-        @RequestParam("features") String featuresJson, // JSON or comma-separated string
+        @RequestParam("features") String featuresJson,
         @RequestParam("maxAdults") int maxAdults,
         @RequestParam("maxChildren") int maxChildren,
         @RequestParam("bedCount") int bedCount,
@@ -265,53 +281,51 @@ public ResponseEntity<Map<String, Object>> registerRoomWithImages(
         @RequestParam("images") MultipartFile[] files
 ) {
     try {
-        // 1️⃣ Validate input
         if (files == null || files.length == 0) {
             return ApiResponse.badRequest("At least one image file is required");
         }
 
-        // 2️⃣ Save images to server
-        List<String> imageFilenames = new ArrayList<>();
-        // String uploadDir = "C:/uploaded_images";
-        Files.createDirectories(Paths.get(uploadDir));
+        List<String> imageNames = new ArrayList<>();
+        List<String> imageUrls = new ArrayList<>();
 
         for (MultipartFile file : files) {
             if (file.isEmpty()) continue;
-            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path path = Paths.get(uploadDir, filename);
-            Files.write(path, file.getBytes());
-            imageFilenames.add(filename);
+
+            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+            // Upload to Cloudinary
+            Map uploadResult = cloudinaryService.uploadImage(file, fileName);
+
+            // Store DB value (image name ONLY)
+            imageNames.add(fileName);
+
+            // Return to frontend (full URL)
+            imageUrls.add(uploadResult.get("secure_url").toString());
         }
 
-        if (imageFilenames.isEmpty()) {
+        if (imageNames.isEmpty()) {
             return ApiResponse.badRequest("No valid images uploaded");
         }
 
-        // 3️⃣ Convert image list and features to JSON
         ObjectMapper mapper = new ObjectMapper();
-        String imagesJsonStr = mapper.writeValueAsString(imageFilenames);
+        String imagesJsonStr = mapper.writeValueAsString(imageNames);
         String featuresJsonStr = featuresJson;
 
-        // 4️⃣ Save room details in DB
         String roomId = roomRegisterRepository.saveRoomWithJson(
                 hotelId, roomType, featuresJsonStr, imagesJsonStr,
                 price, maxAdults, maxChildren, bedCount
         );
 
-        // ✅ Return success directly
         return ApiResponse.created(
                 Map.of(
                         "roomId", roomId,
                         "hotelId", hotelId,
-                        "uploadedImages", imageFilenames
+                        "imageNames", imageNames,
+                        "imageUrls", imageUrls
                 ),
                 "Room registered successfully"
         );
 
-    } catch (IOException e) {
-        return ApiResponse.badRequest("Invalid image file: " + e.getMessage());
-    } catch (SecurityException e) {
-        return ApiResponse.unauthorized("Unauthorized access");
     } catch (Exception e) {
         return ApiResponse.serverError("Error registering room: " + e.getMessage());
     }
