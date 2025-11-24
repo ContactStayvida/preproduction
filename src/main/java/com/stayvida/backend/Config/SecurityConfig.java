@@ -142,7 +142,8 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
             "http://localhost:5173",
             "http://localhost:5174",
-            "http://localhost:5175"
+            "http://localhost:5175",
+            "https://sv-website-frontend-qo6e-j90x8n73z-stay-vidas-projects.vercel.app/"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
