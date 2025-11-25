@@ -8,6 +8,7 @@ import com.stayvida.backend.security.SupabaseJwtFilter;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -20,10 +21,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
-
 @Configuration
 public class SecurityConfig {
+
 
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
     private final JwtAuthFilter jwtAuthFilter;
@@ -135,17 +137,26 @@ public class SecurityConfig {
         
     }
 
+
+ @Value("${CORS}")
+ private String corsAllowedOrigins;
+
+
     // ✅ CORS policy
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        List<String> allowedOrigins = Arrays.stream(corsAllowedOrigins.split(","))
+            .map(String::trim)
+            .toList();
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:5175",
-            "https://sv-website-frontend-uyt5qvn33-stay-vidas-projects.vercel.app/",
-            "https://sv-website-frontend.vercel.app/"
-        ));
+        // configuration.setAllowedOriginPatterns(List.of(
+        //     "http://localhost:5173",
+        //     "http://localhost:5174",
+        //     "http://localhost:5175",
+        //     "https://sv-website-frontend-uyt5qvn33-stay-vidas-projects.vercel.app/",
+        //     "https://sv-website-frontend.vercel.app/"
+        // ));
+        configuration.setAllowedOriginPatterns(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
