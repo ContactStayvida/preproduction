@@ -4,12 +4,13 @@
     import org.springframework.http.ResponseEntity;
 
     import java.util.HashMap;
-    import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
     public class ApiResponse {
 
         public static ResponseEntity<Map<String, Object>> success(Object data, String message) {
-            Map<String, Object> response = new HashMap<>();
+            Map<String, Object> response = new LinkedHashMap<>();
             response.put("status", 200);
             response.put("message", message);
             response.put("data", data);
@@ -54,4 +55,6 @@
             response.put("message", message);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+        
+        
     }
