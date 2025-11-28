@@ -23,19 +23,20 @@ public class OwnerDashboardService {
         int totalMonthlyBookings = 0;
         int totalGuests = 0;
 
+        // ===============================
+        // HOTEL & ROOM WISE DATA
+        // ===============================
         for (Map<String, Object> hotel : hotels) {
+
             int hotelId = (int) hotel.get("hotel_ID");
             String hotelName = (String) hotel.get("name");
 
-            // Hotel monthly bookings
             int hotelBookings = repo.getMonthlyBookingCount(hotelId);
             totalMonthlyBookings += hotelBookings;
 
-            // Total guests for this hotel
-            int hotelGuests = repo.getTotalGuestsForMonth(hotelId); // you need to add this method
+            int hotelGuests = repo.getTotalGuestsForMonth(hotelId);
             totalGuests += hotelGuests;
 
-            // Fetch rooms
             List<Map<String, Object>> rooms = repo.getRoomsByHotelId(hotelId);
             List<Map<String, Object>> roomWiseList = new ArrayList<>();
 
@@ -53,7 +54,6 @@ public class OwnerDashboardService {
                 roomWiseList.add(roomData);
             }
 
-            // Prepare hotel final data
             Map<String, Object> hotelData = new HashMap<>();
             hotelData.put("hotelId", hotelId);
             hotelData.put("hotelName", hotelName);
@@ -64,14 +64,69 @@ public class OwnerDashboardService {
             hotelWiseList.add(hotelData);
         }
 
-        // Total revenue for all hotels of this owner
-        double totalRevenue = repo.getMonthlyRevenueForOwner(ownerId); // add method in repo
 
+        // ===============================
+        // CURRENT MONTH TOTAL METRICS
+        // ===============================
+        double totalRevenue = repo.getMonthlyRevenueForOwner(ownerId);
+
+
+        // ===============================
+        // LAST MONTH METRICS
+        // ===============================
+        double lastMonthRevenue = repo.getLastMonthRevenueForOwner(ownerId);
+        int lastMonthBookings = repo.getLastMonthBookingCount(ownerId);
+        int lastMonthGuests = repo.getLastMonthGuestCount(ownerId);
+
+
+        // ===============================
+        // COMPARISON PERCENTAGE
+        // ===============================
+        String revenueChange = calculateChange(totalRevenue, lastMonthRevenue);
+        String bookingChange = calculateChange(totalMonthlyBookings, lastMonthBookings);
+        String guestChange = calculateChange(totalGuests, lastMonthGuests);
+
+
+        // ===============================
+        // ROOMS OCCUPIED TODAY
+        // ===============================
+        int roomsOccupiedToday = repo.getRoomsOccupiedToday(ownerId);
+
+
+        // ===============================
+        // FINAL RESPONSE OBJECT
+        // ===============================
         response.put("totalMonthlyBookings", totalMonthlyBookings);
         response.put("totalGuests", totalGuests);
         response.put("totalRevenue", totalRevenue);
+
+        response.put("revenueDifference", revenueChange);
+        response.put("bookingDifference", bookingChange);
+        response.put("guestDifference", guestChange);
+
+        response.put("roomsOccupied", roomsOccupiedToday);
+
         response.put("hotelWiseBookings", hotelWiseList);
 
         return response;
+    }
+
+
+
+    // ===============================
+    // PERCENTAGE CHANGE CALCULATOR
+    // ===============================
+    private String calculateChange(double current, double last) {
+
+        if (last == 0 && current == 0) return "0% same as last month";
+
+        if (last == 0) return "+100% increased from last month"; // Edge case
+
+        double change = ((current - last) / last) * 100.0;
+        String percent = String.format("%.2f", Math.abs(change));
+
+        return change >= 0
+                ? "+" + percent + "% increased from last month"
+                : "-" + percent + "% decreased from last month";
     }
 }
