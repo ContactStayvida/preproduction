@@ -14,15 +14,17 @@ public class ProfileRepository {
     public Profile createOrUpdate(Profile profile) {
 
         String sql = """
-            INSERT INTO profile (user_ID, name, phone_number, address, bio)
-            VALUES (?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                name = VALUES(name),
-                phone_number = VALUES(phone_number),
-                address = VALUES(address),
-                bio = VALUES(bio),
-                updated_at = CURRENT_TIMESTAMP
-        """;
+    INSERT INTO profile (user_ID, name, phone_number, address, bio, gender)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+        name = VALUES(name),
+        phone_number = VALUES(phone_number),
+        address = VALUES(address),
+        bio = VALUES(bio),
+        gender = VALUES(gender),
+        updated_at = CURRENT_TIMESTAMP
+""";
+
 
         jdbcTemplate.update(
                 sql,
@@ -30,7 +32,9 @@ public class ProfileRepository {
                 profile.getName(),
                 profile.getPhoneNumber(),
                 profile.getAddress(),
-                profile.getBio()
+                profile.getBio(),
+                profile.getGender()
+
         );
 
         // return full profile including email + role
@@ -59,6 +63,7 @@ public class ProfileRepository {
             // extra fields from users table
             p.setEmail(rs.getString("email"));
             p.setRole(rs.getString("role"));
+            p.setGender(rs.getString("gender"));
 
             return p;
         }, userId);

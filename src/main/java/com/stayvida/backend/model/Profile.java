@@ -12,6 +12,7 @@ public class Profile {
     private LocalDateTime updatedAt;
     private String email;
     private String role;
+    private String gender;
 
 
     // Getter
@@ -75,5 +76,11 @@ public class Profile {
     }
     public void setRole(String role) {
         this.role = role;
+    }
+    public String getGender() {
+        return gender;
+    }
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 }
