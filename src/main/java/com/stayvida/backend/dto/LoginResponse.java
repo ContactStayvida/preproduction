@@ -7,6 +7,7 @@ public class LoginResponse {
     private String email;
     private String role;
     private String message;
+    private boolean profileExists;
 
 
     public LoginResponse() {
@@ -46,5 +47,11 @@ public class LoginResponse {
     public String getMessage() {
         return message;
     }
+    public boolean isProfileExists() {
+        return profileExists;
+    }   
+    public void setProfileExists(boolean profileExists) {
+        this.profileExists = profileExists;
+    }    
  
 }

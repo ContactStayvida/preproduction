@@ -71,5 +71,11 @@ public class ProfileRepository {
         return null; // return null when no data found
     }
 }
+public boolean profileExists(Long userId) {
+    String sql = "SELECT COUNT(*) FROM profile WHERE user_ID = ?";
+    Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId);
+    return count != null && count > 0;
+}
+
 
 }

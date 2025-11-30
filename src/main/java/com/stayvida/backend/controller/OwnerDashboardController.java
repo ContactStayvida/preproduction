@@ -49,6 +49,28 @@ public ResponseEntity<?> getActiveBookings(@PathVariable int ownerId) {
         return ApiResponse.serverError("Failed to fetch active bookings");
     }
 }
+@PutMapping("/booking/{bookingId}/status")
+public ResponseEntity<?> updateBookingStatus(
+        @PathVariable String bookingId,
+        @RequestParam String status) {
+    try {
+        boolean updated = dashboardService.updateBookingStatus(bookingId, status);
+
+        if (!updated) {
+            return ApiResponse.notFound("Booking not found");
+        }
+
+        return ApiResponse.success(null, "Booking status updated successfully");
+
+    } catch (IllegalArgumentException ex) {
+        return ApiResponse.badRequest(ex.getMessage());
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ApiResponse.serverError("Failed to update booking status");
+    }
+}
+
 
 
 }

@@ -17,6 +17,14 @@ public class OwnerDashboardService {
     @Autowired
     private JdbcTemplate jdbcTemplate;  // ✅ REQUIRED
 
+    private static final Set<String> VALID_BOOKING_STATUSES = Set.of(
+        "CheckIn",
+        "Confirmed",
+        "Cancelled",
+        "CheckedOut"
+    );
+
+
     
     // ===============================
     // MONTHLY BOOKING METRICS
@@ -141,7 +149,7 @@ public class OwnerDashboardService {
             INNER JOIN profile p ON b.user_ID = p.user_ID
             INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID
             WHERE h.owner_ID = ?
-            AND (b.checkOut >= CURDATE() OR b.payment_Status = 'Pending')
+            AND (b.checkOut >= CURDATE() OR b.payment_Status = 'Pending' OR b.booking_Status = 'Pending')
             ORDER BY b.checkIn ASC
         """;
 
@@ -179,4 +187,24 @@ public class OwnerDashboardService {
             return map;
         });
     }
+
+    public boolean updateBookingStatus(String bookingId, String newStatus) {
+
+    // Validate allowed values
+    List<String> allowed = Arrays.asList("CheckIn", "Confirmed", "Cancelled", "CheckedOut");
+
+    if (!allowed.contains(newStatus)) {
+        throw new IllegalArgumentException("Invalid booking status: " + newStatus);
+    }
+
+    String sql = "UPDATE bookings SET booking_Status = ?, updatedAt = NOW() WHERE booking_ID = ?";
+
+    int rows = jdbcTemplate.update(sql, newStatus, bookingId);
+
+    return rows > 0;
+}
+
+
+
+
 }
