@@ -70,7 +70,22 @@ public ResponseEntity<?> updateBookingStatus(
         return ApiResponse.serverError("Failed to update booking status");
     }
 }
+@GetMapping("/{ownerId}/all-bookings")
+public ResponseEntity<?> getAllBookings(@PathVariable int ownerId) {
+    try {
+        List<Map<String, Object>> data = dashboardService.getAllBookingsForOwner(ownerId);
 
+        if (data == null || data.isEmpty()) {
+            return ApiResponse.notFound("No bookings found");
+        }
+
+        return ApiResponse.success(data, "All bookings fetched successfully");
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ApiResponse.serverError("Failed to fetch all bookings");
+    }
+}
 
 
 }
