@@ -78,29 +78,22 @@ public class HotelRepository {
     }
       // ✅ Check hotel availability
     public boolean isHotelAvailable(int hotelId, LocalDate checkIn, LocalDate checkOut) {
-        String sql = """
-            SELECT COUNT(*) 
-            FROM rooms r
-            WHERE r.hotel_ID = ?
-            AND (
-                NOT EXISTS (
-                    SELECT 1 
-                    FROM bookings b
-                    WHERE b.room_ID = r.room_ID
-                      AND b.booking_Status <> 'Cancelled'
-                      AND b.checkIn < ? 
-                      AND b.checkOut > ?
-                )
-                OR EXISTS (
-                    SELECT 1 
-                    FROM bookings b
-                    WHERE b.room_ID = r.room_ID
-                      AND b.booking_Status = 'Cancelled'
-                      AND b.checkIn < ? 
-                      AND b.checkOut > ?
-                )
-            )
-        """;
+       String sql = """
+    SELECT COUNT(*)
+    FROM rooms r
+    WHERE r.hotel_ID = ?
+      AND NOT EXISTS (
+            SELECT 1
+            FROM bookings b
+            WHERE b.room_ID = r.room_ID
+              AND b.booking_Status NOT IN ('Cancelled', 'Checkout')
+              AND (
+                    (? > b.checkIn AND ? < b.checkOut)      -- condition 1
+                 OR (? > b.checkIn AND ? < b.checkOut)      -- condition 2
+              )
+      )
+""";
+
 
         Integer availableRoomCount = jdbcTemplate.queryForObject(
                 sql, Integer.class,
