@@ -27,7 +27,7 @@ public class OwnerDashboardController {
         }
     }
    @GetMapping("/{ownerId}/active-bookings")
-public ResponseEntity<?> getActiveBookings(@PathVariable int ownerId) {
+    public ResponseEntity<?> getActiveBookings(@PathVariable int ownerId) {
     try {
         List<Map<String, Object>> data = dashboardService.getActiveBookingsForOwner(ownerId);
 
@@ -84,6 +84,22 @@ public ResponseEntity<?> getAllBookings(@PathVariable int ownerId) {
     } catch (Exception e) {
         e.printStackTrace();
         return ApiResponse.serverError("Failed to fetch all bookings");
+    }
+}
+@GetMapping("/{ownerId}/upcoming-bookings")
+public ResponseEntity<?> getUpcomingBookings(@PathVariable int ownerId) {
+    try {
+        List<Map<String, Object>> data = dashboardService.getUpcomingBookings(ownerId);
+
+        if (data == null || data.isEmpty()) {
+            return ApiResponse.notFound("No upcoming bookings found");
+        }
+
+        return ApiResponse.success(data, "Upcoming bookings fetched successfully");
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ApiResponse.serverError("Failed to fetch upcoming bookings");
     }
 }
 

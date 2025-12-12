@@ -129,28 +129,39 @@ public class OwnerDashboardService {
     public List<Map<String, Object>> getActiveBookingsForOwner(int ownerId) {
 
         String sql = """
-            SELECT 
-                b.booking_ID,
-                b.user_ID,
-                b.hotel_ID,
-                b.room_ID,
-                b.booking_Status,
-                b.checkIn,
-                b.checkOut,
-                b.payment_Status,
-                b.payment_amount,
-                b.totalAmount,
-                b.tax_amount,
-                b.platformFee,
-                b.is_refundable,
-                p.name,
-                p.phone_number
-            FROM bookings b
-            INNER JOIN profile p ON b.user_ID = p.user_ID
-            INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID
-            WHERE h.owner_ID = ?
-            AND (b.checkOut >= CURDATE() OR b.payment_Status = 'Pending' OR b.booking_Status = 'Pending' OR b.booking_Status = 'Confirmed' OR b.booking_Status = 'CheckIn')
-            ORDER BY b.checkIn ASC
+        SELECT 
+        b.booking_ID,
+        b.user_ID,
+        b.hotel_ID,
+        b.room_ID,
+        b.booking_Status,
+        b.checkIn,
+        b.checkOut,
+        b.payment_Status,
+        b.payment_amount,
+        b.totalAmount,
+        b.tax_amount,
+        b.platformFee,
+        b.is_refundable,
+        b.name,
+        p.phone_number
+        FROM bookings b
+        INNER JOIN profile p ON b.user_ID = p.user_ID
+        INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID
+        WHERE h.owner_ID = ?
+        AND b.booking_Status != 'CheckOut'
+        AND (
+        -- 🔥 Priority conditions first
+        b.booking_Status = 'Pending'
+        OR b.payment_Status = 'Pending'
+
+        -- ✔ If NOT pending, then apply normal conditions
+        OR (
+        b.booking_Status IN ('Confirmed', 'CheckIn')
+        OR b.checkOut >= CURDATE()
+        )
+        )
+        ORDER BY b.checkIn ASC
         """;
 
         return jdbcTemplate.query(sql, new Object[]{ownerId}, (rs, rowNum) -> {
@@ -224,7 +235,7 @@ public List<Map<String, Object>> getAllBookingsForOwner(int ownerId) {
             b.tax_amount,
             b.platformFee,
             b.is_refundable,
-            p.name,
+            b.name,
             p.phone_number
         FROM bookings b
         INNER JOIN profile p ON b.user_ID = p.user_ID
@@ -274,7 +285,38 @@ public List<Map<String, Object>> getAllBookingsForOwner(int ownerId) {
     });
 }
 
+// ===============================
+// UPCOMING RECENT 5 BOOKINGS
+// ===============================
+public List<Map<String, Object>> getUpcomingBookings(int ownerId) {
 
+    String sql = """
+        SELECT 
+            b.booking_ID,
+            b.room_ID,
+            b.name,
+            b.checkIn,
+            b.booking_Status
+        FROM bookings b
+        INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID
+        WHERE h.owner_ID = ?
+          AND b.checkIn >= CURDATE()
+        ORDER BY b.checkIn ASC
+        LIMIT 5
+    """;
+
+    return jdbcTemplate.query(sql, new Object[]{ownerId}, (rs, rowNum) -> {
+        Map<String, Object> map = new LinkedHashMap<>();
+
+        map.put("booking_ID", rs.getString("booking_ID"));
+        map.put("room_ID", rs.getString("room_ID"));
+        map.put("name", rs.getString("name"));
+        map.put("checkIn", rs.getDate("checkIn"));
+        map.put("booking_Status", rs.getString("booking_Status"));
+
+        return map;
+    });
+}
 
 
 }
