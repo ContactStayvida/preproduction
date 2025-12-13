@@ -12,7 +12,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -29,15 +29,14 @@ public class User {
     @Column
     private LocalDateTime updatedAt;
 
-
     // Constructors
     public User() {
     }
 
-    public User(String email, String password,String role ,LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public User(String email, String password, String role, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.email = email;
         this.password = password;
-    
+
         this.role = role;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -46,11 +45,11 @@ public class User {
 
     // Getters & Setters
 
-    public Long getuserID() {
+    public int getuserID() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -71,29 +70,33 @@ public class User {
     }
 
     // public String getName() {
-    //     return name;
+    // return name;
     // }
     // public void setName(String name) {
-    //     this.name = name;
+    // this.name = name;
     // }
     public String getRole() {
         return role;
     }
+
     public void setRole(String role) {
         this.role = role;
     }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
+
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-
 
 }

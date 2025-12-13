@@ -25,9 +25,9 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         this.jwtUtil = jwtUtil;
     }
 
-     @Override
+    @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException {
+            Authentication authentication) throws IOException {
 
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
@@ -53,13 +53,15 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         }
 
         // 🧾 Generate JWT token
-        String token = jwtUtil.generateToken(email);
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getuserID(),
+                user.getRole());
 
         // 🎯 Return JSON response
         String jsonResponse = String.format(
-            "{\"success\":true,\"token\":\"%s\",\"userId\":\"%s\",\"email\":\"%s\",\"role\":\"%s\"}",
-            token, user.getuserID(), user.getEmail(), user.getRole()
-        );
+                "{\"success\":true,\"token\":\"%s\",\"userId\":\"%s\",\"email\":\"%s\",\"role\":\"%s\"}",
+                token, user.getuserID(), user.getEmail(), user.getRole());
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
