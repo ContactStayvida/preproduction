@@ -20,17 +20,15 @@ public class RegisterRepository {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-
     // Insert new hotel record
     public int saveHotel(Register register) {
 
         updateUserRoleIfNeeded(register.getOwner_ID());
 
         String sql = "INSERT INTO hotels (" +
-        "owner_ID, name, type, destination, isForEvent, description, phone_NO, tags, " +
-        "amenities, images, longitude, latitude, status, onArrivalPayment, remark, createdAt, updatedAt" +
-        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
-
+                "owner_ID, name, type, destination, isForEvent, description, phone_NO, country_code, tags, " +
+                "amenities, images, longitude, latitude, status, onArrivalPayment, remark, createdAt, updatedAt" +
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -45,28 +43,30 @@ public class RegisterRepository {
             ps.setString(6, register.getDescription());
             ps.setString(7, register.getPhone_NO());
 
+            // ✅ NEW FIELD
+            ps.setString(8, register.getCountry_code());
+
             try {
-                ps.setString(8, objectMapper.writeValueAsString(register.getTags()));
-                ps.setString(9, objectMapper.writeValueAsString(register.getAmenities()));
+                ps.setString(9, objectMapper.writeValueAsString(register.getTags()));
+                ps.setString(10, objectMapper.writeValueAsString(register.getAmenities()));
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Error converting JSON", e);
             }
 
-            ps.setString(10, register.getImages());
-            ps.setString(11, register.getLongitude());
-            ps.setString(12, register.getLatitude());
-        //  ---- default valuse applied for the following fields ----
-            ps.setString(13, "Pending");      // default status
-            ps.setBoolean(14, false);         // default onArrivalPayment
-            ps.setString(15, "New hotel added"); // default remark
+            ps.setString(11, register.getImages());
+            ps.setString(12, register.getLongitude());
+            ps.setString(13, register.getLatitude());
 
+            // defaults
+            ps.setString(14, "Pending");
+            ps.setBoolean(15, false);
+            ps.setString(16, "New hotel added");
 
             return ps;
         }, keyHolder);
 
         return keyHolder.getKey().intValue();
     }
-
 
     private void updateUserRoleIfNeeded(int ownerId) {
         String sqlCheck = "SELECT role FROM users WHERE user_ID = ?";
@@ -78,14 +78,14 @@ public class RegisterRepository {
             return null;
         }, ownerId);
 
-        if (role == null) return;
+        if (role == null)
+            return;
 
         if (role.equalsIgnoreCase("user")) {
             String sqlUpdate = "UPDATE users SET role = 'hotel_owner' WHERE user_ID = ?";
             jdbcTemplate.update(sqlUpdate, ownerId);
         }
     }
-
 
     public void updateHotelImage(int hotelId, String imageUrl) {
         String sql = "UPDATE hotels SET images = ?, updatedAt = NOW() WHERE hotel_ID = ?";

@@ -1,5 +1,6 @@
 package com.stayvida.backend.security;
 
+import java.util.List;
 import com.stayvida.backend.service.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,21 +23,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-                                    throws ServletException, IOException {
-                                        
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
+
         String path = request.getRequestURI();
 
         // ✅ Skip this filter for Supabase-admin routes
         if (path.startsWith("/api/admin")) {
             filterChain.doFilter(request, response);
             return;
-            
+
         }
         System.out.println("JwtAuthFilter triggered for: " + path);
-
-
 
         String authHeader = request.getHeader("Authorization");
 
@@ -45,10 +44,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (jwtUtil.validateToken(token)) {
                 String email = jwtUtil.extractEmail(token);
-
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, null);
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                int ownerId = (int) jwtUtil.extractClaim(token, "ID");
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(ownerId, // 👈
+                                                                                                                      // principal
+                        null,
+                        List.of() // authorities (add roles later)
+                );
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }

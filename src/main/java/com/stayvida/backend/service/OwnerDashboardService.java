@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.repository.OwnerDashboardRepository;
 
 @Service
@@ -198,7 +199,7 @@ public class OwnerDashboardService {
         });
     }
 
-    public boolean updateBookingStatus(String bookingId, String newStatus) {
+    public boolean updateBookingStatus(String bookingId, String newStatus, int ownerId) {
 
         // Validate allowed values
         List<String> allowed = Arrays.asList("CheckIn", "Confirmed", "Cancelled", "CheckedOut");
@@ -207,9 +208,9 @@ public class OwnerDashboardService {
             throw new IllegalArgumentException("Invalid booking status: " + newStatus);
         }
 
-        String sql = "UPDATE bookings SET booking_Status = ?, updatedAt = NOW() WHERE booking_ID = ?";
+        String sql = "UPDATE bookings b INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID SET b.booking_Status = ?, b.updatedAt = NOW() WHERE b.booking_ID = ? AND h.owner_ID = ?";
 
-        int rows = jdbcTemplate.update(sql, newStatus, bookingId);
+        int rows = jdbcTemplate.update(sql, newStatus, bookingId, ownerId);
 
         return rows > 0;
     }
@@ -317,7 +318,7 @@ public class OwnerDashboardService {
     // ===============================
     // OPEN BOOKING DETAILS
     // ===============================
-    public Map<String, Object> getBookingDetails(String bookingId) {
+    public Map<String, Object> getBookingDetails(String bookingId, int ownerId) {
 
         String sql = """
                     SELECT
@@ -343,57 +344,58 @@ public class OwnerDashboardService {
                     INNER JOIN profile p ON b.user_ID = p.user_ID
                     INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID
                     INNER JOIN rooms r ON b.room_ID = r.room_ID
-                    WHERE b.booking_ID = ?
+                    WHERE b.booking_ID = ? and h.owner_ID = ?
                 """;
 
-        List<Map<String, Object>> result = jdbcTemplate.query(sql, new Object[] { bookingId }, (rs, rowNum) -> {
+        List<Map<String, Object>> result = jdbcTemplate.query(sql, new Object[] { bookingId, ownerId },
+                (rs, rowNum) -> {
 
-            Map<String, Object> map = new LinkedHashMap<>();
+                    Map<String, Object> map = new LinkedHashMap<>();
 
-            double totalAmount = rs.getDouble("totalAmount");
-            double taxAmount = rs.getDouble("tax_amount");
-            double platformFee = rs.getDouble("platformFee");
-            double paid = rs.getDouble("payment_amount");
+                    double totalAmount = rs.getDouble("totalAmount");
+                    double taxAmount = rs.getDouble("tax_amount");
+                    double platformFee = rs.getDouble("platformFee");
+                    double paid = rs.getDouble("payment_amount");
 
-            // Platform calculations
-            double platformBase = totalAmount - taxAmount - platformFee;
-            double commission = platformBase * 0.20;
-            double payableAfterCut = platformBase - commission;
+                    // Platform calculations
+                    double platformBase = totalAmount - taxAmount - platformFee;
+                    double commission = platformBase * 0.20;
+                    double payableAfterCut = platformBase - commission;
 
-            double paymentLeft = totalAmount - paid;
+                    double paymentLeft = totalAmount - paid;
 
-            // Booking details
-            map.put("booking_ID", rs.getString("booking_ID"));
-            map.put("booking_Status", rs.getString("booking_Status"));
-            map.put("checkIn", rs.getDate("checkIn"));
-            map.put("checkOut", rs.getDate("checkOut"));
+                    // Booking details
+                    map.put("booking_ID", rs.getString("booking_ID"));
+                    map.put("booking_Status", rs.getString("booking_Status"));
+                    map.put("checkIn", rs.getDate("checkIn"));
+                    map.put("checkOut", rs.getDate("checkOut"));
 
-            // Payment details
-            map.put("payment_Status", rs.getString("payment_Status"));
-            map.put("payment_amount", paid);
-            map.put("payment_left", paymentLeft);
-            map.put("is_refundable", rs.getBoolean("is_refundable"));
-            map.put("Gross Amount", totalAmount);
-            map.put("tax_amount", taxAmount);
-            map.put("platformFee", platformFee);
-            map.put("commission", commission);
-            map.put("Net Amount", payableAfterCut);
+                    // Payment details
+                    map.put("payment_Status", rs.getString("payment_Status"));
+                    map.put("payment_amount", paid);
+                    map.put("payment_left", paymentLeft);
+                    map.put("is_refundable", rs.getBoolean("is_refundable"));
+                    map.put("Gross Amount", totalAmount);
+                    map.put("tax_amount", taxAmount);
+                    map.put("platformFee", platformFee);
+                    map.put("commission", commission);
+                    map.put("Net Amount", payableAfterCut);
 
-            // User details
-            map.put("user_ID", rs.getInt("user_ID"));
-            map.put("name", rs.getString("name"));
-            map.put("phone_number", rs.getString("phone_number"));
+                    // User details
+                    map.put("user_ID", rs.getInt("user_ID"));
+                    map.put("name", rs.getString("name"));
+                    map.put("phone_number", rs.getString("phone_number"));
 
-            // Hotel details
-            map.put("hotel_ID", rs.getInt("hotel_ID"));
-            map.put("hotel_name", rs.getString("hotel_name"));
+                    // Hotel details
+                    map.put("hotel_ID", rs.getInt("hotel_ID"));
+                    map.put("hotel_name", rs.getString("hotel_name"));
 
-            // Room details
-            map.put("room_ID", rs.getString("room_ID"));
-            map.put("room_Type", rs.getString("room_Type"));
+                    // Room details
+                    map.put("room_ID", rs.getString("room_ID"));
+                    map.put("room_Type", rs.getString("room_Type"));
 
-            return map;
-        });
+                    return map;
+                });
 
         return result.isEmpty() ? null : result.get(0);
     }
@@ -401,6 +403,218 @@ public class OwnerDashboardService {
     public boolean deleteRoom(int ownerId, String roomId, int hotel_ID) {
         String sql = "DELETE r FROM rooms r INNER JOIN hotels h ON r.hotel_ID = h.hotel_ID WHERE h.owner_ID = ?  AND r.room_ID = ? AND r.hotel_ID = ?;";
         return jdbcTemplate.update(sql, ownerId, roomId, hotel_ID) > 0;
+    }
+
+    public boolean updateRoom(String roomId, int ownerId, Map<String, Object> updates) {
+
+        if (updates == null || updates.isEmpty()) {
+            throw new IllegalArgumentException("No fields provided for update");
+        }
+
+        StringBuilder sql = new StringBuilder("""
+                    UPDATE rooms r
+                    INNER JOIN hotels h ON r.hotel_ID = h.hotel_ID
+                    SET
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        // Allowed fields for partial update
+        if (updates.containsKey("roomType")) {
+            sql.append(" r.room_Type = ?,");
+            params.add(updates.get("roomType"));
+        }
+
+        if (updates.containsKey("features")) {
+            sql.append(" r.features = ?,");
+            params.add(updates.get("features")); // JSON string
+        }
+
+        if (updates.containsKey("images")) {
+            sql.append(" r.images = ?,");
+            params.add(updates.get("images")); // JSON string of image names
+        }
+
+        if (updates.containsKey("price")) {
+            sql.append(" r.price = ?,");
+            params.add(updates.get("price"));
+        }
+
+        if (updates.containsKey("maxAdults")) {
+            sql.append(" r.max_adults = ?,");
+            params.add(updates.get("maxAdults"));
+        }
+
+        if (updates.containsKey("maxChildren")) {
+            sql.append(" r.max_children = ?,");
+            params.add(updates.get("maxChildren"));
+        }
+
+        if (updates.containsKey("bedCount")) {
+            sql.append(" r.bed_count = ?,");
+            params.add(updates.get("bedCount"));
+        }
+
+        // Remove trailing comma
+        if (sql.charAt(sql.length() - 1) == ',') {
+            sql.deleteCharAt(sql.length() - 1);
+        }
+
+        // Always update timestamp
+        sql.append(", r.updatedAt = NOW()");
+
+        // Ownership + room condition
+        sql.append(" WHERE r.room_ID = ? AND h.owner_ID = ?");
+        params.add(roomId);
+        params.add(ownerId);
+
+        int rows = jdbcTemplate.update(sql.toString(), params.toArray());
+        return rows > 0;
+    }
+
+    public boolean updateHotel(int hotelId, int ownerId, Map<String, Object> updates) {
+
+        if (updates == null || updates.isEmpty()) {
+            throw new IllegalArgumentException("No fields provided for update");
+        }
+
+        StringBuilder sql = new StringBuilder("""
+                    UPDATE hotels h
+                    SET
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (updates.containsKey("name")) {
+            sql.append(" h.name = ?,");
+            params.add(updates.get("name"));
+        }
+        if (updates.containsKey("type")) {
+            sql.append(" h.type = ?,");
+            params.add(updates.get("type"));
+        }
+        if (updates.containsKey("destination")) {
+            sql.append(" h.destination = ?,");
+            params.add(updates.get("destination"));
+        }
+        if (updates.containsKey("isForEvent")) {
+            sql.append(" h.isForEvent = ?,");
+            params.add(updates.get("isForEvent"));
+        }
+        if (updates.containsKey("description")) {
+            sql.append(" h.description = ?,");
+            params.add(updates.get("description"));
+        }
+        if (updates.containsKey("phone_NO")) {
+            sql.append(" h.phone_NO = ?,");
+            params.add(updates.get("phone_NO"));
+        }
+        if (updates.containsKey("tags")) {
+            sql.append(" h.tags = ?,");
+            params.add(updates.get("tags"));
+        }
+        if (updates.containsKey("amenities")) {
+            sql.append(" h.amenities = ?,");
+            params.add(updates.get("amenities"));
+        }
+        if (updates.containsKey("longitude")) {
+            sql.append(" h.longitude = ?,");
+            params.add(updates.get("longitude"));
+        }
+        if (updates.containsKey("latitude")) {
+            sql.append(" h.latitude = ?,");
+            params.add(updates.get("latitude"));
+        }
+        if (updates.containsKey("images")) {
+            sql.append(" h.images = ?,");
+            params.add(updates.get("images"));
+        }
+
+        // Remove trailing comma
+        if (sql.charAt(sql.length() - 1) == ',') {
+            sql.deleteCharAt(sql.length() - 1);
+        }
+
+        // Always update timestamp
+        sql.append(", h.updatedAt = NOW()");
+
+        // Ownership + hotel condition
+        sql.append(" WHERE h.hotel_ID = ? AND h.owner_ID = ?");
+        params.add(hotelId);
+        params.add(ownerId);
+
+        int rows = jdbcTemplate.update(sql.toString(), params.toArray());
+        return rows > 0;
+    }
+
+    public List<Map<String, Object>> getHotelsByOwner(int ownerId) {
+
+        String sql = """
+                SELECT
+                    hotel_ID,
+                    name,
+                    type,
+                    destination,
+                    description,
+                    phone_no,
+                    tags,
+                    images,
+                    amenities,
+                    longitude,
+                    latitude,
+                    status,
+                    remark
+                FROM hotels
+                WHERE owner_ID = ?
+                ORDER BY hotel_ID DESC
+                """;
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        return jdbcTemplate.query(sql, new Object[] { ownerId }, (rs, rowNum) -> {
+
+            Map<String, Object> map = new LinkedHashMap<>();
+
+            map.put("hotel_ID", rs.getInt("hotel_ID"));
+            map.put("name", rs.getString("name"));
+            map.put("type", rs.getString("type"));
+            map.put("destination", rs.getString("destination"));
+            map.put("description", rs.getString("description"));
+            map.put("phone_no", rs.getString("phone_no"));
+            map.put("longitude", rs.getString("longitude"));
+            map.put("latitude", rs.getString("latitude"));
+            map.put("status", rs.getString("status"));
+            map.put("remark", rs.getString("remark"));
+
+            // 🔹 Parse tags
+            String tagsJson = rs.getString("tags");
+            try {
+                map.put("tags",
+                        tagsJson != null ? mapper.readValue(tagsJson, List.class) : List.of());
+            } catch (Exception e) {
+                map.put("tags", List.of());
+            }
+
+            // 🔹 Parse amenities
+            String amenitiesJson = rs.getString("amenities");
+            try {
+                map.put("amenities",
+                        amenitiesJson != null ? mapper.readValue(amenitiesJson, List.class) : List.of());
+            } catch (Exception e) {
+                map.put("amenities", List.of());
+            }
+
+            // 🔹 Parse images (filenames only)
+            String imagesJson = rs.getString("images");
+            try {
+                map.put("images",
+                        imagesJson != null ? mapper.readValue(imagesJson, List.class) : List.of());
+            } catch (Exception e) {
+                map.put("images", List.of());
+            }
+
+            return map;
+        });
     }
 
 }

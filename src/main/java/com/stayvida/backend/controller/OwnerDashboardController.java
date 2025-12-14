@@ -1,10 +1,16 @@
 package com.stayvida.backend.controller;
 
 import java.util.*;
+import org.springframework.beans.factory.annotation.Value;
+import com.stayvida.backend.service.CloudinaryService;
 import com.stayvida.backend.service.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.OwnerDashboardService;
 
@@ -16,12 +22,22 @@ public class OwnerDashboardController {
     private OwnerDashboardService dashboardService;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private CloudinaryService cloudinaryService;
 
-    @GetMapping("/{ownerId}/monthly-bookings")
-    public ResponseEntity<?> getMonthlyBookings(@PathVariable int ownerId) {
+    @GetMapping("/monthly-bookings")
+    public ResponseEntity<?> getMonthlyBookings() {
         try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
             Map<String, Object> data = dashboardService.getMonthlyBookingsForOwner(ownerId);
-            return ApiResponse.success(data, "Monthly bookings fetched successfully");
+
+            return ApiResponse.success(
+                    data,
+                    "Monthly bookings fetched successfully");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -29,25 +45,26 @@ public class OwnerDashboardController {
         }
     }
 
-    @GetMapping("/{ownerId}/active-bookings")
-    public ResponseEntity<?> getActiveBookings(@PathVariable int ownerId) {
+    @GetMapping("/active-bookings")
+    public ResponseEntity<?> getActiveBookings() {
         try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
             List<Map<String, Object>> data = dashboardService.getActiveBookingsForOwner(ownerId);
 
-            // ⭐ Case 1: No bookings found
             if (data == null || data.isEmpty()) {
                 return ApiResponse.notFound("No booking found");
             }
 
-            // ⭐ Case 2: Bookings found
             return ApiResponse.success(
                     data,
                     "Active bookings fetched successfully");
 
         } catch (Exception e) {
             e.printStackTrace();
-
-            // ⭐ Case 3: Error occurred
             return ApiResponse.serverError("Failed to fetch active bookings");
         }
     }
@@ -57,7 +74,11 @@ public class OwnerDashboardController {
             @PathVariable String bookingId,
             @RequestParam String status) {
         try {
-            boolean updated = dashboardService.updateBookingStatus(bookingId, status);
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+            boolean updated = dashboardService.updateBookingStatus(bookingId, status, ownerId);
 
             if (!updated) {
                 return ApiResponse.notFound("Booking not found");
@@ -74,16 +95,23 @@ public class OwnerDashboardController {
         }
     }
 
-    @GetMapping("/{ownerId}/all-bookings")
-    public ResponseEntity<?> getAllBookings(@PathVariable int ownerId) {
+    @GetMapping("/all-bookings")
+    public ResponseEntity<?> getAllBookings() {
         try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
             List<Map<String, Object>> data = dashboardService.getAllBookingsForOwner(ownerId);
 
             if (data == null || data.isEmpty()) {
                 return ApiResponse.notFound("No bookings found");
             }
 
-            return ApiResponse.success(data, "All bookings fetched successfully");
+            return ApiResponse.success(
+                    data,
+                    "All bookings fetched successfully");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -91,16 +119,23 @@ public class OwnerDashboardController {
         }
     }
 
-    @GetMapping("/{ownerId}/upcoming-bookings")
-    public ResponseEntity<?> getUpcomingBookings(@PathVariable int ownerId) {
+    @GetMapping("/upcoming-bookings")
+    public ResponseEntity<?> getUpcomingBookings() {
         try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
             List<Map<String, Object>> data = dashboardService.getUpcomingBookings(ownerId);
 
             if (data == null || data.isEmpty()) {
                 return ApiResponse.notFound("No upcoming bookings found");
             }
 
-            return ApiResponse.success(data, "Upcoming bookings fetched successfully");
+            return ApiResponse.success(
+                    data,
+                    "Upcoming bookings fetched successfully");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -111,13 +146,20 @@ public class OwnerDashboardController {
     @GetMapping("/{bookingId}/details")
     public ResponseEntity<?> getBookingDetails(@PathVariable String bookingId) {
         try {
-            Map<String, Object> data = dashboardService.getBookingDetails(bookingId);
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
+            Map<String, Object> data = dashboardService.getBookingDetails(bookingId, ownerId);
 
             if (data == null) {
                 return ApiResponse.notFound("Booking not found");
             }
 
-            return ApiResponse.success(data, "Booking details fetched successfully");
+            return ApiResponse.success(
+                    data,
+                    "Booking details fetched successfully");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -128,20 +170,14 @@ public class OwnerDashboardController {
     @DeleteMapping("/{roomId}/{hotelId}/delete-room")
     public ResponseEntity<?> deleteRoom(
             @PathVariable String roomId,
-            @PathVariable int hotelId,
-            @RequestHeader("Authorization") String authHeader) {
+            @PathVariable int hotelId) {
 
         try {
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ApiResponse.unauthorized("Missing or invalid Authorization header");
-            }
-
-            String token = authHeader.substring(7);
-            if (!jwtUtil.validateToken(token)) {
-                return ApiResponse.unauthorized("Invalid token");
-            }
-
-            int ownerId = (int) jwtUtil.extractClaim(token, "ID"); // extract ownerId from JWT
+            // 🔐 Get ownerId from SecurityContext (global JWT)
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
 
             boolean deleted = dashboardService.deleteRoom(ownerId, roomId, hotelId);
 
@@ -149,17 +185,203 @@ public class OwnerDashboardController {
                 return ApiResponse.notFound("Room not found");
             }
 
-            Map<String, Object> response = Map.of(
-                    "roomId", roomId,
-                    "deleted", true,
-                    "hotelId", hotelId,
-                    "ownerId", ownerId);
-
-            return ApiResponse.success(response, "Room deleted successfully");
+            return ApiResponse.success(
+                    Map.of(
+                            "roomId", roomId,
+                            "deleted", true,
+                            "hotelId", hotelId,
+                            "ownerId", ownerId),
+                    "Room deleted successfully");
 
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.serverError("Failed to delete room");
         }
     }
+
+    @PutMapping("/rooms/{roomId}")
+    public ResponseEntity<?> updateRoomWithImages(
+            @PathVariable String roomId,
+            @RequestParam(required = false) String roomType,
+            @RequestParam(required = false) String features, // JSON string
+            @RequestParam(required = false) MultipartFile[] images,
+            @RequestParam(required = false) Integer price,
+            @RequestParam(required = false) Integer maxAdults,
+            @RequestParam(required = false) Integer maxChildren,
+            @RequestParam(required = false) Integer bedCount) {
+        try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
+            Map<String, Object> updates = new HashMap<>();
+
+            if (roomType != null)
+                updates.put("roomType", roomType);
+            if (features != null)
+                updates.put("features", features);
+            if (price != null)
+                updates.put("price", price);
+            if (maxAdults != null)
+                updates.put("maxAdults", maxAdults);
+            if (maxChildren != null)
+                updates.put("maxChildren", maxChildren);
+            if (bedCount != null)
+                updates.put("bedCount", bedCount);
+
+            // Handle images upload if provided
+            if (images != null && images.length > 0) {
+                List<String> imageNames = new ArrayList<>();
+                List<String> imageUrls = new ArrayList<>();
+
+                for (MultipartFile file : images) {
+                    if (file.isEmpty())
+                        continue;
+
+                    String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+                    // Upload to Cloudinary
+                    Map uploadResult = cloudinaryService.uploadImage(file, fileName);
+
+                    imageNames.add(fileName);
+                    imageUrls.add(uploadResult.get("secure_url").toString());
+                }
+
+                if (!imageNames.isEmpty()) {
+                    // Store JSON string of image names in DB
+                    ObjectMapper mapper = new ObjectMapper();
+                    updates.put("images", mapper.writeValueAsString(imageNames));
+
+                    // Optional: include URLs in response
+                    updates.put("imageUrls", imageUrls);
+                }
+            }
+
+            if (updates.isEmpty()) {
+                return ApiResponse.badRequest("No fields provided for update");
+            }
+
+            boolean updated = dashboardService.updateRoom(roomId, ownerId, updates);
+
+            if (!updated) {
+                return ApiResponse.notFound("Room not found or not owned by you");
+            }
+
+            return ApiResponse.success(updates, "Room updated successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to update room: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/hotels/{hotelId}")
+    public ResponseEntity<?> updateHotel(
+            @PathVariable int hotelId,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String type, // 'Hotel','Resort','Villa','Guest House'
+            @RequestParam(required = false) String destination,
+            @RequestParam(required = false) Boolean isForEvent,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String phone_NO,
+            @RequestParam(required = false) String tags, // JSON string
+            @RequestParam(required = false) MultipartFile image, // Single file
+            @RequestParam(required = false) String amenities, // JSON string
+            @RequestParam(required = false) String longitude,
+            @RequestParam(required = false) String latitude) {
+        try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
+            Map<String, Object> updates = new HashMap<>();
+
+            if (name != null)
+                updates.put("name", name);
+            if (type != null)
+                updates.put("type", type);
+            if (destination != null)
+                updates.put("destination", destination);
+            if (isForEvent != null)
+                updates.put("isForEvent", isForEvent);
+            if (description != null)
+                updates.put("description", description);
+            if (phone_NO != null)
+                updates.put("phone_NO", phone_NO);
+            if (tags != null)
+                updates.put("tags", tags);
+            if (amenities != null)
+                updates.put("amenities", amenities);
+            if (longitude != null)
+                updates.put("longitude", longitude);
+            if (latitude != null)
+                updates.put("latitude", latitude);
+
+            // Handle image if provided
+            if (image != null && !image.isEmpty()) {
+                String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
+                Map uploadResult = cloudinaryService.uploadImage(image, fileName);
+                updates.put("images", fileName); // Save filename in DB
+                updates.put("imageUrl", uploadResult.get("secure_url").toString()); // optional for response
+            }
+
+            if (updates.isEmpty()) {
+                return ApiResponse.badRequest("No fields provided for update");
+            }
+
+            boolean updated = dashboardService.updateHotel(hotelId, ownerId, updates);
+
+            if (!updated) {
+                return ApiResponse.notFound("Hotel not found or not owned by you");
+            }
+
+            return ApiResponse.success(updates, "Hotel updated successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to update hotel: " + e.getMessage());
+        }
+    }
+
+    @Value("${cloudinary.urlPrefix}")
+    private String cloudinaryPrefix;
+
+    @GetMapping("/hotels-profile")
+    public ResponseEntity<?> getOwnerHotels() {
+        try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
+            List<Map<String, Object>> hotels = dashboardService.getHotelsByOwner(ownerId);
+
+            if (hotels == null || hotels.isEmpty()) {
+                return ApiResponse.notFound("No hotels found");
+            }
+
+            // 🔗 Add Cloudinary prefix to images
+            hotels.forEach(hotel -> {
+                Object imagesObj = hotel.get("images");
+                if (imagesObj instanceof List<?> images) {
+                    List<String> fullUrls = images.stream()
+                            .filter(Objects::nonNull)
+                            .map(img -> img.toString().startsWith("http")
+                                    ? img.toString()
+                                    : cloudinaryPrefix + img)
+                            .toList();
+                    hotel.put("images", fullUrls);
+                }
+            });
+
+            return ApiResponse.success(hotels, "Hotels fetched successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to fetch hotels");
+        }
+    }
+
 }
