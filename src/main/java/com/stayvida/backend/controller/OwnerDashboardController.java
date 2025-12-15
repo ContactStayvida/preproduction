@@ -285,6 +285,7 @@ public class OwnerDashboardController {
             @RequestParam(required = false) Boolean isForEvent,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String phone_NO,
+            @RequestParam(required = false) String country_code,
             @RequestParam(required = false) String tags, // JSON string
             @RequestParam(required = false) MultipartFile image, // Single file
             @RequestParam(required = false) String amenities, // JSON string
@@ -310,6 +311,8 @@ public class OwnerDashboardController {
                 updates.put("description", description);
             if (phone_NO != null)
                 updates.put("phone_NO", phone_NO);
+            if (country_code != null)
+                updates.put("country_code", country_code);
             if (tags != null)
                 updates.put("tags", tags);
             if (amenities != null)
