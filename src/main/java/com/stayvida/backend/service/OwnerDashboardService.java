@@ -601,7 +601,7 @@ public class OwnerDashboardService {
                 map.put("tags", List.of());
             }
 
-            // 🔹 Parse amenities
+            // 🔹 Parse amenities.
             String amenitiesJson = rs.getString("amenities");
             try {
                 map.put("amenities",
