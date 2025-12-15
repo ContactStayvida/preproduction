@@ -585,7 +585,6 @@ public class OwnerDashboardService {
             map.put("type", rs.getString("type"));
             map.put("destination", rs.getString("destination"));
             map.put("description", rs.getString("description"));
-            map.put("country_code", rs.getString("country_code"));
             map.put("phone_no", phoneNo);
             map.put("longitude", rs.getString("longitude"));
             map.put("latitude", rs.getString("latitude"));
