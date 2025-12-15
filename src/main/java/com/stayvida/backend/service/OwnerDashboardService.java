@@ -605,11 +605,12 @@ public class OwnerDashboardService {
             }
 
             // 🔹 Parse images (filenames only)
-            String imagesJson = rs.getString("images");
-            try {
-                map.put("images",
-                        imagesJson != null ? mapper.readValue(imagesJson, List.class) : List.of());
-            } catch (Exception e) {
+            // 🔹 Parse images (single image per row)
+            String image = rs.getString("images");
+
+            if (image != null && !image.isBlank()) {
+                map.put("images", List.of(image));
+            } else {
                 map.put("images", List.of());
             }
 
