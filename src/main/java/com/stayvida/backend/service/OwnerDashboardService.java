@@ -560,6 +560,7 @@ public class OwnerDashboardService {
                     type,
                     destination,
                     description,
+                    country_code,
                     phone_no,
                     tags,
                     images,
@@ -576,7 +577,7 @@ public class OwnerDashboardService {
         ObjectMapper mapper = new ObjectMapper();
 
         return jdbcTemplate.query(sql, new Object[] { ownerId }, (rs, rowNum) -> {
-
+            String phoneNo = rs.getString("country_code") + "-" + rs.getString("phone_no");
             Map<String, Object> map = new LinkedHashMap<>();
 
             map.put("hotel_ID", rs.getInt("hotel_ID"));
@@ -584,7 +585,8 @@ public class OwnerDashboardService {
             map.put("type", rs.getString("type"));
             map.put("destination", rs.getString("destination"));
             map.put("description", rs.getString("description"));
-            map.put("phone_no", rs.getString("phone_no"));
+            map.put("country_code", rs.getString("country_code"));
+            map.put("phone_no", phoneNo);
             map.put("longitude", rs.getString("longitude"));
             map.put("latitude", rs.getString("latitude"));
             map.put("status", rs.getString("status"));
