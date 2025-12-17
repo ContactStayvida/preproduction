@@ -19,18 +19,19 @@ import java.util.List;
 @Repository
 public class HotelRepository {
 
-   @Autowired
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     // 🧭 Search hotels by location, availability & fetch average rating dynamically
-    public List<Hotel> searchHotels(String destination, String checkIn, String checkOut, int adultCapacity, int childrenCapacity) {
+    public List<Hotel> searchHotels(String destination, String checkIn, String checkOut, int adultCapacity,
+            int childrenCapacity) {
         String sql = """
-            SELECT h.*, 
-                   (SELECT MIN(price) FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price,
-                   (SELECT AVG(rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating
-            FROM hotels h 
-            WHERE h.destination = ? AND h.status = 'Verified'
-        """;
+                    SELECT h.*,
+                           (SELECT MIN(price) FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price,
+                           (SELECT AVG(rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating
+                    FROM hotels h
+                    WHERE h.destination = ? AND h.status = 'Verified'
+                """;
 
         LocalDate checkInDate = LocalDate.parse(checkIn);
         LocalDate checkOutDate = LocalDate.parse(checkOut);
@@ -44,7 +45,8 @@ public class HotelRepository {
 
             // ⬇️ Use average rating (from rating table) instead of hotels.rating
             Double avgRating = rs.getDouble("avg_rating");
-            if (rs.wasNull()) avgRating = 0.0;
+            if (rs.wasNull())
+                avgRating = 0.0;
             hotel.setRating(avgRating);
 
             hotel.setForEvent(rs.getBoolean("isForEvent"));
@@ -67,45 +69,45 @@ public class HotelRepository {
 
     // 📘 Helper to parse JSON string → List<String>
     private List<String> parseJsonArray(String json) {
-        if (json == null || json.isEmpty()) return new ArrayList<>();
+        if (json == null || json.isEmpty())
+            return new ArrayList<>();
         try {
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(json, new TypeReference<List<String>>() {});
+            return mapper.readValue(json, new TypeReference<List<String>>() {
+            });
         } catch (Exception e) {
             e.printStackTrace();
             return new ArrayList<>();
         }
     }
-      // ✅ Check hotel availability
-    public boolean isHotelAvailable(int hotelId, LocalDate checkIn, LocalDate checkOut) {
-       String sql = """
-    SELECT COUNT(*)
-    FROM rooms r
-    WHERE r.hotel_ID = ?
-      AND NOT EXISTS (
-            SELECT 1
-            FROM bookings b
-            WHERE b.room_ID = r.room_ID
-              AND b.booking_Status NOT IN ('Cancelled', 'Checkout')
-              AND (
-                    (? > b.checkIn AND ? < b.checkOut)      -- condition 1
-                 OR (? > b.checkIn AND ? < b.checkOut)      -- condition 2
-              )
-      )
-""";
 
+    // ✅ Check hotel availability
+    // ✅ Check hotel availability
+    public boolean isHotelAvailable(int hotelId, LocalDate checkIN, LocalDate checkOut) {
+        String sql = """
+                SELECT COUNT(*)
+                FROM rooms r
+                WHERE r.hotel_ID = ?
+                  AND r.isEnable = true
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM bookings b
+                        WHERE b.room_ID = r.room_ID
+                          AND b.booking_Status NOT IN ('Cancelled', 'CheckedOut')
+                          AND NOT (
+                                b.checkOut < ?  -- booking ends before requested check-in
+                             OR b.checkIn > ?   -- booking starts after requested check-out
+                          )
+                  )
+                """;
 
         Integer availableRoomCount = jdbcTemplate.queryForObject(
                 sql, Integer.class,
                 hotelId,
-                checkOut, checkIn,
-                checkOut, checkIn
-        );
+                checkIN, checkOut);
 
         return availableRoomCount != null && availableRoomCount > 0;
     }
-
-
 
     public int updateVerificationStatus(int hotelId, String status, String remark) {
         String sql = "UPDATE hotels SET status = ?, remark = ? WHERE hotel_ID = ?";
@@ -130,7 +132,5 @@ public class HotelRepository {
             return hotel;
         });
     }
-
-
 
 }
