@@ -107,7 +107,7 @@ public class RoomRepository {
 
         // --- Fetch Only Available Rooms ---
         String roomSql = """
-                SELECT r.room_ID, r.hotel_ID, r.room_Type, r.features, r.images,
+                SELECT r.room_ID, r.room_NO, r.hotel_ID, r.room_Type, r.features, r.images,
                        r.price, r.max_adults, r.max_children, r.bed_count
                 FROM rooms r
                 WHERE r.hotel_ID = ?
@@ -135,6 +135,7 @@ public class RoomRepository {
                 (ResultSet rs, int rowNum) -> {
                     RoomDTO room = new RoomDTO(
                             rs.getString("room_ID"),
+                            rs.getInt("room_NO"),
                             rs.getInt("hotel_ID"),
                             rs.getString("room_Type"),
                             rs.getDouble("price"),

@@ -167,41 +167,37 @@ public class OwnerDashboardController {
         }
     }
 
-    @DeleteMapping("/{roomId}/{hotelId}/delete-room")
-    public ResponseEntity<?> deleteRoom(
+    @PatchMapping("/{roomId}/{hotelId}/status/{isEnable}") // enable-dissable
+    public ResponseEntity<?> updateRoomStatus(
             @PathVariable String roomId,
-            @PathVariable int hotelId) {
+            @PathVariable int hotelId,
+            @PathVariable boolean isEnable) {
 
-        try {
-            // 🔐 Get ownerId from SecurityContext (global JWT)
-            int ownerId = (int) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
-                    .getPrincipal();
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
 
-            boolean deleted = dashboardService.deleteRoom(ownerId, roomId, hotelId);
+        boolean updated = dashboardService.updateRoomStatus(
+                ownerId, roomId, hotelId, isEnable);
 
-            if (!deleted) {
-                return ApiResponse.notFound("Room not found");
-            }
-
-            return ApiResponse.success(
-                    Map.of(
-                            "roomId", roomId,
-                            "deleted", true,
-                            "hotelId", hotelId,
-                            "ownerId", ownerId),
-                    "Room deleted successfully");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ApiResponse.serverError("Failed to delete room");
+        if (!updated) {
+            return ApiResponse.notFound("Room not found or already in desired state");
         }
+
+        return ApiResponse.success(
+                Map.of(
+                        "roomId", roomId,
+                        "hotelId", hotelId,
+                        "isEnable", isEnable,
+                        "ownerId", ownerId),
+                isEnable ? "Room enabled successfully" : "Room disabled successfully");
     }
 
     @PutMapping("/rooms/{roomId}")
     public ResponseEntity<?> updateRoomWithImages(
             @PathVariable String roomId,
+            @RequestParam(required = false) String room_NO,
             @RequestParam(required = false) String roomType,
             @RequestParam(required = false) String features, // JSON string
             @RequestParam(required = false) MultipartFile[] images,
@@ -217,6 +213,8 @@ public class OwnerDashboardController {
 
             Map<String, Object> updates = new HashMap<>();
 
+            if (room_NO != null)
+                updates.put("room_NO", room_NO);
             if (roomType != null)
                 updates.put("roomType", roomType);
             if (features != null)
@@ -384,6 +382,44 @@ public class OwnerDashboardController {
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.serverError("Failed to fetch hotels");
+        }
+    }
+
+    @GetMapping("/allrooms")
+    public ResponseEntity<?> getallrooms() {
+        try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
+            List<Map<String, Object>> data = dashboardService.getallrooms(ownerId);
+
+            if (data == null || data.isEmpty()) {
+                return ApiResponse.notFound("No rooms found");
+            }
+
+            // 🔗 Add Cloudinary prefix to images
+            data.forEach(room -> {
+                Object imagesObj = room.get("images");
+                if (imagesObj instanceof List<?> images) {
+                    List<String> fullUrls = images.stream()
+                            .filter(Objects::nonNull)
+                            .map(img -> img.toString().startsWith("http")
+                                    ? img.toString()
+                                    : cloudinaryPrefix + img)
+                            .toList();
+                    room.put("images", fullUrls);
+                }
+            });
+
+            return ApiResponse.success(
+                    data,
+                    "All Rooms fetched successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to fetch rooms");
         }
     }
 

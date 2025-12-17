@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.repository.OwnerDashboardRepository;
 
@@ -33,73 +34,63 @@ public class OwnerDashboardService {
 
         List<Map<String, Object>> hotels = repo.getOwnerVerifiedHotels(ownerId);
 
-        List<Map<String, Object>> hotelWiseList = new ArrayList<>();
-        int totalMonthlyBookings = 0;
-        int totalGuests = 0;
-
-        for (Map<String, Object> hotel : hotels) {
-
-            int hotelId = (int) hotel.get("hotel_ID");
-            String hotelName = (String) hotel.get("name");
-
-            int hotelBookings = repo.getMonthlyBookingCount(hotelId);
-            totalMonthlyBookings += hotelBookings;
-
-            int hotelGuests = repo.getTotalGuestsForMonth(hotelId);
-            totalGuests += hotelGuests;
-
-            List<Map<String, Object>> rooms = repo.getRoomsByHotelId(hotelId);
-            List<Map<String, Object>> roomWiseList = new ArrayList<>();
-
-            for (Map<String, Object> room : rooms) {
-                String roomId = (String) room.get("room_ID");
-                String roomType = (String) room.get("room_Type");
-
-                int roomBookings = repo.getMonthlyBookingCountForRoom(roomId);
-
-                Map<String, Object> roomData = new LinkedHashMap<>();
-                roomData.put("roomId", roomId);
-                roomData.put("roomType", roomType);
-                roomData.put("monthlyBookings", roomBookings);
-
-                roomWiseList.add(roomData);
-            }
-
-            Map<String, Object> hotelData = new LinkedHashMap<>();
-            hotelData.put("hotelId", hotelId);
-            hotelData.put("hotelName", hotelName);
-            hotelData.put("monthlyBookings", hotelBookings);
-            hotelData.put("totalGuests", hotelGuests);
-            hotelData.put("rooms", roomWiseList);
-
-            hotelWiseList.add(hotelData);
+        // ✅ Safety check
+        if (hotels.isEmpty()) {
+            response.put("totalMonthlyBookings", 0);
+            response.put("bookingDifference", "0% same as last month");
+            response.put("roomsOccupied", 0);
+            response.put("totalGuests", 0);
+            response.put("guestDifference", "0% same as last month");
+            response.put("totalRevenue", 0.0);
+            response.put("revenueDifference", "0% same as last month");
+            response.put("hotelId", null);
+            response.put("hotelName", null);
+            return response;
         }
 
-        double totalRevenue = repo.getMonthlyRevenueForOwner(ownerId);
+        // ✅ ONLY ONE HOTEL
+        Map<String, Object> hotel = hotels.get(0);
 
+        int hotelId = (int) hotel.get("hotel_ID");
+        String hotelName = (String) hotel.get("name");
+
+        int monthlyBookings = repo.getMonthlyBookingCount(hotelId);
+        int totalGuests = repo.getTotalGuestsForMonth(hotelId);
+
+        double totalRevenue = repo.getMonthlyRevenueForOwner(ownerId);
         double lastMonthRevenue = repo.getLastMonthRevenueForOwner(ownerId);
         int lastMonthBookings = repo.getLastMonthBookingCount(ownerId);
         int lastMonthGuests = repo.getLastMonthGuestCount(ownerId);
 
-        String revenueChange = calculateChange(totalRevenue, lastMonthRevenue);
-        String bookingChange = calculateChange(totalMonthlyBookings, lastMonthBookings);
+        String bookingChange = calculateChange(monthlyBookings, lastMonthBookings);
         String guestChange = calculateChange(totalGuests, lastMonthGuests);
+        String revenueChange = calculateChange(totalRevenue, lastMonthRevenue);
 
         int roomsOccupiedToday = repo.getRoomsOccupiedToday(ownerId);
+        int totalrooms = repo.getTotalRoomCount(ownerId);
+        int AvailableRooms;
+        if (roomsOccupiedToday < totalrooms) {
+            AvailableRooms = totalrooms - roomsOccupiedToday;
+        } else {
+            AvailableRooms = 0;
+        }
 
-        // Ordered response
-        response.put("totalMonthlyBookings", totalMonthlyBookings);
+        // ✅ FINAL RESPONSE (exactly what you want)
+        response.put("hotelId", hotelId);
+        response.put("hotelName", hotelName);
+
+        response.put("totalMonthlyBookings", monthlyBookings);
         response.put("bookingDifference", bookingChange);
 
         response.put("roomsOccupied", roomsOccupiedToday);
+        response.put("AvailableRooms", AvailableRooms);
 
         response.put("totalGuests", totalGuests);
         response.put("guestDifference", guestChange);
 
         response.put("totalRevenue", totalRevenue);
         response.put("revenueDifference", revenueChange);
-
-        response.put("hotelWiseBookings", hotelWiseList);
+        response.put("last monthy", lastMonthRevenue);
 
         return response;
     }
@@ -131,6 +122,7 @@ public class OwnerDashboardService {
                 b.user_ID,
                 b.hotel_ID,
                 b.room_ID,
+                r.room_NO,
                 b.booking_Status,
                 b.checkIn,
                 b.checkOut,
@@ -145,6 +137,7 @@ public class OwnerDashboardService {
                 FROM bookings b
                 INNER JOIN profile p ON b.user_ID = p.user_ID
                 INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID
+                INNER JOIN rooms r on r.hotel_ID = h.hotel_ID
                 WHERE h.owner_ID = ?
                 AND b.booking_Status != 'CheckOut'
                 AND (
@@ -179,12 +172,13 @@ public class OwnerDashboardService {
             map.put("user_ID", rs.getInt("user_ID"));
             map.put("hotel_ID", rs.getInt("hotel_ID"));
             map.put("room_ID", rs.getString("room_ID"));
+            map.put("RoomNumber", rs.getInt("room_NO"));
             map.put("booking_Status", rs.getString("booking_Status"));
             map.put("checkIn", rs.getDate("checkIn"));
             map.put("checkOut", rs.getDate("checkOut"));
             // map.put("payment_Status", rs.getString("payment_Status"));
             // map.put("payment_amount", paid);
-            // map.put("payment_left", paymentLeft);
+            map.put("payment_left", paymentLeft);
             map.put("is_refundable", rs.getBoolean("is_refundable"));
             // map.put("totalAmount", totalAmount);
             // map.put("tax_amount", taxAmount);
@@ -223,6 +217,7 @@ public class OwnerDashboardService {
                         b.user_ID,
                         b.hotel_ID,
                         b.room_ID,
+                        b.room_NO,
                         b.booking_Status,
                         b.checkIn,
                         b.checkOut,
@@ -260,6 +255,7 @@ public class OwnerDashboardService {
             map.put("user_ID", rs.getInt("user_ID"));
             map.put("hotel_ID", rs.getInt("hotel_ID"));
             map.put("room_ID", rs.getString("room_ID"));
+            map.put("room_NO", rs.getInt("room_NO"));
             map.put("booking_Status", rs.getString("booking_Status"));
             map.put("checkIn", rs.getDate("checkIn"));
             map.put("checkOut", rs.getDate("checkOut"));
@@ -291,6 +287,7 @@ public class OwnerDashboardService {
                     SELECT
                         b.booking_ID,
                         b.room_ID,
+                        b.room_NO,
                         b.name,
                         b.checkIn,
                         b.booking_Status
@@ -307,6 +304,7 @@ public class OwnerDashboardService {
 
             map.put("booking_ID", rs.getString("booking_ID"));
             map.put("room_ID", rs.getString("room_ID"));
+            map.put("room_NO", rs.getInt("room_NO"));
             map.put("name", rs.getString("name"));
             map.put("checkIn", rs.getDate("checkIn"));
             map.put("booking_Status", rs.getString("booking_Status"));
@@ -326,6 +324,7 @@ public class OwnerDashboardService {
                         b.user_ID,
                         b.hotel_ID,
                         b.room_ID,
+                        b.room_NO,
                         b.booking_Status,
                         b.checkIn,
                         b.checkOut,
@@ -392,6 +391,7 @@ public class OwnerDashboardService {
 
                     // Room details
                     map.put("room_ID", rs.getString("room_ID"));
+                    map.put("room_NO", rs.getInt("room_NO"));
                     map.put("room_Type", rs.getString("room_Type"));
 
                     return map;
@@ -420,6 +420,12 @@ public class OwnerDashboardService {
         List<Object> params = new ArrayList<>();
 
         // Allowed fields for partial update
+
+        if (updates.containsKey("room_NO")) {
+            sql.append(" r.room_NO = ?,");
+            params.add(updates.get("room_NO"));
+        }
+
         if (updates.containsKey("roomType")) {
             sql.append(" r.room_Type = ?,");
             params.add(updates.get("roomType"));
@@ -615,6 +621,92 @@ public class OwnerDashboardService {
 
             if (image != null && !image.isBlank()) {
                 map.put("images", List.of(image));
+            } else {
+                map.put("images", List.of());
+            }
+
+            return map;
+        });
+    }
+
+    public boolean updateRoomStatus(
+            int ownerId, String roomId, int hotelId, boolean isEnable) {
+
+        String sql = """
+                    UPDATE rooms r
+                    INNER JOIN hotels h ON r.hotel_ID = h.hotel_ID
+                    SET r.isEnable = ?
+                    WHERE h.owner_ID = ?
+                      AND r.room_ID = ?
+                      AND r.hotel_ID = ?
+                      AND r.isEnable <> ?
+                """;
+
+        return jdbcTemplate.update(
+                sql,
+                isEnable,
+                ownerId,
+                roomId,
+                hotelId,
+                isEnable) > 0;
+    }
+
+    public List<Map<String, Object>> getallrooms(int ownerId) {
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        String sql = """
+                               SELECT
+                    r.room_ID,
+                    r.room_NO,
+                    r.hotel_ID,
+                    r.price,
+                    r.images,
+                    r.isEnable,
+                    r.createdAt,
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1
+                            FROM bookings b
+                            WHERE b.room_ID = r.room_ID
+                              AND b.checkIn <= CURRENT_DATE()
+                              AND b.checkOut >= CURRENT_DATE()
+                              AND b.booking_Status NOT IN ('Cancelled')
+                        )
+                        THEN false
+                        ELSE true
+                    END AS availability
+                FROM rooms r
+                INNER JOIN hotels h ON h.hotel_ID = r.hotel_ID
+                WHERE h.owner_ID = ?
+                ORDER BY r.room_NO DESC
+                                """;
+
+        return jdbcTemplate.query(sql, new Object[] { ownerId }, (rs, rowNum) -> {
+
+            Map<String, Object> map = new LinkedHashMap<>();
+
+            map.put("room_ID", rs.getString("room_ID"));
+            map.put("room_NO", rs.getInt("room_NO"));
+            map.put("hotel_ID", rs.getInt("hotel_ID"));
+            map.put("price", rs.getInt("price"));
+            map.put("availability", rs.getBoolean("availability"));
+            map.put("isEnable", rs.getBoolean("isEnable"));
+            map.put("createdAt", rs.getTimestamp("createdAt").toLocalDateTime());
+
+            // ✅ Parse JSON array
+            String imagesJson = rs.getString("images");
+
+            if (imagesJson != null && !imagesJson.isBlank()) {
+                try {
+                    List<String> images = mapper.readValue(
+                            imagesJson,
+                            new TypeReference<List<String>>() {
+                            });
+                    map.put("images", images);
+                } catch (Exception e) {
+                    map.put("images", List.of()); // fallback
+                }
             } else {
                 map.put("images", List.of());
             }

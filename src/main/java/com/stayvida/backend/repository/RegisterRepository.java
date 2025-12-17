@@ -23,6 +23,12 @@ public class RegisterRepository {
     // Insert new hotel record
     public int saveHotel(Register register) {
 
+        // 🔍 Check if hotel already exists
+        Integer existingHotelId = findHotelIdByOwnerId(register.getOwner_ID());
+        if (existingHotelId != null) {
+            return existingHotelId; // ❌ do not insert
+        }
+
         updateUserRoleIfNeeded(register.getOwner_ID());
 
         String sql = "INSERT INTO hotels (" +
@@ -42,22 +48,19 @@ public class RegisterRepository {
             ps.setBoolean(5, register.isForEvent());
             ps.setString(6, register.getDescription());
             ps.setString(7, register.getPhone_NO());
-
-            // ✅ NEW FIELD
             ps.setString(8, register.getCountry_code());
 
             try {
                 ps.setString(9, objectMapper.writeValueAsString(register.getTags()));
                 ps.setString(10, objectMapper.writeValueAsString(register.getAmenities()));
             } catch (JsonProcessingException e) {
-                throw new RuntimeException("Error converting JSON", e);
+                throw new RuntimeException(e);
             }
 
             ps.setString(11, register.getImages());
             ps.setString(12, register.getLongitude());
             ps.setString(13, register.getLatitude());
 
-            // defaults
             ps.setString(14, "Pending");
             ps.setBoolean(15, false);
             ps.setString(16, "New hotel added");
@@ -91,4 +94,16 @@ public class RegisterRepository {
         String sql = "UPDATE hotels SET images = ?, updatedAt = NOW() WHERE hotel_ID = ?";
         jdbcTemplate.update(sql, imageUrl, hotelId);
     }
+
+    public Integer findHotelIdByOwnerId(int ownerId) {
+        String sql = "SELECT hotel_ID FROM hotels WHERE owner_ID = ? LIMIT 1";
+
+        return jdbcTemplate.query(sql, rs -> {
+            if (rs.next()) {
+                return rs.getInt("hotel_ID");
+            }
+            return null;
+        }, ownerId);
+    }
+
 }
