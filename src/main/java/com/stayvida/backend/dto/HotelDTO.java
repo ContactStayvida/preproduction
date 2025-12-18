@@ -15,6 +15,7 @@ public class HotelDTO {
     private List<String> images;
     private List<String> tags;
     private String countryCode; // ✅ ADD THIS
+    private String phoneNo;
     private List<RoomDTO> rooms; // List of all rooms for this hotel
 
     // Getters & Setters
@@ -112,6 +113,14 @@ public class HotelDTO {
 
     public void setCountryCode(String countryCode) {
         this.countryCode = countryCode;
+    }
+
+    public String getPhoneNo() {
+        return phoneNo;
+    }
+
+    public void setPhoneNo(String phoneNo) {
+        this.phoneNo = phoneNo;
     }
 
 }

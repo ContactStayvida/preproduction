@@ -24,13 +24,14 @@ public class RoomRepository {
     public HotelDTO getRoomsByHotelId(int hotelId, String checkIn, String checkOut) {
         LocalDate checkInDate = LocalDate.parse(checkIn);
         LocalDate checkOutDate = LocalDate.parse(checkOut);
+        String PhoneNo;
 
         // --- Fetch Hotel Info ---
         String hotelSql = """
                 SELECT h.hotel_ID, h.name, h.description,
                 (SELECT AVG(rt.rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating,
                 h.destination, h.onArrivalPayment, h.isForEvent,
-                h.country_code,
+                h.country_code,h.phone_no,
                 h.tags, h.images, h.amenities
                 FROM hotels h
                 WHERE h.hotel_ID = ?
@@ -51,7 +52,7 @@ public class RoomRepository {
                     dto.setForEvent(rs.getBoolean("isForEvent"));
 
                     // ✅ ADD THIS
-                    dto.setCountryCode(rs.getString("country_code"));
+                    dto.setPhoneNo(rs.getString("country_code") + "-" + rs.getString("phone_no"));
 
                     // tags
                     String tagsJson = rs.getString("tags");
@@ -107,31 +108,36 @@ public class RoomRepository {
 
         // --- Fetch Only Available Rooms ---
         String roomSql = """
-                SELECT r.room_ID, r.room_NO, r.hotel_ID, r.room_Type, r.features, r.images,
-                       r.price, r.max_adults, r.max_children, r.bed_count
+                                        SELECT
+                    r.room_ID,
+                    r.room_NO,
+                    r.hotel_ID,
+                    r.room_Type,
+                    r.features,
+                    r.images,
+                    r.price,
+                    r.max_adults,
+                    r.max_children,
+                    r.bed_count
                 FROM rooms r
                 WHERE r.hotel_ID = ?
-                  AND (
-                      NOT EXISTS (
-                          SELECT 1 FROM bookings b
-                          WHERE b.room_ID = r.room_ID
-                            AND b.booking_Status <> 'Cancelled'
-                            AND b.checkIn < ?
-                            AND b.checkOut > ?
-                      )
-                      OR EXISTS (
-                          SELECT 1 FROM bookings b
-                          WHERE b.room_ID = r.room_ID
-                            AND (b.booking_Status = 'Cancelled' OR b.booking_Status = 'CheckedOut')
-                            AND b.checkIn < ?
-                            AND b.checkOut > ?
-                      )
-                  )
+                  AND r.isEnable = true
+                  AND ? > CURRENT_DATE           -- param check-in must be after today
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM bookings b
+                      WHERE b.room_ID = r.room_ID
+                        AND b.booking_Status NOT IN ('Cancelled', 'CheckedOut')
+                        AND NOT (
+                              ? >= b.checkOut
+                           OR ? <= b.checkIn
+                        )
+                  );
                 """;
 
         List<RoomDTO> rooms = jdbcTemplate.query(
                 roomSql,
-                new Object[] { hotelId, checkOutDate, checkInDate, checkOutDate, checkInDate },
+                new Object[] { hotelId, checkInDate, checkInDate, checkOutDate },
                 (ResultSet rs, int rowNum) -> {
                     RoomDTO room = new RoomDTO(
                             rs.getString("room_ID"),
