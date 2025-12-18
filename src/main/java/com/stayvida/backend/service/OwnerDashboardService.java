@@ -12,7 +12,7 @@ import com.stayvida.backend.repository.OwnerDashboardRepository;
 
 @Service
 public class OwnerDashboardService {
-
+    private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired
     private OwnerDashboardRepository repo;
 
@@ -659,7 +659,9 @@ public class OwnerDashboardService {
                                SELECT
                     r.room_ID,
                     r.room_NO,
+                    r.room_Type,
                     r.hotel_ID,
+                    r.features,
                     r.price,
                     r.images,
                     r.isEnable,
@@ -688,7 +690,18 @@ public class OwnerDashboardService {
 
             map.put("room_ID", rs.getString("room_ID"));
             map.put("room_NO", rs.getInt("room_NO"));
+            map.put("room_Type", rs.getString("room_Type"));
             map.put("hotel_ID", rs.getInt("hotel_ID"));
+            String featuresJson = rs.getString("features");
+            if (featuresJson != null && !featuresJson.isEmpty()) {
+                try {
+                    map.put("features", objectMapper.readValue(
+                            featuresJson, new TypeReference<List<String>>() {
+                            }));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
             map.put("price", rs.getInt("price"));
             map.put("availability", rs.getBoolean("availability"));
             map.put("isEnable", rs.getBoolean("isEnable"));
