@@ -44,9 +44,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (jwtUtil.validateToken(token)) {
                 String email = jwtUtil.extractEmail(token);
-                int ownerId = (int) jwtUtil.extractClaim(token, "ID");
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(ownerId, // 👈
-                                                                                                                      // principal
+                int Id = (int) jwtUtil.extractClaim(token, "ID");
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(Id, // 👈
+                                                                                                                 // principal
                         null,
                         List.of() // authorities (add roles later)
                 );

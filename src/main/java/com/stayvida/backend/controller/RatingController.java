@@ -6,6 +6,7 @@ import com.stayvida.backend.security.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
@@ -28,17 +29,22 @@ public class RatingController {
         try {
             // ✅ Extract JSON data
             String bookingId = (String) body.get("booking_id");
-            int userId = (int) body.get("user_id");
+            // int userId = (int) body.get("user_id");
+            int userId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
             int hotelId = (int) body.get("hotel_id");
             double ratingValue = Double.parseDouble(body.get("rating_value").toString());
             String comment = (String) body.get("comment");
 
             // ✅ SQL query
             String sql = "INSERT INTO rating (booking_ID, user_ID, hotel_ID, rating_value, comment, rated_at) " +
-                         "VALUES (?, ?, ?, ?, ?, ?)";
+                    "VALUES (?, ?, ?, ?, ?, ?)";
 
             // ✅ Execute query
-            int rows = jdbcTemplate.update(sql, bookingId, userId, hotelId, ratingValue, comment, Timestamp.from(Instant.now()));
+            int rows = jdbcTemplate.update(sql, bookingId, userId, hotelId, ratingValue, comment,
+                    Timestamp.from(Instant.now()));
 
             if (rows > 0) {
                 return ApiResponse.created(
@@ -46,10 +52,8 @@ public class RatingController {
                                 "booking_ID", bookingId,
                                 "hotel_ID", hotelId,
                                 "rating_value", ratingValue,
-                                "comment", comment
-                        ),
-                        "Rating created successfully"   
-                );
+                                "comment", comment),
+                        "Rating created successfully");
             } else {
                 return ApiResponse.badRequest("Failed to insert rating");
             }
@@ -65,7 +69,8 @@ public class RatingController {
     public ResponseEntity<?> getRatingsByHotel(@PathVariable int hotelId) {
         List<Rating> ratings = ratingRepository.findAllByHotelId(hotelId);
         Double avgRating = ratingRepository.findAverageRatingByHotelId(hotelId);
-        if (avgRating == null) avgRating = 0.0;
+        if (avgRating == null)
+            avgRating = 0.0;
 
         Map<String, Object> response = new HashMap<>();
         response.put("ratings", ratings);
@@ -73,7 +78,5 @@ public class RatingController {
 
         return ResponseEntity.ok(response);
     }
-
-
 
 }

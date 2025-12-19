@@ -37,6 +37,8 @@ public class RegisterRepository {
                 ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
+        String hoteldestination = register.getDestination()
+                .toLowerCase();
 
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -44,7 +46,7 @@ public class RegisterRepository {
             ps.setInt(1, register.getOwner_ID());
             ps.setString(2, register.getName());
             ps.setString(3, register.getType());
-            ps.setString(4, register.getDestination());
+            ps.setString(4, hoteldestination);
             ps.setBoolean(5, register.isForEvent());
             ps.setString(6, register.getDescription());
             ps.setString(7, register.getPhone_NO());
