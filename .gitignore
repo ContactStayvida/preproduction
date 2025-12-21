@@ -14,7 +14,7 @@ HELP.md
 .sts4-cache
 
 # .gitignore
-# .env
+.env
 
 ### IntelliJ IDEA ###
 .idea
@@ -35,3 +35,5 @@ build/
 ### VS Code ###
 .vscode/
 desktop.ini
+.env
+.env
