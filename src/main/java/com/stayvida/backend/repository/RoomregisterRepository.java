@@ -44,7 +44,7 @@ public class RoomregisterRepository {
         return roomId;
     }
 
-    public String saveRoomWithJson(int hotelId, String roomNumber, String roomType, String featuresJson,
+    public String saveRoomWithJson(String hotelId, String roomNumber, String roomType, String featuresJson,
             String imagesJson, int price, int maxAdults,
             int maxChildren, int bedCount) {
         String roomId = generateUniqueRoomId(); // unique 4-char ID
@@ -57,7 +57,7 @@ public class RoomregisterRepository {
 
         jdbcTemplate.update(sql, ps -> {
             ps.setString(1, roomId);
-            ps.setInt(2, hotelId);
+            ps.setString(2, hotelId);
             ps.setString(3, roomNumber);
             ps.setString(4, roomType);
             ps.setString(5, featuresJson);
@@ -73,7 +73,7 @@ public class RoomregisterRepository {
         return roomId;
     }
 
-    public boolean roomExists(int hotelId, String roomNumber) {
+    public boolean roomExists(String hotelId, String roomNumber) {
         String sql = "SELECT COUNT(*) FROM rooms WHERE hotel_ID = ? AND room_NO = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, hotelId, roomNumber);
         return count != null && count > 0;

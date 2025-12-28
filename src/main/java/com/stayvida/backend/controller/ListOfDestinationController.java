@@ -14,22 +14,25 @@ public class ListOfDestinationController {
     private JdbcTemplate jdbcTemplate;
 
     @Value("${app.base.url}")
-    private String baseUrl;   // ✅ Prefix for image URLs
+    private String baseUrl; // ✅ Prefix for image URLs
+    @Value("${cloudinary.urlPrefix}")
+    private String cloudinaryPrefix; // Cloudinary URL prefix
 
     @GetMapping("/list")
     public Object getAllLocations() {
         String sql = """
-            SELECT 
-                h.destination AS location,
-                MIN(r.price) AS lowest_price,
-                GROUP_CONCAT(h.images) AS all_images,
-                COUNT(DISTINCT h.hotel_ID) AS hotel_count
-            FROM hotels h
-            LEFT JOIN rooms r ON h.hotel_ID = r.hotel_ID
-            WHERE h.status = 'Verified'
-            GROUP BY h.destination
-            ORDER BY lowest_price ASC
-        """;
+                                    SELECT
+                    MIN(h.destination) AS location,
+                    MIN(r.price) AS lowest_price,
+                    GROUP_CONCAT(DISTINCT h.images) AS all_images,
+                    COUNT(DISTINCT h.hotel_ID) AS hotel_count
+                FROM hotels h
+                LEFT JOIN rooms r ON h.hotel_ID = r.hotel_ID
+                WHERE h.status = 'Verified'
+                GROUP BY LOWER(LEFT(h.destination, 3))
+                ORDER BY lowest_price ASC;
+
+                                """;
 
         List<Map<String, Object>> results = jdbcTemplate.queryForList(sql);
         List<Map<String, Object>> response = new ArrayList<>();
@@ -52,7 +55,7 @@ public class ListOfDestinationController {
                             .split(",")) {
                         String trimmed = img.trim();
                         if (!trimmed.isEmpty()) {
-                            imageList.add(baseUrl + trimmed); // ✅ Add URL prefix
+                            imageList.add(cloudinaryPrefix + trimmed); // ✅ Add URL prefix
                         }
                     }
                 }

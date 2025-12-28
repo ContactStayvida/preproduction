@@ -22,8 +22,10 @@ import org.springframework.beans.factory.annotation.Value;
 // import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.stayvida.backend.model.Charges;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -51,6 +53,7 @@ public class HotelController {
     private HotelRepository hotelRepository;
     @Autowired
     private RoomRepository roomRepository;
+
     // @Autowired
     // private RoomImageRepository roomImageRepository;
     @Autowired
@@ -80,10 +83,18 @@ public class HotelController {
                     return ApiResponse.badRequest("Missing required field: " + entry.getKey());
                 }
             }
+            String location = request.getLocation();
+
+            if (location != null) {
+                location = location.trim().toLowerCase();
+                if (location.length() > 3) {
+                    location = location.substring(0, 3);
+                }
+            }
 
             // ✅ Fetch hotels from repository
             List<Hotel> hotels = hotelRepository.searchHotels(
-                    request.getLocation(),
+                    location,
                     request.getCheckIn(),
                     request.getCheckOut(),
                     request.getAdults(),
@@ -92,10 +103,20 @@ public class HotelController {
             if (hotels == null || hotels.isEmpty()) {
                 return ApiResponse.success(List.of(), "No hotels found for the given criteria");
             }
+            List<Charges> charges = hotelRepository.getCharges();
+            double platformCharges = charges.stream()
+                    .filter(c -> "platform_charges".equals(c.getType()))
+                    .mapToDouble(Charges::getValue)
+                    .sum();
 
-            // 🧩 Add prefix (baseUrl) to image URLs
+            double taxPercent = charges.stream()
+                    .filter(c -> "tax".equals(c.getType()))
+                    .mapToDouble(Charges::getValue)
+                    .sum();
+
             List<Map<String, Object>> responseHotels = hotels.stream().map(hotel -> {
                 Map<String, Object> map = new LinkedHashMap<>();
+                double price = hotel.getPrice();
                 map.put("id", hotel.getId());
                 map.put("name", hotel.getName());
                 map.put("type", hotel.getType());
@@ -104,7 +125,9 @@ public class HotelController {
                 // map.put("amenities", hotel.getAmenities());
                 map.put("imageUrl", hotel.getImage() != null ? cloudinaryPrefix + encodeURL(hotel.getImage()) : null);
                 map.put("isForEvent", hotel.isForEvent());
-                map.put("price", hotel.getPrice());
+                map.put("base price", price);
+                map.put("platformCharges test", platformCharges);
+                map.put("taxPercent test", taxPercent);
                 return map;
             }).collect(Collectors.toList());
 
@@ -128,10 +151,23 @@ public class HotelController {
                 msg.put("message", "No hotels available");
                 return ApiResponse.success(msg, "No featured hotels found");
             }
+            if (hotels == null || hotels.isEmpty()) {
+                return ApiResponse.success(List.of(), "No hotels found for the given criteria");
+            }
+            List<Charges> charges = hotelRepository.getCharges();
+            double platformCharges = charges.stream()
+                    .filter(c -> "platform_charges".equals(c.getType()))
+                    .mapToDouble(Charges::getValue)
+                    .sum();
 
+            double taxPercent = charges.stream()
+                    .filter(c -> "tax".equals(c.getType()))
+                    .mapToDouble(Charges::getValue)
+                    .sum();
             // 🟢 Map hotel data
             List<Map<String, Object>> result = hotels.stream().map(hotel -> {
                 Map<String, Object> map = new LinkedHashMap<>();
+                double price = hotel.getPrice();
                 map.put("id", hotel.getId());
                 map.put("name", hotel.getName());
                 map.put("type", hotel.getType());
@@ -140,7 +176,9 @@ public class HotelController {
                 map.put("amenities", hotel.getAmenities());
                 map.put("imageUrl", hotel.getImage() != null ? cloudinaryPrefix + encodeURL(hotel.getImage()) : null);
                 map.put("isForEvent", hotel.isForEvent());
-                map.put("price", hotel.getPrice());
+                map.put("base price", price);
+                map.put("platformCharges", platformCharges);
+                map.put("taxPercent", taxPercent);
                 return map;
             }).collect(Collectors.toList());
 
@@ -156,7 +194,7 @@ public class HotelController {
         }
     }
 
-    @GetMapping("/{hotelId}/rooms")
+    @GetMapping("/{hotelId}/rooms") // open hotel to fetch rooms
     public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
             @PathVariable int hotelId,
             @RequestParam(required = false) String checkIn,
@@ -169,6 +207,7 @@ public class HotelController {
         }
 
         try {
+
             HotelDTO result = roomRepository.getRoomsByHotelId(hotelId, checkIn, checkOut);
 
             if (result == null) {
@@ -220,6 +259,12 @@ public class HotelController {
             ObjectMapper mapper = new ObjectMapper();
             Register register = mapper.readValue(hotelJson, Register.class);
 
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+            register.setOwner_ID(ownerId);
+            register.setHotel_ID("H-" + ownerId);
             String imageFileName = null;
             String cloudinaryUrl = null;
 
@@ -232,9 +277,9 @@ public class HotelController {
                 register.setImages(imageFileName);
             }
 
-            Integer existingHotelId = registerRepository.findHotelIdByOwnerId(register.getOwner_ID());
+            String existingHotelId = registerRepository.findHotelIdByOwnerId(register.getOwner_ID());
 
-            int hotelId = registerRepository.saveHotel(register);
+            String hotelId = registerRepository.saveHotel(register);
 
             Map<String, Object> responseBody = new HashMap<>();
             responseBody.put("hotelId", hotelId);
@@ -257,7 +302,7 @@ public class HotelController {
 
     @PostMapping("/register_room_with_images")
     public ResponseEntity<Map<String, Object>> registerRoomWithImages(
-            @RequestParam("hotelId") int hotelId,
+            @RequestParam("hotelId") String hotelId,
             @RequestParam("roomType") String roomType,
             @RequestParam("roomNumber") String roomNumber,
             @RequestParam("features") String featuresJson,

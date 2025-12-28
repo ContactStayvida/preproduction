@@ -34,7 +34,6 @@ public class OwnerDashboardController {
                     .getPrincipal();
 
             Map<String, Object> data = dashboardService.getMonthlyBookingsForOwner(ownerId);
-
             return ApiResponse.success(
                     data,
                     "Monthly bookings fetched successfully");
@@ -54,7 +53,7 @@ public class OwnerDashboardController {
                     .getPrincipal();
 
             List<Map<String, Object>> data = dashboardService.getActiveBookingsForOwner(ownerId);
-
+            System.out.println("OWNER ID USED: " + ownerId);
             if (data == null || data.isEmpty()) {
                 return ApiResponse.notFound("No booking found");
             }
@@ -179,7 +178,7 @@ public class OwnerDashboardController {
                 .getPrincipal();
 
         boolean updated = dashboardService.updateRoomStatus(
-                ownerId, roomId, hotelId, isEnable);
+                ownerId, roomId, isEnable);
 
         if (!updated) {
             return ApiResponse.notFound("Room not found or already in desired state");
@@ -188,7 +187,6 @@ public class OwnerDashboardController {
         return ApiResponse.success(
                 Map.of(
                         "roomId", roomId,
-                        "hotelId", hotelId,
                         "isEnable", isEnable,
                         "ownerId", ownerId),
                 isEnable ? "Room enabled successfully" : "Room disabled successfully");
@@ -332,7 +330,7 @@ public class OwnerDashboardController {
                 return ApiResponse.badRequest("No fields provided for update");
             }
 
-            boolean updated = dashboardService.updateHotel(hotelId, ownerId, updates);
+            boolean updated = dashboardService.updateHotel(ownerId, updates);
 
             if (!updated) {
                 return ApiResponse.notFound("Hotel not found or not owned by you");

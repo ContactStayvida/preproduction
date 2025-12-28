@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 // import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 // import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +24,13 @@ public class OwnerDashboardRepository {
         return jdbcTemplate.queryForList(sql, ownerId);
     }
 
+    public BigDecimal getadvanceamount() {
+        String sql = "Select value from amount where type = 'Advance'";
+        return jdbcTemplate.queryForObject(sql, BigDecimal.class);
+    }
+
     // Fetch monthly booking count for a hotel (check-in only)
-    public int getMonthlyBookingCount(int hotelId) {
+    public int getMonthlyBookingCount(String hotelId) {
         String sql = """
                     SELECT COUNT(*) FROM bookings
                     WHERE hotel_ID = ?
@@ -60,7 +66,7 @@ public class OwnerDashboardRepository {
     }
 
     // Total guests for a hotel this month (check-in only)
-    public int getTotalGuestsForMonth(int hotelId) {
+    public int getTotalGuestsForMonth(String hotelId) {
         String sql = """
                     SELECT COALESCE(SUM(adults + children),0)
                     FROM bookings
@@ -76,7 +82,7 @@ public class OwnerDashboardRepository {
         String sql = """
                     SELECT COALESCE(SUM(
                         b.payment_amount
-                        - ((b.totalAmount - b.tax_amount - b.platformFee) * 0.2)
+                        - ((b.totalAmount) * 0.2)
                         - b.platformFee
                         - b.tax_amount
                     ), 0)
@@ -100,7 +106,7 @@ public class OwnerDashboardRepository {
         String sql = """
                     SELECT COALESCE(SUM(
                         b.payment_amount
-                        - ((b.totalAmount - b.tax_amount - b.platformFee) * 0.2)
+                        - ((b.totalAmount) * 0.2)
                         - b.platformFee
                         - b.tax_amount
                     ), 0)

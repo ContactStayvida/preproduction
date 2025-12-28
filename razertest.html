@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Razorpay Test</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+
+<body>
+    <button id="payBtn">Pay Now</button>
+
+    <script>
+        document.getElementById("payBtn").onclick = function () {
+
+            var options = {
+                key: "rzp_test_RwGtJwDWISfJGf", // TEST KEY ID
+                amount: 396008,      // paise (IMPORTANT)
+                currency: "INR",
+                name: "StayVida",
+                description: "Hotel Booking Payment",
+                order_id: "order_Rwj15qtL5dqFVh",
+
+                handler: function (response) {
+                    console.log("Payment Success", response);
+
+                    // Send this to backend for verification
+                    fetch("http://localhost:8080/api/payments/razorpay/verify", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(response)
+                    });
+                }
+            };
+
+            var rzp = new Razorpay(options);
+            rzp.open();
+        };
+    </script>
+</body>
+
+</html>

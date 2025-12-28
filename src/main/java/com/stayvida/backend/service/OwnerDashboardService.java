@@ -51,7 +51,7 @@ public class OwnerDashboardService {
         // ✅ ONLY ONE HOTEL
         Map<String, Object> hotel = hotels.get(0);
 
-        int hotelId = (int) hotel.get("hotel_ID");
+        String hotelId = (String) hotel.get("hotel_ID");
         String hotelName = (String) hotel.get("name");
 
         int monthlyBookings = repo.getMonthlyBookingCount(hotelId);
@@ -117,78 +117,68 @@ public class OwnerDashboardService {
     public List<Map<String, Object>> getActiveBookingsForOwner(int ownerId) {
 
         String sql = """
-                SELECT
-                b.booking_ID,
-                b.user_ID,
-                b.hotel_ID,
-                b.room_ID,
-                r.room_NO,
-                b.booking_Status,
-                b.checkIn,
-                b.checkOut,
-                b.payment_Status,
-                b.payment_amount,
-                b.totalAmount,
-                b.tax_amount,
-                b.platformFee,
-                b.is_refundable,
-                b.name,
-                p.phone_number
+                                               SELECT
+                    b.booking_ID,
+                    b.user_ID,
+                    b.hotel_ID,
+                    b.room_ID,
+                    r.room_NO,
+                    b.booking_Status,
+                    b.checkIn,
+                    b.checkOut,
+                    b.payment_Status,
+                    b.payment_amount,
+                    b.totalAmount,
+                    b.tax_amount,
+                    b.platformFee,
+                    b.is_refundable,
+                    b.name,
+                    b.phone_no
                 FROM bookings b
-                INNER JOIN profile p ON b.user_ID = p.user_ID
-                INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID
-                INNER JOIN rooms r on r.hotel_ID = h.hotel_ID
+                JOIN hotels h ON b.hotel_ID = h.hotel_ID
+                LEFT JOIN rooms r ON r.room_ID = b.room_ID
+                LEFT JOIN profile p ON b.user_ID = p.user_ID
                 WHERE h.owner_ID = ?
-                AND b.booking_Status != 'CheckOut'
                 AND (
-                -- 🔥 Priority conditions first
-                b.booking_Status = 'Pending'
-                OR b.payment_Status = 'Pending'
-
-                -- ✔ If NOT pending, then apply normal conditions
-                OR (
-                b.booking_Status IN ('Confirmed', 'CheckIn')
-                OR b.checkOut >= CURDATE()
+                    b.booking_Status IN ('Pending', 'Confirmed', 'CheckIn')
+                    AND b.checkOut >= CURDATE()
                 )
-                )
-                ORDER BY b.checkIn ASC
+                or payment_Status = 'Pending'
+                ORDER BY b.checkIn ASC;
                 """;
 
         return jdbcTemplate.query(sql, new Object[] { ownerId }, (rs, rowNum) -> {
 
             Map<String, Object> map = new LinkedHashMap<>();
 
-            double totalAmount = rs.getDouble("totalAmount");
-            double taxAmount = rs.getDouble("tax_amount");
-            double platformFee = rs.getDouble("platformFee");
-            double paid = rs.getDouble("payment_amount");
+            double totalAmount = rs.getDouble("totalAmount");// room amount
+            double taxAmount = rs.getDouble("tax_amount");// tax amount
+            double platformFee = rs.getDouble("platformFee");// platform fee
+            double paid = rs.getDouble("payment_amount");// amount paid by customer
+            // double platformBase = totalAmount - taxAmount - platformFee;
+            // double commission = platformBase * 0.20;
+            // double payableAfterCut = platformBase - commission;
+            double paymentLeft = totalAmount - (paid - taxAmount - platformFee);// left to pay
+            double grossAmount = paymentLeft + paid;// amount paid by coustomer + amount left
 
-            double platformBase = totalAmount - taxAmount - platformFee;
-            double commission = platformBase * 0.20;
-            double payableAfterCut = platformBase - commission;
-            double paymentLeft = totalAmount - paid;
-
-            map.put("booking_ID", rs.getString("booking_ID"));
-            map.put("user_ID", rs.getInt("user_ID"));
-            map.put("hotel_ID", rs.getInt("hotel_ID"));
-            map.put("room_ID", rs.getString("room_ID"));
-            map.put("RoomNumber", rs.getInt("room_NO"));
-            map.put("booking_Status", rs.getString("booking_Status"));
-            map.put("checkIn", rs.getDate("checkIn"));
-            map.put("checkOut", rs.getDate("checkOut"));
-            // map.put("payment_Status", rs.getString("payment_Status"));
-            // map.put("payment_amount", paid);
-            map.put("payment_left", paymentLeft);
-            map.put("is_refundable", rs.getBoolean("is_refundable"));
-            // map.put("totalAmount", totalAmount);
-            // map.put("tax_amount", taxAmount);
-            // map.put("platformFee", platformFee);
-            // map.put("commision",commission);
-            map.put("name", rs.getString("name"));
-            map.put("phone_number", rs.getString("phone_number"));
-            map.put("Gross Amount", totalAmount);
-            map.put("Net Amount", payableAfterCut);
-
+            map.put("booking_ID", rs.getString("booking_ID")); // booking id
+            map.put("user_ID", rs.getInt("user_ID")); // coustomer's user id
+            map.put("hotel_ID", rs.getString("hotel_ID")); // hotel's ID
+            map.put("room_ID", rs.getString("room_ID"));// room's ID
+            map.put("RoomNumber", rs.getInt("room_NO")); // room number
+            map.put("booking_Status", rs.getString("booking_Status")); // booking status
+            map.put("checkIn", rs.getDate("checkIn"));// check in date
+            map.put("checkOut", rs.getDate("checkOut"));// check out date
+            map.put("payment_Status", rs.getString("payment_Status"));
+            // map.put("amount paid", paid);// amount paid by customer
+            // map.put("payment_left", paymentLeft);// payment left
+            // map.put("is_refundable", rs.getBoolean("is_refundable"));
+            // map.put("tax_amount", taxAmount);// tax amount
+            // map.put("platformFee", platformFee);// platform fee
+            map.put("name", rs.getString("name"));// customer name
+            // map.put("phone_number", rs.getString("phone_no"));// customer phone number
+            // map.put("Room Price", totalAmount);// room price
+            map.put("gross amount", grossAmount);// payment amount
             return map;
         });
     }
@@ -212,68 +202,62 @@ public class OwnerDashboardService {
     public List<Map<String, Object>> getAllBookingsForOwner(int ownerId) {
 
         String sql = """
-                    SELECT
-                        b.booking_ID,
-                        b.user_ID,
-                        b.hotel_ID,
-                        b.room_ID,
-                        b.room_NO,
-                        b.booking_Status,
-                        b.checkIn,
-                        b.checkOut,
-                        b.payment_Status,
-                        b.payment_amount,
-                        b.totalAmount,
-                        b.tax_amount,
-                        b.platformFee,
-                        b.is_refundable,
-                        b.name,
-                        p.phone_number
-                    FROM bookings b
-                    INNER JOIN profile p ON b.user_ID = p.user_ID
-                    INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID
-                    WHERE h.owner_ID = ?
-                    ORDER BY b.checkIn DESC
+                   SELECT
+                    b.booking_ID,
+                    b.user_ID,
+                    b.hotel_ID,
+                    b.room_ID,
+                    r.room_NO,
+                    b.booking_Status,
+                    b.checkIn,
+                    b.checkOut,
+                    b.payment_Status,
+                    b.payment_amount,
+                    b.totalAmount,
+                    b.tax_amount,
+                    b.platformFee,
+                    b.is_refundable,
+                    b.name,
+                    b.phone_no
+                FROM bookings b
+                JOIN hotels h ON b.hotel_ID = h.hotel_ID
+                LEFT JOIN rooms r ON r.room_ID = b.room_ID
+                WHERE h.owner_ID = ?
+                ORDER BY b.checkIn DESC
                 """;
 
         return jdbcTemplate.query(sql, new Object[] { ownerId }, (rs, rowNum) -> {
 
             Map<String, Object> map = new LinkedHashMap<>();
 
-            double totalAmount = rs.getDouble("totalAmount");
-            double taxAmount = rs.getDouble("tax_amount");
-            double platformFee = rs.getDouble("platformFee");
-            double paid = rs.getDouble("payment_amount");
+            double totalAmount = rs.getDouble("totalAmount");// room amount
+            double taxAmount = rs.getDouble("tax_amount");// tax amount
+            double platformFee = rs.getDouble("platformFee");// platform fee
+            double paid = rs.getDouble("payment_amount");// amount paid by customer
+            // double platformBase = totalAmount - taxAmount - platformFee;
+            // double commission = platformBase * 0.20;
+            // double payableAfterCut = platformBase - commission;
+            double paymentLeft = totalAmount - (paid - taxAmount - platformFee);// left to pay
+            double grossAmount = paymentLeft + paid;// amount paid by coustomer + amount left
 
-            double platformBase = totalAmount - taxAmount - platformFee;
-            double commission = platformBase * 0.20;
-            double payableAfterCut = platformBase - commission;
-
-            double paymentLeft = totalAmount - paid;
-
-            map.put("booking_ID", rs.getString("booking_ID"));
-            map.put("user_ID", rs.getInt("user_ID"));
-            map.put("hotel_ID", rs.getInt("hotel_ID"));
-            map.put("room_ID", rs.getString("room_ID"));
-            map.put("room_NO", rs.getInt("room_NO"));
-            map.put("booking_Status", rs.getString("booking_Status"));
-            map.put("checkIn", rs.getDate("checkIn"));
-            map.put("checkOut", rs.getDate("checkOut"));
+            map.put("booking_ID", rs.getString("booking_ID")); // booking id
+            map.put("user_ID", rs.getInt("user_ID")); // coustomer's user id
+            map.put("hotel_ID", rs.getString("hotel_ID")); // hotel's ID
+            map.put("room_ID", rs.getString("room_ID"));// room's ID
+            map.put("RoomNumber", rs.getInt("room_NO")); // room number
+            map.put("booking_Status", rs.getString("booking_Status")); // booking status
+            map.put("checkIn", rs.getDate("checkIn"));// check in date
+            map.put("checkOut", rs.getDate("checkOut"));// check out date
             map.put("payment_Status", rs.getString("payment_Status"));
-            // map.put("payment_amount", paid);
-            // map.put("payment_left", paymentLeft);
-            map.put("is_refundable", rs.getBoolean("is_refundable"));
-
-            // map.put("totalAmount", totalAmount);
-            // map.put("tax_amount", taxAmount);
-            // map.put("platformFee", platformFee);
-            // map.put("commision", commission);
-            map.put("Gross Amount", totalAmount);
-            map.put("Net Amount", payableAfterCut);
-
-            map.put("name", rs.getString("name"));
-            map.put("phone_number", rs.getString("phone_number"));
-
+            // map.put("amount paid", paid);// amount paid by customer
+            // map.put("payment_left", paymentLeft);// payment left
+            // map.put("is_refundable", rs.getBoolean("is_refundable"));
+            // map.put("tax_amount", taxAmount);// tax amount
+            // map.put("platformFee", platformFee);// platform fee
+            map.put("name", rs.getString("name"));// customer name
+            // map.put("phone_number", rs.getString("phone_no"));// customer phone number
+            // map.put("Room Price", totalAmount);// room price
+            map.put("gross amount", grossAmount);// payment amount
             return map;
         });
     }
@@ -330,17 +314,17 @@ public class OwnerDashboardService {
                         b.checkOut,
                         b.payment_Status,
                         b.payment_amount,
+                        b.payment_type,
                         b.totalAmount,
                         b.tax_amount,
                         b.platformFee,
                         b.is_refundable,
                         b.name,
-                        p.phone_number,
+                        b.phone_no,
                         h.name AS hotel_name,
                         r.room_Type
 
                     FROM bookings b
-                    INNER JOIN profile p ON b.user_ID = p.user_ID
                     INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID
                     INNER JOIN rooms r ON b.room_ID = r.room_ID
                     WHERE b.booking_ID = ? and h.owner_ID = ?
@@ -351,59 +335,49 @@ public class OwnerDashboardService {
 
                     Map<String, Object> map = new LinkedHashMap<>();
 
-                    double totalAmount = rs.getDouble("totalAmount");
-                    double taxAmount = rs.getDouble("tax_amount");
-                    double platformFee = rs.getDouble("platformFee");
-                    double paid = rs.getDouble("payment_amount");
+                    double totalAmount = rs.getDouble("totalAmount");// room amount
+                    double taxAmount = rs.getDouble("tax_amount");// tax amount
+                    double platformFee = rs.getDouble("platformFee");// platform fee
+                    double paid = rs.getDouble("payment_amount");// amount paid by customer
+                    // double platformBase = totalAmount - taxAmount - platformFee;
+                    // double commission = platformBase * 0.20;
+                    // double payableAfterCut = platformBase - commission;
+                    double paymentLeft = totalAmount - (paid - taxAmount - platformFee);// left to pay
+                    double grossAmount = paymentLeft + paid;// amount paid by coustomer + amount left
 
-                    // Platform calculations
-                    double platformBase = totalAmount - taxAmount - platformFee;
-                    double commission = platformBase * 0.20;
-                    double payableAfterCut = platformBase - commission;
-
-                    double paymentLeft = totalAmount - paid;
-
-                    // Booking details
-                    map.put("booking_ID", rs.getString("booking_ID"));
-                    map.put("booking_Status", rs.getString("booking_Status"));
-                    map.put("checkIn", rs.getDate("checkIn"));
-                    map.put("checkOut", rs.getDate("checkOut"));
-
-                    // Payment details
+                    map.put("booking_ID", rs.getString("booking_ID")); // booking id
+                    map.put("user_ID", rs.getInt("user_ID")); // coustomer's user id
+                    map.put("hotel_ID", rs.getString("hotel_ID")); // hotel's ID
+                    map.put("hotel_name", rs.getString("hotel_name")); // hotel name
+                    map.put("room_ID", rs.getString("room_ID"));// room's ID
+                    map.put("RoomNumber", rs.getInt("room_NO")); // room number
+                    map.put("booking_Status", rs.getString("booking_Status")); // booking status
+                    map.put("checkIn", rs.getDate("checkIn"));// check in date
+                    map.put("checkOut", rs.getDate("checkOut"));// check out date
                     map.put("payment_Status", rs.getString("payment_Status"));
-                    map.put("payment_amount", paid);
-                    map.put("payment_left", paymentLeft);
+                    map.put("amount paid", paid);// amount paid by customer
+                    map.put("payment_type", rs.getString("payment_type"));
+                    map.put("payment_left", paymentLeft);// payment left
                     map.put("is_refundable", rs.getBoolean("is_refundable"));
-                    map.put("Gross Amount", totalAmount);
-                    map.put("tax_amount", taxAmount);
-                    map.put("platformFee", platformFee);
-                    map.put("commission", commission);
-                    map.put("Net Amount", payableAfterCut);
-
-                    // User details
-                    map.put("user_ID", rs.getInt("user_ID"));
-                    map.put("name", rs.getString("name"));
-                    map.put("phone_number", rs.getString("phone_number"));
-
-                    // Hotel details
-                    map.put("hotel_ID", rs.getInt("hotel_ID"));
-                    map.put("hotel_name", rs.getString("hotel_name"));
-
-                    // Room details
-                    map.put("room_ID", rs.getString("room_ID"));
-                    map.put("room_NO", rs.getInt("room_NO"));
-                    map.put("room_Type", rs.getString("room_Type"));
-
+                    map.put("tax_amount", taxAmount);// tax amount
+                    map.put("platformFee", platformFee);// platform fee
+                    map.put("name", rs.getString("name"));// customer name
+                    map.put("phone_number", rs.getString("phone_no"));// customer phone number
+                    map.put("Room Price", totalAmount);// room price
+                    map.put("gross amount", grossAmount);// payment amount
                     return map;
                 });
 
         return result.isEmpty() ? null : result.get(0);
     }
 
-    public boolean deleteRoom(int ownerId, String roomId, int hotel_ID) {
-        String sql = "DELETE r FROM rooms r INNER JOIN hotels h ON r.hotel_ID = h.hotel_ID WHERE h.owner_ID = ?  AND r.room_ID = ? AND r.hotel_ID = ?;";
-        return jdbcTemplate.update(sql, ownerId, roomId, hotel_ID) > 0;
-    }
+    // tempory dissabled
+
+    // public boolean deleteRoom(int ownerId, String roomId, int hotel_ID) {
+    // String sql = "DELETE r FROM rooms r INNER JOIN hotels h ON r.hotel_ID =
+    // h.hotel_ID WHERE h.owner_ID = ? AND r.room_ID = ? AND r.hotel_ID = ?;";
+    // return jdbcTemplate.update(sql, ownerId, roomId, hotel_ID) > 0;
+    // }
 
     public boolean updateRoom(String roomId, int ownerId, Map<String, Object> updates) {
 
@@ -478,7 +452,7 @@ public class OwnerDashboardService {
         return rows > 0;
     }
 
-    public boolean updateHotel(int hotelId, int ownerId, Map<String, Object> updates) {
+    public boolean updateHotel(int ownerId, Map<String, Object> updates) {
 
         if (updates == null || updates.isEmpty()) {
             throw new IllegalArgumentException("No fields provided for update");
@@ -549,8 +523,7 @@ public class OwnerDashboardService {
         sql.append(", h.updatedAt = NOW()");
 
         // Ownership + hotel condition
-        sql.append(" WHERE h.hotel_ID = ? AND h.owner_ID = ?");
-        params.add(hotelId);
+        sql.append(" WHERE h.owner_ID = ?");
         params.add(ownerId);
 
         int rows = jdbcTemplate.update(sql.toString(), params.toArray());
@@ -586,7 +559,7 @@ public class OwnerDashboardService {
             String phoneNo = rs.getString("country_code") + "-" + rs.getString("phone_no");
             Map<String, Object> map = new LinkedHashMap<>();
 
-            map.put("hotel_ID", rs.getInt("hotel_ID"));
+            map.put("hotel_ID", rs.getString("hotel_ID"));
             map.put("name", rs.getString("name"));
             map.put("type", rs.getString("type"));
             map.put("destination", rs.getString("destination"));
@@ -630,7 +603,7 @@ public class OwnerDashboardService {
     }
 
     public boolean updateRoomStatus(
-            int ownerId, String roomId, int hotelId, boolean isEnable) {
+            int ownerId, String roomId, boolean isEnable) {
 
         String sql = """
                     UPDATE rooms r
@@ -638,7 +611,6 @@ public class OwnerDashboardService {
                     SET r.isEnable = ?
                     WHERE h.owner_ID = ?
                       AND r.room_ID = ?
-                      AND r.hotel_ID = ?
                       AND r.isEnable <> ?
                 """;
 
@@ -647,7 +619,6 @@ public class OwnerDashboardService {
                 isEnable,
                 ownerId,
                 roomId,
-                hotelId,
                 isEnable) > 0;
     }
 
@@ -691,7 +662,7 @@ public class OwnerDashboardService {
             map.put("room_ID", rs.getString("room_ID"));
             map.put("room_NO", rs.getInt("room_NO"));
             map.put("room_Type", rs.getString("room_Type"));
-            map.put("hotel_ID", rs.getInt("hotel_ID"));
+            map.put("hotel_ID", rs.getString("hotel_ID"));
             String featuresJson = rs.getString("features");
             if (featuresJson != null && !featuresJson.isEmpty()) {
                 try {

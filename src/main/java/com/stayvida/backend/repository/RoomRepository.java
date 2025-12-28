@@ -4,12 +4,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.dto.HotelDTO;
 import com.stayvida.backend.dto.RoomDTO;
+import com.stayvida.backend.model.Charges;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +21,8 @@ public class RoomRepository {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private HotelRepository hotelRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -135,6 +140,21 @@ public class RoomRepository {
                   );
                 """;
 
+        List<Charges> charges = hotelRepository.getCharges();
+        double platformCharges = charges.stream()
+                .filter(c -> "platform_charges".equals(c.getType()))
+                .mapToDouble(Charges::getValue)
+                .sum();
+
+        double taxPercent = charges.stream()
+                .filter(c -> "tax".equals(c.getType()))
+                .mapToDouble(Charges::getValue)
+                .sum();
+
+        long stayDuration = ChronoUnit.DAYS.between(checkInDate, checkOutDate);
+
+        System.out.println("platformCharges: " + platformCharges);
+        System.out.println("taxPercent: " + taxPercent);
         List<RoomDTO> rooms = jdbcTemplate.query(
                 roomSql,
                 new Object[] { hotelId, checkInDate, checkInDate, checkOutDate },
@@ -145,6 +165,9 @@ public class RoomRepository {
                             rs.getInt("hotel_ID"),
                             rs.getString("room_Type"),
                             rs.getDouble("price"),
+                            platformCharges,
+                            taxPercent,
+                            stayDuration,
                             rs.getInt("max_adults"),
                             rs.getInt("max_children"),
                             rs.getInt("bed_count"));

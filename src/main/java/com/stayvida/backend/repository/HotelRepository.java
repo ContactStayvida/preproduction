@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.model.Hotel;
-
+import com.stayvida.backend.model.Charges;
 // import java.sql.ResultSet;
 // import java.sql.SQLException;
 import java.time.LocalDate;
@@ -22,23 +22,36 @@ public class HotelRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    public List<Charges> getCharges() {
+        String sql = "SELECT charges_ID, type, value FROM amount";
+        List<Charges> charges = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Charges charge = new Charges();
+            charge.setCharge_ID(rs.getInt("charges_ID"));
+            charge.setType(rs.getString("type"));
+            charge.setValue(rs.getDouble("value"));
+            return charge;
+        });
+        return charges;
+    }
+
     // 🧭 Search hotels by location, availability & fetch average rating dynamically
     public List<Hotel> searchHotels(String destination, String checkIn, String checkOut, int adultCapacity,
             int childrenCapacity) {
         String sql = """
-                    SELECT h.*,
-                           (SELECT MIN(price) FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price,
-                           (SELECT AVG(rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating
-                    FROM hotels h
-                    WHERE h.destination = ? AND h.status = 'Verified'
-                """;
+                SELECT h.*,
+                       (SELECT MIN(price) FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price,
+                       (SELECT AVG(rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating
+                FROM hotels h
+                WHERE LOWER(SUBSTRING(h.destination, 1, 3)) = ?
+                  AND h.status = 'Verified';
+                    """;
 
         LocalDate checkInDate = LocalDate.parse(checkIn);
         LocalDate checkOutDate = LocalDate.parse(checkOut);
 
         List<Hotel> allHotels = jdbcTemplate.query(sql, (rs, rowNum) -> {
             Hotel hotel = new Hotel();
-            hotel.setId(rs.getInt("hotel_ID"));
+            hotel.setId(rs.getString("hotel_ID"));
             hotel.setName(rs.getString("name"));
             hotel.setType(rs.getString("type"));
             hotel.setDestination(rs.getString("destination"));
@@ -83,7 +96,7 @@ public class HotelRepository {
 
     // ✅ Check hotel availability
     // ✅ Check hotel availability
-    public boolean isHotelAvailable(int hotelId, LocalDate checkIN, LocalDate checkOut) {
+    public boolean isHotelAvailable(String hotelId, LocalDate checkIN, LocalDate checkOut) {
         String sql = """
                 SELECT COUNT(*)
                 FROM rooms r
@@ -120,7 +133,7 @@ public class HotelRepository {
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Hotel hotel = new Hotel();
-            hotel.setId(rs.getInt("hotel_ID"));
+            hotel.setId(rs.getString("hotel_ID"));
             hotel.setName(rs.getString("name"));
             hotel.setType(rs.getString("type"));
             hotel.setDestination(rs.getString("destination"));

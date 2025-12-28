@@ -23,13 +23,15 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-                                    throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
 
         String path = request.getRequestURI();
         // ✅ Only protect admin routes
-        if (!path.startsWith("/api/admin/")) {
+        if (!path.startsWith("/api/admin/") ||
+                SecurityContextHolder.getContext().getAuthentication() != null) {
+
             filterChain.doFilter(request, response);
             return;
         }
@@ -51,8 +53,8 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
             String email = claims.get("email", String.class);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(email, null, null);
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(email, null,
+                    null);
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
