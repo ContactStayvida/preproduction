@@ -126,8 +126,8 @@ public class HotelController {
                 map.put("imageUrl", hotel.getImage() != null ? cloudinaryPrefix + encodeURL(hotel.getImage()) : null);
                 map.put("isForEvent", hotel.isForEvent());
                 map.put("base price", price);
-                map.put("platformCharges test", platformCharges);
-                map.put("taxPercent test", taxPercent);
+                map.put("platformCharges", platformCharges);
+                map.put("taxPercent", taxPercent);
                 return map;
             }).collect(Collectors.toList());
 
