@@ -92,7 +92,9 @@ public class SecurityConfig {
                                                                 "/api/events/details",
                                                                 // "/owner/dashboard/**",
                                                                 "/api/profile/**",
-                                                                "/lookup/**")
+                                                                "/lookup/**",
+                                                                "/test/upload",
+                                                                "/api/admin/**")
                                                 .permitAll()
                                                 .anyRequest().authenticated()
 

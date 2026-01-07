@@ -29,7 +29,7 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
         // ✅ Only protect admin routes
-        if (!path.startsWith("/api/admin/") ||
+        if (!path.startsWith("/test") || // "/api/admin/"
                 SecurityContextHolder.getContext().getAuthentication() != null) {
 
             filterChain.doFilter(request, response);

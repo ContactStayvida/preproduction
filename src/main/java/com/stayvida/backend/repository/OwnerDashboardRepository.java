@@ -82,9 +82,8 @@ public class OwnerDashboardRepository {
         String sql = """
                     SELECT COALESCE(SUM(
                         b.payment_amount
-                        - ((b.totalAmount) * 0.2)
+                        - commision_Amount
                         - b.platformFee
-                        - b.tax_amount
                     ), 0)
                     FROM bookings b
                     JOIN hotels h ON b.hotel_ID = h.hotel_ID
@@ -106,9 +105,8 @@ public class OwnerDashboardRepository {
         String sql = """
                     SELECT COALESCE(SUM(
                         b.payment_amount
-                        - ((b.totalAmount) * 0.2)
+                        - commision_Amount
                         - b.platformFee
-                        - b.tax_amount
                     ), 0)
                     FROM bookings b
                     JOIN hotels h ON b.hotel_ID = h.hotel_ID

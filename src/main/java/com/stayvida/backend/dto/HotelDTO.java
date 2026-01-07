@@ -4,7 +4,7 @@ import java.util.List;
 // import java.util.Map;
 
 public class HotelDTO {
-    private int hotelId;
+    private String hotelId;
     private String name;
     private String description;
     private List<String> amenities;
@@ -19,11 +19,11 @@ public class HotelDTO {
     private List<RoomDTO> rooms; // List of all rooms for this hotel
 
     // Getters & Setters
-    public int getHotelId() {
+    public String getHotelId() {
         return hotelId;
     }
 
-    public void setHotelId(int hotelId) {
+    public void setHotelId(String hotelId) {
         this.hotelId = hotelId;
     }
 

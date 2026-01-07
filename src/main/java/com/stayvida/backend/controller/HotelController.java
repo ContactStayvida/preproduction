@@ -16,6 +16,7 @@ import com.stayvida.backend.repository.RoomRepository;
 import com.stayvida.backend.repository.RoomregisterRepository;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.CloudinaryService;
+import com.stayvida.backend.service.ImageCompressionUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,9 +46,6 @@ public class HotelController {
 
     @Value("${app.base.url}")
     private String baseUrl; // ✅ Base URL for image access
-
-    @Value("${cloudinary.urlPrefix}")
-    private String cloudinaryPrefix; // Cloudinary URL prefix
 
     @Autowired
     private HotelRepository hotelRepository;
@@ -104,15 +102,6 @@ public class HotelController {
                 return ApiResponse.success(List.of(), "No hotels found for the given criteria");
             }
             List<Charges> charges = hotelRepository.getCharges();
-            double platformCharges = charges.stream()
-                    .filter(c -> "platform_charges".equals(c.getType()))
-                    .mapToDouble(Charges::getValue)
-                    .sum();
-
-            double taxPercent = charges.stream()
-                    .filter(c -> "tax".equals(c.getType()))
-                    .mapToDouble(Charges::getValue)
-                    .sum();
 
             List<Map<String, Object>> responseHotels = hotels.stream().map(hotel -> {
                 Map<String, Object> map = new LinkedHashMap<>();
@@ -123,11 +112,14 @@ public class HotelController {
                 map.put("destination", hotel.getDestination());
                 map.put("rating", hotel.getRating());
                 // map.put("amenities", hotel.getAmenities());
-                map.put("imageUrl", hotel.getImage() != null ? cloudinaryPrefix + encodeURL(hotel.getImage()) : null);
+                map.put("image",
+                        hotel.getImage() != null
+                                ? "data:image/jpeg;base64," + hotel.getImage()
+                                : null);
                 map.put("isForEvent", hotel.isForEvent());
                 map.put("base price", price);
-                map.put("platformCharges", platformCharges);
-                map.put("taxPercent", taxPercent);
+                // map.put("platformCharges", platformCharges);
+                // map.put("taxPercent", taxPercent);
                 return map;
             }).collect(Collectors.toList());
 
@@ -155,16 +147,7 @@ public class HotelController {
                 return ApiResponse.success(List.of(), "No hotels found for the given criteria");
             }
             List<Charges> charges = hotelRepository.getCharges();
-            double platformCharges = charges.stream()
-                    .filter(c -> "platform_charges".equals(c.getType()))
-                    .mapToDouble(Charges::getValue)
-                    .sum();
 
-            double taxPercent = charges.stream()
-                    .filter(c -> "tax".equals(c.getType()))
-                    .mapToDouble(Charges::getValue)
-                    .sum();
-            // 🟢 Map hotel data
             List<Map<String, Object>> result = hotels.stream().map(hotel -> {
                 Map<String, Object> map = new LinkedHashMap<>();
                 double price = hotel.getPrice();
@@ -174,11 +157,12 @@ public class HotelController {
                 map.put("destination", hotel.getDestination());
                 map.put("rating", hotel.getRating());
                 map.put("amenities", hotel.getAmenities());
-                map.put("imageUrl", hotel.getImage() != null ? cloudinaryPrefix + encodeURL(hotel.getImage()) : null);
+                map.put("image",
+                        hotel.getImage() != null
+                                ? "data:image/jpeg;base64," + hotel.getImage()
+                                : null);
                 map.put("isForEvent", hotel.isForEvent());
                 map.put("base price", price);
-                map.put("platformCharges", platformCharges);
-                map.put("taxPercent", taxPercent);
                 return map;
             }).collect(Collectors.toList());
 
@@ -196,7 +180,7 @@ public class HotelController {
 
     @GetMapping("/{hotelId}/rooms") // open hotel to fetch rooms
     public ResponseEntity<Map<String, Object>> getHotelWithAvailableRooms(
-            @PathVariable int hotelId,
+            @PathVariable String hotelId,
             @RequestParam(required = false) String checkIn,
             @RequestParam(required = false) String checkOut) {
         if (checkIn == null || checkIn.isEmpty()) {
@@ -219,8 +203,9 @@ public class HotelController {
                 result.setImages(
                         result.getImages().stream()
                                 .filter(img -> img != null && !img.isEmpty())
-                                .map(img -> img.startsWith("http") ? img : cloudinaryPrefix + encodePath(img))
+                                .map(img -> "data:image/jpeg;base64," + img)
                                 .toList());
+
             }
 
             // 🟩 Add prefix to each room image
@@ -230,7 +215,7 @@ public class HotelController {
                         room.setRoomImages(
                                 room.getRoomImages().stream()
                                         .filter(img -> img != null && !img.isEmpty())
-                                        .map(img -> img.startsWith("http") ? img : cloudinaryPrefix + encodePath(img))
+                                        .map(img -> "data:image/jpeg;base64," + img)
                                         .toList());
                     }
                 });
@@ -243,9 +228,6 @@ public class HotelController {
             return ApiResponse.serverError("Unable to fetch rooms: " + e.getMessage());
         }
     }
-
-    @Autowired
-    private CloudinaryService cloudinaryService;
 
     @Autowired
     private RegisterRepository registerRepository;
@@ -263,18 +245,18 @@ public class HotelController {
                     .getContext()
                     .getAuthentication()
                     .getPrincipal();
+
             register.setOwner_ID(ownerId);
             register.setHotel_ID("H-" + ownerId);
-            String imageFileName = null;
-            String cloudinaryUrl = null;
+
+            String imageBase64 = null;
 
             if (imageFile != null && !imageFile.isEmpty()) {
+                imageBase64 = ImageCompressionUtil
+                        .processImageToBase64(imageFile.getBytes());
 
-                imageFileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
-                Map uploadResult = cloudinaryService.uploadImage(imageFile, imageFileName);
-                cloudinaryUrl = uploadResult.get("secure_url").toString();
-
-                register.setImages(imageFileName);
+                // ✅ store BASE64 directly
+                register.setImages(imageBase64);
             }
 
             String existingHotelId = registerRepository.findHotelIdByOwnerId(register.getOwner_ID());
@@ -283,19 +265,18 @@ public class HotelController {
 
             Map<String, Object> responseBody = new HashMap<>();
             responseBody.put("hotelId", hotelId);
-            responseBody.put("imageName", imageFileName);
-            responseBody.put("imageUrl", cloudinaryUrl);
+            // responseBody.put("imageBase64", imageBase64);
 
             if (existingHotelId != null) {
                 return ApiResponse.success(
                         responseBody,
-                        "Hotel already exists for user " + register.getOwner_ID() +
-                                ". You can add rooms or edit them.");
+                        "Hotel already exists. You can add or edit rooms.");
             }
 
             return ApiResponse.created(responseBody, "Hotel registered successfully");
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ApiResponse.serverError("Error registering hotel: " + e.getMessage());
         }
     }
@@ -326,23 +307,24 @@ public class HotelController {
             List<String> imageNames = new ArrayList<>();
             List<String> imageUrls = new ArrayList<>();
 
+            List<String> imageBase64List = new ArrayList<>();
+
             for (MultipartFile file : files) {
                 if (file.isEmpty())
                     continue;
 
-                String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-                Map uploadResult = cloudinaryService.uploadImage(file, fileName);
+                String base64 = ImageCompressionUtil
+                        .processImageToBase64(file.getBytes());
 
-                imageNames.add(fileName);
-                imageUrls.add(uploadResult.get("secure_url").toString());
+                imageBase64List.add(base64);
             }
 
-            if (imageNames.isEmpty()) {
+            if (imageBase64List.isEmpty()) {
                 return ApiResponse.badRequest("No valid images uploaded");
             }
 
             ObjectMapper mapper = new ObjectMapper();
-            String imagesJsonStr = mapper.writeValueAsString(imageNames);
+            String imagesJsonStr = mapper.writeValueAsString(imageBase64List);
 
             String roomId = roomRegisterRepository.saveRoomWithJson(
                     hotelId, roomNumber, roomType, featuresJson,
@@ -352,8 +334,6 @@ public class HotelController {
                     Map.of(
                             "roomId", roomId,
                             "hotelId", hotelId,
-                            "imageNames", imageNames,
-                            "imageUrls", imageUrls,
                             "roomNumber", roomNumber),
                     "Room registered successfully");
 
@@ -372,7 +352,7 @@ public class HotelController {
     @PutMapping("/update-verification")
     public ResponseEntity<?> updateVerificationStatus(@RequestBody HotelVerificationUpdate request) {
         try {
-            if (request.getHotelId() <= 0 || request.getStatus() == null || request.getStatus().isEmpty()) {
+            if (request.getHotelId() == null || request.getStatus() == null || request.getStatus().isEmpty()) {
                 return ApiResponse.badRequest("Invalid input: hotelId and status are required");
             }
 
@@ -396,24 +376,6 @@ public class HotelController {
             return ApiResponse.unauthorized("Unauthorized to update verification status");
         } catch (Exception e) {
             return ApiResponse.serverError("Error updating verification status: " + e.getMessage());
-        }
-    }
-
-    private String encodeURL(String urlPath) {
-        try {
-            return URLEncoder.encode(urlPath, StandardCharsets.UTF_8.toString())
-                    .replace("+", "%20"); // fix space encoding
-        } catch (Exception e) {
-            return urlPath;
-        }
-    }
-
-    private String encodePath(String path) {
-        try {
-            return URLEncoder.encode(path, StandardCharsets.UTF_8.toString())
-                    .replace("+", "%20");
-        } catch (Exception e) {
-            return path;
         }
     }
 

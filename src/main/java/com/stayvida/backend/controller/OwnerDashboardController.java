@@ -3,8 +3,10 @@ package com.stayvida.backend.controller;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Value;
 import com.stayvida.backend.service.CloudinaryService;
+import com.stayvida.backend.service.ImageCompressionUtil;
 import com.stayvida.backend.service.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -192,17 +194,17 @@ public class OwnerDashboardController {
                 isEnable ? "Room enabled successfully" : "Room disabled successfully");
     }
 
-    @PutMapping("/rooms/{roomId}")
-    public ResponseEntity<?> updateRoomWithImages(
+    @PutMapping("/rooms/{roomId}") // update room (NO IMAGES)
+    public ResponseEntity<?> updateRoom(
             @PathVariable String roomId,
             @RequestParam(required = false) String room_NO,
             @RequestParam(required = false) String roomType,
             @RequestParam(required = false) String features, // JSON string
-            @RequestParam(required = false) MultipartFile[] images,
             @RequestParam(required = false) Integer price,
             @RequestParam(required = false) Integer maxAdults,
             @RequestParam(required = false) Integer maxChildren,
             @RequestParam(required = false) Integer bedCount) {
+
         try {
             int ownerId = (int) SecurityContextHolder
                     .getContext()
@@ -226,34 +228,6 @@ public class OwnerDashboardController {
             if (bedCount != null)
                 updates.put("bedCount", bedCount);
 
-            // Handle images upload if provided
-            if (images != null && images.length > 0) {
-                List<String> imageNames = new ArrayList<>();
-                List<String> imageUrls = new ArrayList<>();
-
-                for (MultipartFile file : images) {
-                    if (file.isEmpty())
-                        continue;
-
-                    String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-
-                    // Upload to Cloudinary
-                    Map uploadResult = cloudinaryService.uploadImage(file, fileName);
-
-                    imageNames.add(fileName);
-                    imageUrls.add(uploadResult.get("secure_url").toString());
-                }
-
-                if (!imageNames.isEmpty()) {
-                    // Store JSON string of image names in DB
-                    ObjectMapper mapper = new ObjectMapper();
-                    updates.put("images", mapper.writeValueAsString(imageNames));
-
-                    // Optional: include URLs in response
-                    updates.put("imageUrls", imageUrls);
-                }
-            }
-
             if (updates.isEmpty()) {
                 return ApiResponse.badRequest("No fields provided for update");
             }
@@ -272,21 +246,119 @@ public class OwnerDashboardController {
         }
     }
 
-    @PutMapping("/hotels/{hotelId}")
+    // ROOMIMAGE UPDATE HELPER FRTCH ALL ROOM IMAGE
+    @GetMapping("/rooms/{roomId}/images")
+    public ResponseEntity<?> getRoomImagesBase64(@PathVariable String roomId) {
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        Map<Integer, String> images = dashboardService.getRoomImagesBase64WithId(roomId, ownerId);
+
+        if (images.isEmpty()) {
+            return ApiResponse.notFound("No images found for this room");
+        }
+
+        return ApiResponse.success(
+                images,
+                "Room images fetched successfully");
+    }
+
+    // delete image from room
+    @DeleteMapping("/rooms/remove-image")
+    public ResponseEntity<?> removeRoomImage(@RequestBody Map<String, Object> request) {
+        try {
+            String roomId = (String) request.get("roomId");
+            Integer imageIndex = (Integer) request.get("imageIndex"); // optional, 1-based
+            String base64Image = (String) request.get("base64Image"); // optional alternative
+
+            if (roomId == null || (imageIndex == null && base64Image == null)) {
+                return ApiResponse.badRequest("roomId and either imageIndex or base64Image are required");
+            }
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+            boolean removed = dashboardService.removeRoomImage(roomId, imageIndex, base64Image, ownerId);
+
+            if (!removed) {
+                return ApiResponse.notFound("Image not found or already removed");
+            }
+
+            return ApiResponse.success(null, "Image removed successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to remove image: " + e.getMessage());
+        }
+    }
+
+    // insert image in room
+    @PostMapping("/rooms/{roomId}/update-image")
+    public ResponseEntity<?> addRoomImages(
+            @PathVariable String roomId,
+            @RequestParam("images") MultipartFile[] images) {
+
+        try {
+            if (images == null || images.length == 0) {
+                return ApiResponse.badRequest("At least one image is required");
+            }
+
+            List<String> base64Images = new ArrayList<>();
+
+            for (MultipartFile image : images) {
+                if (image.isEmpty())
+                    continue;
+
+                // ✅ Compress EACH image separately
+                String base64 = ImageCompressionUtil
+                        .processImageToBase64(image.getBytes());
+
+                base64Images.add(base64);
+            }
+
+            if (base64Images.isEmpty()) {
+                return ApiResponse.badRequest("No valid images found");
+            }
+
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
+            boolean updated = dashboardService.appendRoomImages(roomId, base64Images, ownerId);
+
+            if (!updated) {
+                return ApiResponse.notFound("Room not found");
+            }
+
+            return ApiResponse.success(
+                    Map.of("count", base64Images.size()),
+                    "Images added successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to add images");
+        }
+    }
+
+    @PutMapping(value = "/hotels/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateHotel(
-            @PathVariable int hotelId,
+            // @PathVariable int hotelId,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) String type, // 'Hotel','Resort','Villa','Guest House'
+            @RequestParam(required = false) String type,
             @RequestParam(required = false) String destination,
             @RequestParam(required = false) Boolean isForEvent,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String phone_NO,
             @RequestParam(required = false) String country_code,
-            @RequestParam(required = false) String tags, // JSON string
-            @RequestParam(required = false) MultipartFile image, // Single file
-            @RequestParam(required = false) String amenities, // JSON string
+            @RequestParam(required = false) String tags,
+            @RequestParam(required = false) MultipartFile image,
+            @RequestParam(required = false) String amenities,
             @RequestParam(required = false) String longitude,
             @RequestParam(required = false) String latitude) {
+
         try {
             int ownerId = (int) SecurityContextHolder
                     .getContext()
@@ -318,12 +390,13 @@ public class OwnerDashboardController {
             if (latitude != null)
                 updates.put("latitude", latitude);
 
-            // Handle image if provided
+            // ✅ BASE64 IMAGE HANDLING
             if (image != null && !image.isEmpty()) {
-                String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
-                Map uploadResult = cloudinaryService.uploadImage(image, fileName);
-                updates.put("images", fileName); // Save filename in DB
-                updates.put("imageUrl", uploadResult.get("secure_url").toString()); // optional for response
+
+                String base64Image = ImageCompressionUtil
+                        .processImageToBase64(image.getBytes());
+
+                updates.put("images", base64Image);
             }
 
             if (updates.isEmpty()) {
@@ -344,9 +417,6 @@ public class OwnerDashboardController {
         }
     }
 
-    @Value("${cloudinary.urlPrefix}")
-    private String cloudinaryPrefix;
-
     @GetMapping("/hotels-profile")
     public ResponseEntity<?> getOwnerHotels() {
         try {
@@ -361,17 +431,18 @@ public class OwnerDashboardController {
                 return ApiResponse.notFound("No hotels found");
             }
 
-            // 🔗 Add Cloudinary prefix to images
+            // ✅ NO URL PREFIXING – BASE64 ONLY
             hotels.forEach(hotel -> {
                 Object imagesObj = hotel.get("images");
-                if (imagesObj instanceof List<?> images) {
-                    List<String> fullUrls = images.stream()
-                            .filter(Objects::nonNull)
-                            .map(img -> img.toString().startsWith("http")
-                                    ? img.toString()
-                                    : cloudinaryPrefix + img)
-                            .toList();
-                    hotel.put("images", fullUrls);
+
+                if (imagesObj instanceof String base64 && !base64.isBlank()) {
+                    // Single Base64 image
+                    hotel.put("images", base64);
+                } else if (imagesObj instanceof List<?> list) {
+                    // Multiple Base64 images
+                    hotel.put("images", list);
+                } else {
+                    hotel.put("images", List.of());
                 }
             });
 
@@ -397,17 +468,27 @@ public class OwnerDashboardController {
                 return ApiResponse.notFound("No rooms found");
             }
 
-            // 🔗 Add Cloudinary prefix to images
+            // 🖼️ Convert images to Base64 data URLs
             data.forEach(room -> {
                 Object imagesObj = room.get("images");
+
                 if (imagesObj instanceof List<?> images) {
-                    List<String> fullUrls = images.stream()
+                    List<String> base64Images = images.stream()
                             .filter(Objects::nonNull)
-                            .map(img -> img.toString().startsWith("http")
-                                    ? img.toString()
-                                    : cloudinaryPrefix + img)
+                            .map(img -> {
+                                String value = img.toString().trim();
+
+                                // Already prefixed → keep it
+                                if (value.startsWith("data:image")) {
+                                    return value;
+                                }
+
+                                // Assume DB contains pure Base64
+                                return "data:image/jpeg;base64," + value;
+                            })
                             .toList();
-                    room.put("images", fullUrls);
+
+                    room.put("images", base64Images);
                 }
             });
 

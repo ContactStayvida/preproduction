@@ -1,9 +1,15 @@
 package com.stayvida.backend.service;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,14 +77,10 @@ public class BookingService {
 
         // 2️⃣ Fetch charges
         Map<String, BigDecimal> charges = fetchCharges();
-
-        BigDecimal platformCharges = charges.get("platform_charges");
-        BigDecimal taxRate = charges.get("tax");
-
         // 3️⃣ Price calculation
-        // BigDecimal taxableAmount = price.add(platformCharges);
-        // BigDecimal taxAmount = taxableAmount.multiply(taxRate);
-        // BigDecimal totalPrice = taxableAmount.add(taxAmount);
+        BigDecimal platformCharges = charges.get("platform_charges"); // platform charges
+        BigDecimal taxRate = charges.get("tax"); // tax rate
+        platformCharges = platformCharges.add(platformCharges.multiply(taxRate));// platform charges with tax
 
         // 4️⃣ Lock expiry (3 minutes)
         // IST zone
@@ -161,10 +163,22 @@ public class BookingService {
         }
         // 2️⃣ Fetch charges
         Map<String, BigDecimal> charges = fetchCharges();
-        BigDecimal platformCharges = charges.get("platform_charges");
-        BigDecimal taxAmount = request.getTaxAmount();
+        BigDecimal platformCharges = charges.get("platform_charges"); // platform charges
+        BigDecimal taxRate = charges.get("tax"); // tax rate
+        platformCharges = platformCharges.add(platformCharges.multiply(taxRate))
+                .setScale(2, RoundingMode.HALF_UP);// platform charges with tax
+        BigDecimal commissionRate = charges.get("commission"); // commission rate
+        LocalDate checkInDate = LocalDate.parse(request.getCheckIn());
+        LocalDate checkOutDate = LocalDate.parse(request.getCheckOut());
 
-        // BigDecimal taxAmount = roomPrice.add(platformCharges).multiply(taxRate);
+        long totalDays = ChronoUnit.DAYS.between(checkInDate, checkOutDate);
+
+        if (totalDays <= 0) {
+            throw new RuntimeException("Invalid check-in/check-out dates");
+        }
+        roomPrice = roomPrice.multiply(new BigDecimal(totalDays));
+        BigDecimal commissionAmount = roomPrice.multiply(commissionRate); // commission amount
+        commissionAmount = commissionAmount.add(commissionAmount.multiply(taxRate)); // commission amount with tax
 
         // 3️⃣ Generate Booking ID
         String bookingId = "B-" + System.currentTimeMillis();
@@ -178,9 +192,9 @@ public class BookingService {
                         totalAmount, platformFee, tax_amount,
                         payment_type,
                         name, countru_code, phone_no,
-                        createdAt, updatedAt
+                        createdAt, updatedAt,commision_Amount
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(),?)
                 """;
 
         jdbcTemplate.update(insertBooking,
@@ -197,12 +211,13 @@ public class BookingService {
                 "Pending",
                 roomPrice,
                 platformCharges,
-                taxAmount,
+                taxRate, // in table the column name is still tax_amount
                 request.getPaymentType(),
                 request.getName(),
                 request.getCountryCode(),
-                request.getPhoneNo());
-
+                request.getPhoneNo(),
+                commissionAmount);
+        System.out.println(commissionAmount);
         // 5️⃣ Remove room lock
         jdbcTemplate.update(
                 "DELETE FROM room_locks WHERE room_id = ?",
@@ -213,9 +228,10 @@ public class BookingService {
         response.setBookingId(bookingId);
         response.setBookingStatus("Pending");
         response.setPaymentStatus("Pending");
+        response.setDuration(totalDays);
         response.setRoomPrice(roomPrice);
         response.setPlatformCharges(platformCharges);
-        response.setTaxAmount(taxAmount);
+        response.setTaxAmount(taxRate);
         response.setCheckIn(request.getCheckIn());
         response.setCheckOut(request.getCheckOut());
         response.setCreatedAt(LocalDateTime.now());

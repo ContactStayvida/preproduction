@@ -15,6 +15,7 @@ public class BookingResponse {
     private LocalDateTime createdAt;
     private String checkIn;
     private String checkOut;
+    private long duration;
 
     // getters & setters
     public String getBookingId() {
@@ -95,5 +96,13 @@ public class BookingResponse {
 
     public void setTaxAmount(BigDecimal taxAmount) {
         this.taxAmount = taxAmount;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
     }
 }

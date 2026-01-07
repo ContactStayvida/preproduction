@@ -1,5 +1,6 @@
 package com.stayvida.backend.dto;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -7,22 +8,25 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class RoomDTO {
     private String roomId;
     private Integer room_NO;
-    private int hotelId;
+    private String hotelId;
     private String type;
-    private double price;
-    private double platformCharges;
-    private double taxPercent;
+    private BigDecimal price;
+    private BigDecimal platformCharges;
+    private BigDecimal taxRate;
     private long stayDuration;
     private int adultsMax;
     private int childrenMax;
     private int bedCount;
     private List<String> features;
     private List<String> roomImages;
+    private BigDecimal totalAmount;
 
     @JsonPropertyOrder({ "roomId", "room_NO", "hotelId", "type", "price", "platformCharges",
-            "taxPercent", "stayDuration", "adultsMax", "childrenMax", "bedCount", "features", "roomImages" })
-    public RoomDTO(String roomId, Integer room_NO, int hotelId, String type, double price,
-            double platformCharges, double taxPercent, long stayDuration, int adultsMax, int childrenMax,
+            "taxRate", "totalAmount", "stayDuration", "adultsMax", "childrenMax", "bedCount", "features",
+            "roomImages" })
+    public RoomDTO(String roomId, Integer room_NO, String hotelId, String type, BigDecimal price,
+            BigDecimal platformCharges, BigDecimal taxRate, BigDecimal totalAmount, long stayDuration, int adultsMax,
+            int childrenMax,
             int bedCount) {
         this.roomId = roomId;
         this.room_NO = room_NO;
@@ -30,7 +34,8 @@ public class RoomDTO {
         this.type = type;
         this.price = price;
         this.platformCharges = platformCharges;
-        this.taxPercent = taxPercent;
+        this.taxRate = taxRate;
+        this.totalAmount = totalAmount;
         this.adultsMax = adultsMax;
         this.childrenMax = childrenMax;
         this.bedCount = bedCount;
@@ -55,11 +60,11 @@ public class RoomDTO {
         return room_NO;
     }
 
-    public int getHotelId() {
+    public String getHotelId() {
         return hotelId;
     }
 
-    public void setHotelId(int hotelId) {
+    public void setHotelId(String hotelId) {
         this.hotelId = hotelId;
     }
 
@@ -71,24 +76,32 @@ public class RoomDTO {
         this.type = type;
     }
 
-    public double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public double getPlatformCharges() {
+    public BigDecimal getPlatformCharges() {
         return platformCharges;
     }
 
-    public void setPlatformCharges(double platformCharges) {
+    public void setPlatformCharges(BigDecimal platformCharges) {
         this.platformCharges = platformCharges;
     }
 
-    public double getTaxPercent() {
-        return taxPercent;
+    public BigDecimal getTaxRate() {
+        return taxRate;
     }
 
-    public void setTaxPercent(double taxPercent) {
-        this.taxPercent = taxPercent;
+    public void setTaxRate(BigDecimal taxRate) {
+        this.taxRate = taxRate;
+    }
+
+    public BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
     }
 
     public long getStayDuration() {
@@ -99,7 +112,7 @@ public class RoomDTO {
         this.stayDuration = stayDuration;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

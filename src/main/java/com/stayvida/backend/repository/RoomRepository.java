@@ -10,11 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Repository
 public class RoomRepository {
@@ -26,7 +30,7 @@ public class RoomRepository {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public HotelDTO getRoomsByHotelId(int hotelId, String checkIn, String checkOut) {
+    public HotelDTO getRoomsByHotelId(String hotelId, String checkIn, String checkOut) {
         LocalDate checkInDate = LocalDate.parse(checkIn);
         LocalDate checkOutDate = LocalDate.parse(checkOut);
         String PhoneNo;
@@ -48,7 +52,7 @@ public class RoomRepository {
                 (ResultSet rs, int rowNum) -> {
 
                     HotelDTO dto = new HotelDTO();
-                    dto.setHotelId(rs.getInt("hotel_ID"));
+                    dto.setHotelId(rs.getString("hotel_ID"));
                     dto.setName(rs.getString("name"));
                     dto.setDescription(rs.getString("description"));
                     dto.setRating(rs.getDouble("avg_rating"));
@@ -140,21 +144,20 @@ public class RoomRepository {
                   );
                 """;
 
-        List<Charges> charges = hotelRepository.getCharges();
-        double platformCharges = charges.stream()
-                .filter(c -> "platform_charges".equals(c.getType()))
-                .mapToDouble(Charges::getValue)
-                .sum();
-
-        double taxPercent = charges.stream()
-                .filter(c -> "tax".equals(c.getType()))
-                .mapToDouble(Charges::getValue)
-                .sum();
+        Map<String, BigDecimal> charges = fetchCharges();
+        // 3️⃣ Price calculation
+        BigDecimal platformCharges = charges.get("platform_charges"); // platform charges
+        BigDecimal taxRate = charges.get("tax"); // tax rate
+        // BigDecimal price = rs.getBigDecimal("price");
+        BigDecimal platformChargesWithTax = platformCharges
+                .add(platformCharges.multiply(taxRate))
+                .setScale(2, RoundingMode.HALF_UP);// platform charges with tax
 
         long stayDuration = ChronoUnit.DAYS.between(checkInDate, checkOutDate);
-
-        System.out.println("platformCharges: " + platformCharges);
-        System.out.println("taxPercent: " + taxPercent);
+        // BigDecimal totalAmount = price.multiply(new
+        // BigDecimal(stayDuration)).add(platformChargesWithTax);
+        // System.out.println("platformCharges: " + platformCharges);
+        // System.out.println("taxPercent: " + taxPercent);
         List<RoomDTO> rooms = jdbcTemplate.query(
                 roomSql,
                 new Object[] { hotelId, checkInDate, checkInDate, checkOutDate },
@@ -162,12 +165,16 @@ public class RoomRepository {
                     RoomDTO room = new RoomDTO(
                             rs.getString("room_ID"),
                             rs.getInt("room_NO"),
-                            rs.getInt("hotel_ID"),
+                            rs.getString("hotel_ID"),
                             rs.getString("room_Type"),
-                            rs.getDouble("price"),
-                            platformCharges,
-                            taxPercent,
-                            stayDuration,
+                            rs.getBigDecimal("price"), // base room price
+                            platformChargesWithTax, // platform charges with tax
+                            taxRate, // tax rate
+                            rs.getBigDecimal("price")
+                                    .multiply(BigDecimal.valueOf(stayDuration))
+                                    .add(platformChargesWithTax)
+                                    .setScale(2, RoundingMode.HALF_UP), // total amount
+                            stayDuration, // stay duration
                             rs.getInt("max_adults"),
                             rs.getInt("max_children"),
                             rs.getInt("bed_count"));
@@ -205,4 +212,18 @@ public class RoomRepository {
         hotel.setRooms(rooms);
         return hotel;
     }
+
+    private Map<String, BigDecimal> fetchCharges() {
+
+        String sql = "SELECT `type`, `value` FROM amount";
+
+        return jdbcTemplate.query(sql, rs -> {
+            Map<String, BigDecimal> map = new HashMap<>();
+            while (rs.next()) {
+                map.put(rs.getString("type"), rs.getBigDecimal("value"));
+            }
+            return map;
+        });
+    }
+
 }

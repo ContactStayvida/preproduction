@@ -13,7 +13,6 @@ public class BookingRequest {
     private String phoneNo;
     private String checkIn;
     private String checkOut;
-    private BigDecimal taxAmount;
 
     // getters & setters
     public String getLockRoomId() {
@@ -86,14 +85,6 @@ public class BookingRequest {
 
     public void setCheckOut(String checkOut) {
         this.checkOut = checkOut;
-    }
-
-    public BigDecimal getTaxAmount() {
-        return taxAmount;
-    }
-
-    public void setTaxAmount(BigDecimal taxAmount) {
-        this.taxAmount = taxAmount;
     }
 
 }

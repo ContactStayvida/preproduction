@@ -122,7 +122,7 @@ public class HotelRepository {
         return availableRoomCount != null && availableRoomCount > 0;
     }
 
-    public int updateVerificationStatus(int hotelId, String status, String remark) {
+    public int updateVerificationStatus(String hotelId, String status, String remark) {
         String sql = "UPDATE hotels SET status = ?, remark = ? WHERE hotel_ID = ?";
         return jdbcTemplate.update(sql, status, remark, hotelId);
     }

@@ -13,11 +13,6 @@ public class ListOfDestinationController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Value("${app.base.url}")
-    private String baseUrl; // ✅ Prefix for image URLs
-    @Value("${cloudinary.urlPrefix}")
-    private String cloudinaryPrefix; // Cloudinary URL prefix
-
     @GetMapping("/list")
     public Object getAllLocations() {
         String sql = """
@@ -42,26 +37,7 @@ public class ListOfDestinationController {
             locationData.put("location", row.get("location"));
             locationData.put("lowestPrice", row.get("lowest_price"));
             locationData.put("hotelCount", row.get("hotel_count"));
-
-            // 🖼️ Combine and prefix image URLs
-            String imageConcat = (String) row.get("all_images");
-            List<String> imageList = new ArrayList<>();
-            if (imageConcat != null) {
-                for (String imgSet : imageConcat.split(",")) {
-                    for (String img : imgSet
-                            .replace("[", "")
-                            .replace("]", "")
-                            .replace("\"", "")
-                            .split(",")) {
-                        String trimmed = img.trim();
-                        if (!trimmed.isEmpty()) {
-                            imageList.add(cloudinaryPrefix + trimmed); // ✅ Add URL prefix
-                        }
-                    }
-                }
-            }
-
-            locationData.put("images", imageList);
+            locationData.put("images", "data:image/jpeg;base64," + row.get("all_images"));
             response.add(locationData);
         }
 
