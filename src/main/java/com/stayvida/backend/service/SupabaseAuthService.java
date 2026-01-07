@@ -69,6 +69,14 @@ public class SupabaseAuthService {
                 "password", request.getPassword());
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-        return restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Supabase login failed", "message", ex.getMessage()));
+        }
     }
 }
