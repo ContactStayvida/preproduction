@@ -13,6 +13,7 @@ public class RoomDTO {
     private BigDecimal price;
     private BigDecimal platformCharges;
     private BigDecimal taxRate;
+    private BigDecimal advanceRate;
     private long stayDuration;
     private int adultsMax;
     private int childrenMax;
@@ -20,12 +21,17 @@ public class RoomDTO {
     private List<String> features;
     private List<String> roomImages;
     private BigDecimal totalAmount;
+    private BigDecimal advanceAmount;
 
     @JsonPropertyOrder({ "roomId", "room_NO", "hotelId", "type", "price", "platformCharges",
-            "taxRate", "totalAmount", "stayDuration", "adultsMax", "childrenMax", "bedCount", "features",
+            "taxRate", "advanceRate", "totalAmount", "advanceAmount", "stayDuration", "adultsMax", "childrenMax",
+            "bedCount",
+            "features",
             "roomImages" })
     public RoomDTO(String roomId, Integer room_NO, String hotelId, String type, BigDecimal price,
-            BigDecimal platformCharges, BigDecimal taxRate, BigDecimal totalAmount, long stayDuration, int adultsMax,
+            BigDecimal platformCharges, BigDecimal taxRate, BigDecimal advanceRate, BigDecimal totalAmount,
+            BigDecimal advanceAmount,
+            long stayDuration, int adultsMax,
             int childrenMax,
             int bedCount) {
         this.roomId = roomId;
@@ -35,7 +41,9 @@ public class RoomDTO {
         this.price = price;
         this.platformCharges = platformCharges;
         this.taxRate = taxRate;
+        this.advanceRate = advanceRate;
         this.totalAmount = totalAmount;
+        this.advanceAmount = advanceAmount;
         this.adultsMax = adultsMax;
         this.childrenMax = childrenMax;
         this.bedCount = bedCount;
@@ -96,12 +104,28 @@ public class RoomDTO {
         this.taxRate = taxRate;
     }
 
+    public BigDecimal getAdvanceRate() {
+        return advanceRate;
+    }
+
+    public void setAdvanceRate(BigDecimal advanceRate) {
+        this.advanceRate = advanceRate;
+    }
+
     public BigDecimal getTotalAmount() {
         return totalAmount;
     }
 
     public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public BigDecimal getAdvanceAmount() {
+        return advanceAmount;
+    }
+
+    public void setAdvanceAmount(BigDecimal advanceAmount) {
+        this.advanceAmount = advanceAmount;
     }
 
     public long getStayDuration() {

@@ -149,6 +149,7 @@ public class RoomRepository {
         BigDecimal platformCharges = charges.get("platform_charges"); // platform charges
         BigDecimal taxRate = charges.get("tax"); // tax rate
         // BigDecimal price = rs.getBigDecimal("price");
+        BigDecimal advanceRate = charges.get("Advance");
         BigDecimal platformChargesWithTax = platformCharges
                 .add(platformCharges.multiply(taxRate))
                 .setScale(2, RoundingMode.HALF_UP);// platform charges with tax
@@ -170,10 +171,15 @@ public class RoomRepository {
                             rs.getBigDecimal("price"), // base room price
                             platformChargesWithTax, // platform charges with tax
                             taxRate, // tax rate
+                            advanceRate, // advance rate
                             rs.getBigDecimal("price")
                                     .multiply(BigDecimal.valueOf(stayDuration))
                                     .add(platformChargesWithTax)
                                     .setScale(2, RoundingMode.HALF_UP), // total amount
+                            rs.getBigDecimal("price")
+                                    .multiply(BigDecimal.valueOf(stayDuration)).multiply(advanceRate)
+                                    .add(platformChargesWithTax)
+                                    .setScale(2, RoundingMode.HALF_UP), // advance amount
                             stayDuration, // stay duration
                             rs.getInt("max_adults"),
                             rs.getInt("max_children"),

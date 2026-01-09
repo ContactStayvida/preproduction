@@ -27,7 +27,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.stayvida.backend.model.Charges;
-
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -102,7 +103,9 @@ public class HotelController {
                 return ApiResponse.success(List.of(), "No hotels found for the given criteria");
             }
             List<Charges> charges = hotelRepository.getCharges();
-
+            LocalDate checkInDate = LocalDate.parse(request.getCheckIn());
+            LocalDate checkOutDate = LocalDate.parse(request.getCheckOut());
+            long stayDuration = ChronoUnit.DAYS.between(checkInDate, checkOutDate);
             List<Map<String, Object>> responseHotels = hotels.stream().map(hotel -> {
                 Map<String, Object> map = new LinkedHashMap<>();
                 double price = hotel.getPrice();
@@ -118,6 +121,8 @@ public class HotelController {
                                 : null);
                 map.put("isForEvent", hotel.isForEvent());
                 map.put("base price", price);
+                map.put("stayDuration", stayDuration);
+                map.put("Price for duration", price * stayDuration);
                 // map.put("platformCharges", platformCharges);
                 // map.put("taxPercent", taxPercent);
                 return map;
