@@ -79,4 +79,10 @@ public class RoomregisterRepository {
         return count != null && count > 0;
     }
 
+    public String getHotelID(int ownerId) {
+        String sql = "SELECT hotel_ID FROM hotels WHERE owner_ID = ?";
+        return jdbcTemplate.queryForObject(sql, String.class, ownerId);
+
+    }
+
 }

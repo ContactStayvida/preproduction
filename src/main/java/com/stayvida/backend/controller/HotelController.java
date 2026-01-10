@@ -17,6 +17,7 @@ import com.stayvida.backend.repository.RoomregisterRepository;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.CloudinaryService;
 import com.stayvida.backend.service.ImageCompressionUtil;
+import com.stayvida.backend.service.RoomService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,6 +53,8 @@ public class HotelController {
     private HotelRepository hotelRepository;
     @Autowired
     private RoomRepository roomRepository;
+    @Autowired
+    private RoomService roomService;
 
     // @Autowired
     // private RoomImageRepository roomImageRepository;
@@ -198,7 +201,6 @@ public class HotelController {
         try {
 
             HotelDTO result = roomRepository.getRoomsByHotelId(hotelId, checkIn, checkOut);
-
             if (result == null) {
                 return ApiResponse.badRequest("Hotel not found");
             }
@@ -225,6 +227,8 @@ public class HotelController {
                     }
                 });
             }
+
+            roomService.groupRoomsByType(result);
 
             return ApiResponse.success(result, "Hotel rooms fetched successfully");
 
@@ -288,7 +292,7 @@ public class HotelController {
 
     @PostMapping("/register_room_with_images")
     public ResponseEntity<Map<String, Object>> registerRoomWithImages(
-            @RequestParam("hotelId") String hotelId,
+            // @RequestParam("hotelId") String hotelId,
             @RequestParam("roomType") String roomType,
             @RequestParam("roomNumber") String roomNumber,
             @RequestParam("features") String featuresJson,
@@ -299,7 +303,15 @@ public class HotelController {
             @RequestParam("images") MultipartFile[] files) {
 
         try {
+
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
             // 🔴 DUPLICATE CHECK (before upload)
+
+            String hotelId = roomRegisterRepository.getHotelID(ownerId);
+
             if (roomRegisterRepository.roomExists(hotelId, roomNumber)) {
                 return ApiResponse.badRequest(
                         "Room already exists for this hotel with room number: " + roomNumber);

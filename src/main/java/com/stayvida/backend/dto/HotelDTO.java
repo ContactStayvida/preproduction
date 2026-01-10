@@ -3,6 +3,8 @@ package com.stayvida.backend.dto;
 import java.util.List;
 // import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class HotelDTO {
     private String hotelId;
     private String name;
@@ -16,11 +18,22 @@ public class HotelDTO {
     private List<String> tags;
     private String countryCode; // ✅ ADD THIS
     private String phoneNo;
-    private List<RoomDTO> rooms; // List of all rooms for this hotel
+    private List<GroupedRoomDTO> rooms; // List of all rooms for this hotel
+
+    @JsonIgnore
+    private List<RoomDTO> rawRooms; // 👈 repository fills this
 
     // Getters & Setters
     public String getHotelId() {
         return hotelId;
+    }
+
+    public List<RoomDTO> getRawRooms() {
+        return rawRooms;
+    }
+
+    public void setRawRooms(List<RoomDTO> rawRooms) {
+        this.rawRooms = rawRooms;
     }
 
     public void setHotelId(String hotelId) {
@@ -91,11 +104,11 @@ public class HotelDTO {
         this.tags = tags;
     }
 
-    public List<RoomDTO> getRooms() {
+    public List<GroupedRoomDTO> getRooms() {
         return rooms;
     }
 
-    public void setRooms(List<RoomDTO> rooms) {
+    public void setRooms(List<GroupedRoomDTO> rooms) {
         this.rooms = rooms;
     }
 

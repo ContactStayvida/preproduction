@@ -131,7 +131,7 @@ public class RoomRepository {
                 FROM rooms r
                 WHERE r.hotel_ID = ?
                   AND r.isEnable = true
-                  AND ? > CURRENT_DATE           -- param check-in must be after today
+                  AND ? >= CURRENT_DATE           -- param check-in must be after today
                   AND NOT EXISTS (
                       SELECT 1
                       FROM bookings b
@@ -215,7 +215,7 @@ public class RoomRepository {
                     return room;
                 });
 
-        hotel.setRooms(rooms);
+        hotel.setRawRooms(rooms);
         return hotel;
     }
 
