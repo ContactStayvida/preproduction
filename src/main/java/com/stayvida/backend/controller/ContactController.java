@@ -33,44 +33,46 @@ public class ContactController {
         return response;
     }
 
-    // 📅 GET: View All Contact Submissions (Grouped by Date)
-    @GetMapping("/all")
-    public List<Map<String, Object>> getAllContacts() {
-        String sql = "SELECT * FROM contact_form ORDER BY created_AT DESC";
+    // // 📅 GET: View All Contact Submissions (Grouped by Date)
+    // @GetMapping("/all")
+    // public List<Map<String, Object>> getAllContacts() {
+    // String sql = "SELECT * FROM contact_form ORDER BY created_AT DESC";
 
-        List<Map<String, Object>> allContacts = jdbcTemplate.query(sql, (ResultSet rs, int rowNum) -> {
-            Map<String, Object> map = new LinkedHashMap<>();
-            map.put("ID", rs.getInt("ID"));
-            map.put("fullName", rs.getString("full_NAME"));
-            map.put("email", rs.getString("email_ID"));
-            map.put("phoneNumber", rs.getString("phone_NUMBER"));
-            map.put("subject", rs.getString("subject"));
-            map.put("message", rs.getString("message"));
-            map.put("createdAt", rs.getTimestamp("created_AT"));
-            return map;
-        });
+    // List<Map<String, Object>> allContacts = jdbcTemplate.query(sql, (ResultSet
+    // rs, int rowNum) -> {
+    // Map<String, Object> map = new LinkedHashMap<>();
+    // map.put("ID", rs.getInt("ID"));
+    // map.put("fullName", rs.getString("full_NAME"));
+    // map.put("email", rs.getString("email_ID"));
+    // map.put("phoneNumber", rs.getString("phone_NUMBER"));
+    // map.put("subject", rs.getString("subject"));
+    // map.put("message", rs.getString("message"));
+    // map.put("createdAt", rs.getTimestamp("created_AT"));
+    // return map;
+    // });
 
-        // Group by date
-        Map<String, List<Map<String, Object>>> grouped = new LinkedHashMap<>();
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+    // // Group by date
+    // Map<String, List<Map<String, Object>>> grouped = new LinkedHashMap<>();
+    // SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
 
-        for (Map<String, Object> contact : allContacts) {
-            Date createdAt = (Date) contact.get("createdAt");
-            String dateKey = sdf.format(createdAt);
+    // for (Map<String, Object> contact : allContacts) {
+    // Date createdAt = (Date) contact.get("createdAt");
+    // String dateKey = sdf.format(createdAt);
 
-            grouped.computeIfAbsent(dateKey, k -> new ArrayList<>()).add(contact);
-        }
+    // grouped.computeIfAbsent(dateKey, k -> new ArrayList<>()).add(contact);
+    // }
 
-        // Convert grouped map to desired JSON structure
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Map.Entry<String, List<Map<String, Object>>> entry : grouped.entrySet()) {
-            Map<String, Object> dateGroup = new LinkedHashMap<>();
-            dateGroup.put("date", entry.getKey());
-            dateGroup.put("data", entry.getValue());
-            dateGroup.put("count", entry.getValue().size());
-            result.add(dateGroup);
-        }
+    // // Convert grouped map to desired JSON structure
+    // List<Map<String, Object>> result = new ArrayList<>();
+    // for (Map.Entry<String, List<Map<String, Object>>> entry : grouped.entrySet())
+    // {
+    // Map<String, Object> dateGroup = new LinkedHashMap<>();
+    // dateGroup.put("date", entry.getKey());
+    // dateGroup.put("data", entry.getValue());
+    // dateGroup.put("count", entry.getValue().size());
+    // result.add(dateGroup);
+    // }
 
-        return result;
-    }
+    // return result;
+    // }
 }

@@ -366,34 +366,41 @@ public class HotelController {
         }
     }
 
-    @PutMapping("/update-verification")
-    public ResponseEntity<?> updateVerificationStatus(@RequestBody HotelVerificationUpdate request) {
-        try {
-            if (request.getHotelId() == null || request.getStatus() == null || request.getStatus().isEmpty()) {
-                return ApiResponse.badRequest("Invalid input: hotelId and status are required");
-            }
+    // @PutMapping("/update-verification")
+    // public ResponseEntity<?> updateVerificationStatus(@RequestBody
+    // HotelVerificationUpdate request) {
+    // try {
+    // if (request.getHotelId() == null || request.getStatus() == null ||
+    // request.getStatus().isEmpty()) {
+    // return ApiResponse.badRequest("Invalid input: hotelId and status are
+    // required");
+    // }
 
-            int rows = hotelRepository.updateVerificationStatus(
-                    request.getHotelId(),
-                    request.getStatus(),
-                    request.getRemark());
+    // int rows = hotelRepository.updateVerificationStatus(
+    // request.getHotelId(),
+    // request.getStatus(),
+    // request.getRemark());
 
-            if (rows > 0) {
-                return ApiResponse.success(Map.of(
-                        "hotelId", request.getHotelId(),
-                        "status", request.getStatus(),
-                        "remark", request.getRemark()), "Hotel verification status updated successfully!");
-            } else {
-                return ApiResponse.badRequest("Hotel not found"); // or make a notFound() if you like
-            }
+    // if (rows > 0) {
+    // return ApiResponse.success(Map.of(
+    // "hotelId", request.getHotelId(),
+    // "status", request.getStatus(),
+    // "remark", request.getRemark()), "Hotel verification status updated
+    // successfully!");
+    // } else {
+    // return ApiResponse.badRequest("Hotel not found"); // or make a notFound() if
+    // you like
+    // }
 
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.badRequest("Invalid data format: " + e.getMessage());
-        } catch (SecurityException e) {
-            return ApiResponse.unauthorized("Unauthorized to update verification status");
-        } catch (Exception e) {
-            return ApiResponse.serverError("Error updating verification status: " + e.getMessage());
-        }
-    }
+    // } catch (IllegalArgumentException e) {
+    // return ApiResponse.badRequest("Invalid data format: " + e.getMessage());
+    // } catch (SecurityException e) {
+    // return ApiResponse.unauthorized("Unauthorized to update verification
+    // status");
+    // } catch (Exception e) {
+    // return ApiResponse.serverError("Error updating verification status: " +
+    // e.getMessage());
+    // }
+    // }
 
 }
