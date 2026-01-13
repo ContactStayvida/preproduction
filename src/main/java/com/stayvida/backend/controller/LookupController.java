@@ -17,24 +17,24 @@ public class LookupController {
     @Autowired
     private LookupService service;
 
-    // ---------- ADD ----------
-    @PostMapping("/feature")
-    public String addFeature(@RequestParam String name) {
-        service.addFeature(name);
-        return "Feature added successfully";
-    }
+    // // ---------- ADD ----------
+    // @PostMapping("/feature")
+    // public String addFeature(@RequestParam String name) {
+    // service.addFeature(name);
+    // return "Feature added successfully";
+    // }
 
-    @PostMapping("/amenity")
-    public String addAmenity(@RequestParam String name) {
-        service.addAmenity(name);
-        return "Amenity added successfully";
-    }
+    // @PostMapping("/amenity")
+    // public String addAmenity(@RequestParam String name) {
+    // service.addAmenity(name);
+    // return "Amenity added successfully";
+    // }
 
-    @PostMapping("/tag")
-    public String addTag(@RequestParam String name) {
-        service.addTag(name);
-        return "Tag added successfully";
-    }
+    // @PostMapping("/tag")
+    // public String addTag(@RequestParam String name) {
+    // service.addTag(name);
+    // return "Tag added successfully";
+    // }
 
     // ---------- GET ALL ----------
     @GetMapping("/features")
