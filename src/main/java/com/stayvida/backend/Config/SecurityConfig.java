@@ -95,7 +95,8 @@ public class SecurityConfig {
                                                                 "/lookup/**",
                                                                 "/test/upload",
                                                                 "/api/admin/**",
-                                                                "/api/auth/login")
+                                                                "/api/auth/login",
+                                                                "/error")
                                                 .permitAll()
                                                 .anyRequest().authenticated()
 
