@@ -292,6 +292,7 @@ public class HotelController {
 
     @PostMapping("/register_room_with_images")
     public ResponseEntity<Map<String, Object>> registerRoomWithImages(
+
             // @RequestParam("hotelId") String hotelId,
             @RequestParam("roomType") String roomType,
             @RequestParam("roomNumber") String roomNumber,
@@ -301,6 +302,7 @@ public class HotelController {
             @RequestParam("bedCount") int bedCount,
             @RequestParam("price") int price,
             @RequestParam("images") MultipartFile[] files) {
+        System.out.println("🔥 CONTROLLER HIT");
 
         try {
 
