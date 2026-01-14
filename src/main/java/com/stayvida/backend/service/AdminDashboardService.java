@@ -20,12 +20,12 @@ public class AdminDashboardService {
     public Map<String, BigDecimal> getCurrentMonthRevenue() {
 
         String sql = """
-                    SELECT
-                        COALESCE(SUM(commision_Amount), 0) AS totalCommission,
-                        COALESCE(SUM(platformFee), 0) AS totalPlatformFee
-                    FROM bookings
-                    WHERE MONTH(checkIn) = MONTH(CURRENT_DATE)
-                      AND YEAR(checkIn) = YEAR(CURRENT_DATE)
+                SELECT
+                    COALESCE(SUM(commision_Amount), 0) AS totalCommission,
+                    COALESCE(SUM(platformFee), 0) AS totalPlatformFee
+                FROM bookings
+                WHERE MONTH(createdAt) = MONTH(CURRENT_DATE)
+                  AND YEAR(createdAt) = YEAR(CURRENT_DATE)
                 """;
 
         Map<String, Object> dbResult = jdbcTemplate.queryForMap(sql);
@@ -42,11 +42,10 @@ public class AdminDashboardService {
                 ((BigDecimal) dbResult.get("totalPlatformFee"))
                         .setScale(2, RoundingMode.HALF_UP));
         result.put(
-            "totalRevenue",
-            ((BigDecimal) dbResult.get("totalCommission"))
-                    .add((BigDecimal) dbResult.get("totalPlatformFee"))
-                    .setScale(2, RoundingMode.HALF_UP)
-        );
+                "totalRevenue",
+                ((BigDecimal) dbResult.get("totalCommission"))
+                        .add((BigDecimal) dbResult.get("totalPlatformFee"))
+                        .setScale(2, RoundingMode.HALF_UP));
 
         return result;
     }

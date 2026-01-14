@@ -743,9 +743,9 @@ public class OwnerDashboardService {
                               AND b.checkOut >= CURRENT_DATE()
                               AND b.booking_Status NOT IN ('Cancelled')
                         )
-                        THEN false
-                        ELSE true
-                    END AS availability
+                        THEN 'Occupied'
+                        ELSE 'Available'
+                    END AS Status
                 FROM rooms r
                 JOIN (
                     SELECT r2.room_ID
@@ -776,7 +776,7 @@ public class OwnerDashboardService {
                 }
             }
             map.put("price", rs.getInt("price"));
-            map.put("availability", rs.getBoolean("availability"));
+            map.put("Status", rs.getString("Status"));
             map.put("isEnable", rs.getBoolean("isEnable"));
             map.put("createdAt", rs.getTimestamp("createdAt").toLocalDateTime());
 

@@ -16,6 +16,9 @@ public class BookingResponse {
     private String checkIn;
     private String checkOut;
     private long duration;
+    private BigDecimal advanceRate;
+    private BigDecimal totalAmount_ADV;
+    private BigDecimal totalAmount;
 
     // getters & setters
     public String getBookingId() {
@@ -48,6 +51,22 @@ public class BookingResponse {
 
     public void setRoomPrice(BigDecimal roomPrice) {
         this.roomPrice = roomPrice;
+    }
+
+    public BigDecimal getTotalAmount_ADV() {
+        return totalAmount_ADV;
+    }
+
+    public void setTotalAmount_ADV(BigDecimal totalAmount_ADV) {
+        this.totalAmount_ADV = totalAmount_ADV;
+    }
+
+    public BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
     }
 
     public BigDecimal getPlatformCharges() {
@@ -96,6 +115,14 @@ public class BookingResponse {
 
     public void setTaxAmount(BigDecimal taxAmount) {
         this.taxAmount = taxAmount;
+    }
+
+    public BigDecimal getAdvanceRate() {
+        return advanceRate;
+    }
+
+    public void setAdvanceRate(BigDecimal advanceRate) {
+        this.advanceRate = advanceRate;
     }
 
     public long getDuration() {

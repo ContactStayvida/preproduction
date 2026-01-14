@@ -20,4 +20,9 @@ public class ProfileService {
     public Profile getProfile(Integer userId) {
         return profileRepository.getProfile(userId);
     }
+
+    public Profile partialUpdate(int userID, Profile profile) {
+        return profileRepository.partialUpdate(userID, profile);
+    }
+
 }

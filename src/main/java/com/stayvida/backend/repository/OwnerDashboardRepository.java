@@ -89,8 +89,8 @@ public class OwnerDashboardRepository {
                     JOIN hotels h ON b.hotel_ID = h.hotel_ID
                     WHERE h.owner_ID = ?
                       AND h.status = 'Verified'
-                      AND MONTH(b.checkIn) = MONTH(CURRENT_DATE())
-                      AND YEAR(b.checkIn) = YEAR(CURRENT_DATE())
+                      AND MONTH(b.createdAt) = MONTH(CURRENT_DATE())
+                      AND YEAR(b.createdAt) = YEAR(CURRENT_DATE())
                       AND b.booking_Status <> 'Cancelled'
                 """;
 
@@ -112,8 +112,8 @@ public class OwnerDashboardRepository {
                     JOIN hotels h ON b.hotel_ID = h.hotel_ID
                     WHERE h.owner_ID = ?
                       AND h.status = 'Verified'
-                      AND MONTH(b.checkIn) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH)
-                      AND YEAR(b.checkIn) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)
+                      AND MONTH(b.createdAt) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH)
+                      AND YEAR(b.createdAt) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)
                       AND b.booking_Status <> 'Cancelled'
                 """;
         return jdbcTemplate.queryForObject(sql, Double.class, ownerId);

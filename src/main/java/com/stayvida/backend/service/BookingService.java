@@ -179,7 +179,8 @@ public class BookingService {
         roomPrice = roomPrice.multiply(new BigDecimal(totalDays));
         BigDecimal commissionAmount = roomPrice.multiply(commissionRate); // commission amount
         commissionAmount = commissionAmount.add(commissionAmount.multiply(taxRate)); // commission amount with tax
-
+        BigDecimal totalAmount = roomPrice.add(platformCharges);
+        BigDecimal totalAmount_ADV = roomPrice.multiply(charges.get("Advance")).add(platformCharges);
         // 3️⃣ Generate Booking ID
         String bookingId = "B-" + System.currentTimeMillis();
 
@@ -232,6 +233,9 @@ public class BookingService {
         response.setRoomPrice(roomPrice);
         response.setPlatformCharges(platformCharges);
         response.setTaxAmount(taxRate);
+        response.setAdvanceRate(charges.get("Advance"));
+        response.setTotalAmount_ADV(totalAmount_ADV);
+        response.setTotalAmount(totalAmount);
         response.setCheckIn(request.getCheckIn());
         response.setCheckOut(request.getCheckOut());
         response.setCreatedAt(LocalDateTime.now());

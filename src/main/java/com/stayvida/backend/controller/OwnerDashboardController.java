@@ -27,7 +27,7 @@ public class OwnerDashboardController {
     @Autowired
     private CloudinaryService cloudinaryService;
 
-    @GetMapping("/monthly-bookings")
+    @GetMapping("/monthly-bookings") // owner dashbord dashbord page
     public ResponseEntity<?> getMonthlyBookings() {
         try {
             int ownerId = (int) SecurityContextHolder
@@ -46,7 +46,8 @@ public class OwnerDashboardController {
         }
     }
 
-    @GetMapping("/active-bookings")
+    @GetMapping("/active-bookings") // owner dashbord dashbord page fetch all the booking not checked out or payment
+                                    // pending
     public ResponseEntity<?> getActiveBookings() {
         try {
             int ownerId = (int) SecurityContextHolder
@@ -70,7 +71,7 @@ public class OwnerDashboardController {
         }
     }
 
-    @PutMapping("/booking/{bookingId}/status")
+    @PutMapping("/booking/{bookingId}/status") // owner dashboard dashbord page and booking page update booking status
     public ResponseEntity<?> updateBookingStatus(
             @PathVariable String bookingId,
             @RequestParam String status) {
@@ -96,7 +97,7 @@ public class OwnerDashboardController {
         }
     }
 
-    @GetMapping("/all-bookings")
+    @GetMapping("/all-bookings") // owner dashboard booking page fetch all bookings
     public ResponseEntity<?> getAllBookings() {
         try {
             int ownerId = (int) SecurityContextHolder
@@ -120,7 +121,8 @@ public class OwnerDashboardController {
         }
     }
 
-    @GetMapping("/upcoming-bookings")
+    @GetMapping("/upcoming-bookings") // owner dashboard dashboard page fetch recent bookings only
+                                      // five by checkin date
     public ResponseEntity<?> getUpcomingBookings() {
         try {
             int ownerId = (int) SecurityContextHolder
@@ -144,7 +146,7 @@ public class OwnerDashboardController {
         }
     }
 
-    @GetMapping("/{bookingId}/details")
+    @GetMapping("/{bookingId}/details") // owner dashboard all pages where booking is shown open booking fetch details
     public ResponseEntity<?> getBookingDetails(@PathVariable String bookingId) {
         try {
             int ownerId = (int) SecurityContextHolder
@@ -168,7 +170,7 @@ public class OwnerDashboardController {
         }
     }
 
-    @PatchMapping("/{roomId}/{hotelId}/status/{isEnable}") // enable-dissable
+    @PatchMapping("/{roomId}/{hotelId}/status/{isEnable}") // enable-dissable room aka delete
     public ResponseEntity<?> updateRoomStatus(
             @PathVariable String roomId,
             @PathVariable int hotelId,
@@ -246,7 +248,7 @@ public class OwnerDashboardController {
         }
     }
 
-    // ROOMIMAGE UPDATE HELPER FRTCH ALL ROOM IMAGE
+    // ROOMIMAGE UPDATE HELPER FETCH ALL ROOM IMAGE
     @GetMapping("/rooms/{roomId}/images")
     public ResponseEntity<?> getRoomImagesBase64(@PathVariable String roomId) {
         int ownerId = (int) SecurityContextHolder

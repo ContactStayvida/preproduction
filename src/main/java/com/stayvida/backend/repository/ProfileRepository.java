@@ -77,4 +77,34 @@ public class ProfileRepository {
         return count != null && count > 0;
     }
 
+    public Profile partialUpdate(int userID, Profile profile) {
+
+        String sql = """
+                UPDATE profile
+                SET
+                    name = COALESCE(?, name),
+                    phone_number = COALESCE(?, phone_number),
+                    address = COALESCE(?, address),
+                    bio = COALESCE(?, bio),
+                    gender = COALESCE(?, gender),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_ID = ?
+                """;
+
+        int updatedRows = jdbcTemplate.update(
+                sql,
+                profile.getName(),
+                profile.getPhoneNumber(),
+                profile.getAddress(),
+                profile.getBio(),
+                profile.getGender(),
+                userID);
+
+        if (updatedRows == 0) {
+            return null;
+        }
+
+        return getProfile(profile.getUserID());
+    }
+
 }
