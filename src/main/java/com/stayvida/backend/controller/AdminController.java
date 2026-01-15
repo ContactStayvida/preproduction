@@ -191,4 +191,41 @@ public class AdminController {
         }
     }
 
+    // fetch all hotel
+    @GetMapping("/allhotels")
+    public ResponseEntity<?> getallhotels() {
+        try {
+
+            List<Map<String, Object>> data = dashboardService.getallhotels();
+
+            if (data == null || data.isEmpty()) {
+                return ApiResponse.notFound("No hotels found");
+            }
+
+            // 🖼️ Convert images to Base64 data URLs
+            data.forEach(hotel -> {
+                Object imagesObj = hotel.get("images");
+
+                if (imagesObj != null) {
+                    String value = imagesObj.toString().trim();
+
+                    if (!value.startsWith("data:image")) {
+                        value = "data:image/jpeg;base64," + value;
+                    }
+
+                    hotel.put("images", value);
+                }
+
+            });
+
+            return ApiResponse.success(
+                    data,
+                    "All Hotels fetched successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to fetch hotels");
+        }
+    }
+
 }
