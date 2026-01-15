@@ -801,4 +801,86 @@ public class OwnerDashboardService {
         });
     }
 
+    // overloding get allrooms for admin dashbord
+    public List<Map<String, Object>> getallrooms(String hotelId) {
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        String sql = """
+                               SELECT
+                    r.room_ID,
+                    r.room_NO,
+                    r.room_Type,
+                    r.hotel_ID,
+                    r.features,
+                    r.price,
+                    r.images,
+                    r.isEnable,
+                    r.createdAt,
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1
+                            FROM bookings b
+                            WHERE b.room_ID = r.room_ID
+                              AND b.checkIn <= CURRENT_DATE()
+                              AND b.checkOut >= CURRENT_DATE()
+                              AND b.booking_Status NOT IN ('Cancelled')
+                        )
+                        THEN 'Occupied'
+                        ELSE 'Available'
+                    END AS Status
+                FROM rooms r
+                JOIN (
+                    SELECT r2.room_ID
+                    FROM rooms r2
+                    WHERE r2.hotel_ID = ?
+                    ORDER BY r2.room_NO DESC
+                ) sorted ON sorted.room_ID = r.room_ID
+                INNER JOIN hotels h ON h.hotel_ID = r.hotel_ID;
+                """;
+
+        return jdbcTemplate.query(sql, new Object[] { hotelId }, (rs, rowNum) -> {
+
+            Map<String, Object> map = new LinkedHashMap<>();
+
+            map.put("room_ID", rs.getString("room_ID"));
+            map.put("room_NO", rs.getInt("room_NO"));
+            map.put("room_Type", rs.getString("room_Type"));
+            map.put("hotel_ID", rs.getString("hotel_ID"));
+            String featuresJson = rs.getString("features");
+            if (featuresJson != null && !featuresJson.isEmpty()) {
+                try {
+                    map.put("features", objectMapper.readValue(
+                            featuresJson, new TypeReference<List<String>>() {
+                            }));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            map.put("price", rs.getInt("price"));
+            map.put("Status", rs.getString("Status"));
+            map.put("isEnable", rs.getBoolean("isEnable"));
+            map.put("createdAt", rs.getTimestamp("createdAt").toLocalDateTime());
+
+            // ✅ Parse JSON array
+            String imagesJson = rs.getString("images");
+
+            if (imagesJson != null && !imagesJson.isBlank()) {
+                try {
+                    List<String> images = mapper.readValue(
+                            imagesJson,
+                            new TypeReference<List<String>>() {
+                            });
+                    map.put("images", images);
+                } catch (Exception e) {
+                    map.put("images", List.of()); // fallback
+                }
+            } else {
+                map.put("images", List.of());
+            }
+
+            return map;
+        });
+    }
+
 }

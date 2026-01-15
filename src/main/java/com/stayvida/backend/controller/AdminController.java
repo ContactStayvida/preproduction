@@ -3,15 +3,11 @@ package com.stayvida.backend.controller;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,12 +15,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import java.util.*;
 
 import com.stayvida.backend.dto.HotelVerificationUpdate;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.AdminDashboardService;
 import com.stayvida.backend.service.LookupService;
+import com.stayvida.backend.service.OwnerDashboardService;
 import com.stayvida.backend.repository.HotelRepository;
 
 @RestController
@@ -38,6 +37,9 @@ public class AdminController {
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private LookupService service;
+
+    @Autowired
+    private OwnerDashboardService dashboardService;
 
     // @GetMapping("/test")
     // public String testAdminAccess() {
@@ -142,6 +144,51 @@ public class AdminController {
     public String addTag(@RequestParam String name) {
         service.addTag(name);
         return "Tag added successfully";
+    }
+
+    // fetch all room of thee hotel by hotel ID
+    @GetMapping("/allrooms/{hotelId}")
+    public ResponseEntity<?> getallrooms(@PathVariable String hotelId) {
+        try {
+
+            List<Map<String, Object>> data = dashboardService.getallrooms(hotelId);
+
+            if (data == null || data.isEmpty()) {
+                return ApiResponse.notFound("No rooms found");
+            }
+
+            // 🖼️ Convert images to Base64 data URLs
+            data.forEach(room -> {
+                Object imagesObj = room.get("images");
+
+                if (imagesObj instanceof List<?> images) {
+                    List<String> base64Images = images.stream()
+                            .filter(Objects::nonNull)
+                            .map(img -> {
+                                String value = img.toString().trim();
+
+                                // Already prefixed → keep it
+                                if (value.startsWith("data:image")) {
+                                    return value;
+                                }
+
+                                // Assume DB contains pure Base64
+                                return "data:image/jpeg;base64," + value;
+                            })
+                            .toList();
+
+                    room.put("images", base64Images);
+                }
+            });
+
+            return ApiResponse.success(
+                    data,
+                    "All Rooms fetched successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to fetch rooms");
+        }
     }
 
 }

@@ -24,8 +24,6 @@ public class OwnerDashboardController {
     private OwnerDashboardService dashboardService;
     @Autowired
     private JwtUtil jwtUtil;
-    @Autowired
-    private CloudinaryService cloudinaryService;
 
     @GetMapping("/monthly-bookings") // owner dashbord dashbord page
     public ResponseEntity<?> getMonthlyBookings() {
