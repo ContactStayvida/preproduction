@@ -43,8 +43,13 @@ public class AdminController {
     private OwnerDashboardService dashboardService;
 
     @GetMapping("/monthly-revenue")
-    public Map<String, BigDecimal> getMonthlyRevenue() {
-        return adminDashboardService.getCurrentMonthRevenue();
+    public Map<String, Object> getMonthlyRevenue() {
+        return Map.of(
+                "totalRevenue (Current Month)", adminDashboardService.getCurrentMonthRevenue(),
+                "totalBooking", adminDashboardService.totalBooking(),
+                "last 6 MonthRevenue", adminDashboardService.getLast6MonthRevenue(),
+                "hotelCount", adminDashboardService.hotelCount(),
+                "totalOccupancy", adminDashboardService.totalOccupancy());
     }
 
     // update verification status OF HOTEL
