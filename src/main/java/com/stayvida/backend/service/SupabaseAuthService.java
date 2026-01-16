@@ -3,8 +3,10 @@ package com.stayvida.backend.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import com.stayvida.backend.dto.AuthRequest;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 
 @Service
@@ -57,9 +59,34 @@ public class SupabaseAuthService {
         }
     }
 
-    // 🔹 Login user
+    // // 🔹 Login user
+    // public ResponseEntity<?> signIn(AuthRequest request) {
+    // String url = supabaseAuthUrl + "/token?grant_type=password";
+    // HttpHeaders headers = new HttpHeaders();
+    // headers.setContentType(MediaType.APPLICATION_JSON);
+    // headers.set("apikey", supabaseKey);
+
+    // Map<String, Object> body = Map.of(
+    // "email", request.getEmail(),
+    // "password", request.getPassword());
+
+    // HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+    // try {
+    // ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
+    // entity, String.class);
+    // return
+    // ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+    // } catch (Exception ex) {
+    // ex.printStackTrace();
+    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    // .body(Map.of("error", "Supabase login failed", "message", ex.getMessage()));
+    // }
+    // }
+
     public ResponseEntity<?> signIn(AuthRequest request) {
         String url = supabaseAuthUrl + "/token?grant_type=password";
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("apikey", supabaseKey);
@@ -71,12 +98,19 @@ public class SupabaseAuthService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
         try {
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Supabase login failed", "message", ex.getMessage()));
+            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.POST, entity, JsonNode.class);
+
+            return ResponseEntity
+                    .status(response.getStatusCode())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(response.getBody());
+
+        } catch (HttpStatusCodeException ex) {
+            return ResponseEntity
+                    .status(ex.getStatusCode())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(ex.getResponseBodyAsString());
         }
     }
+
 }

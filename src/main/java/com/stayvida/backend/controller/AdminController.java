@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -41,15 +42,6 @@ public class AdminController {
     @Autowired
     private OwnerDashboardService dashboardService;
 
-    // @GetMapping("/test")
-    // public String testAdminAccess() {
-    // return "✅ Supabase JWT authentication successful!";
-    // }
-
-    // public AdminController(AdminDashboardService adminDashboardService) {
-    // this.adminDashboardService = adminDashboardService;
-    // }
-    // get monthly revenue
     @GetMapping("/monthly-revenue")
     public Map<String, BigDecimal> getMonthlyRevenue() {
         return adminDashboardService.getCurrentMonthRevenue();
@@ -134,12 +126,14 @@ public class AdminController {
         return "Feature added successfully";
     }
 
+    // ---------- ADD ----------
     @PostMapping("/amenity")
     public String addAmenity(@RequestParam String name) {
         service.addAmenity(name);
         return "Amenity added successfully";
     }
 
+    // ---------- ADD ----------
     @PostMapping("/tag")
     public String addTag(@RequestParam String name) {
         service.addTag(name);
@@ -228,4 +222,139 @@ public class AdminController {
         }
     }
 
+    // fetch only active bookings of all hotels
+    @GetMapping("/active-bookings") // fetch all the booking not checked out or payment pending
+    public ResponseEntity<?> getActiveBookings() {
+        try {
+
+            List<Map<String, Object>> data = dashboardService.getActiveBookings();
+
+            if (data == null || data.isEmpty()) {
+                return ApiResponse.notFound("No booking found");
+            }
+
+            return ApiResponse.success(
+                    data,
+                    "Active bookings fetched successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to fetch active bookings");
+        }
+    }
+
+    // fetch all bookings of all hotels
+    @GetMapping("/all-bookings")
+    public ResponseEntity<?> getAllBookings() {
+        try {
+            List<Map<String, Object>> data = dashboardService.getAllBookings();
+
+            if (data == null || data.isEmpty()) {
+                return ApiResponse.notFound("No bookings found");
+            }
+
+            return ApiResponse.success(
+                    data,
+                    "All bookings fetched successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to fetch all bookings");
+        }
+    }
+
+    @GetMapping("/{bookingId}/details") // admin dashboard all pages where booking is shown open booking fetch details
+    public ResponseEntity<?> getBookingDetails(@PathVariable String bookingId) {
+        try {
+            Map<String, Object> data = dashboardService.getBookingDetails(bookingId);
+
+            if (data == null) {
+                return ApiResponse.notFound("Booking not found");
+            }
+
+            return ApiResponse.success(
+                    data,
+                    "Booking details fetched successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to fetch booking details");
+        }
+    }
+
+    @PutMapping("/booking/{bookingId}/status") // owner dashboard dashbord page and booking page update booking status
+    public ResponseEntity<?> updateBookingStatus(
+            @PathVariable String bookingId,
+            @RequestParam String status) {
+        try {
+            boolean updated = dashboardService.updateBookingStatus(bookingId, status);
+
+            if (!updated) {
+                return ApiResponse.notFound("Booking not found");
+            }
+
+            return ApiResponse.success(null, "Booking status updated successfully");
+
+        } catch (IllegalArgumentException ex) {
+            return ApiResponse.badRequest(ex.getMessage());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to update booking status");
+        }
+    }
+
+    @PatchMapping("/{roomId}/{hotelId}/status/{isEnable}") // enable-dissable room aka delete
+    public ResponseEntity<?> updateRoomStatus(
+            @PathVariable String roomId,
+            @PathVariable int hotelId,
+            @PathVariable boolean isEnable) {
+
+        boolean updated = dashboardService.updateRoomStatusad(
+                hotelId, roomId, isEnable);
+
+        if (!updated) {
+            return ApiResponse.notFound("Room not found or already in desired state");
+        }
+
+        return ApiResponse.success(
+                Map.of(
+                        "roomId", roomId,
+                        "isEnable", isEnable,
+                        "hotelId", hotelId),
+                isEnable ? "Room enabled successfully" : "Room disabled successfully");
+    }
+
+    @GetMapping("/hotels-profile/{hotelId}")
+    public ResponseEntity<?> getOwnerHotels(@PathVariable String hotelId) {
+        try {
+
+            List<Map<String, Object>> hotels = dashboardService.getHotelsByOwner(hotelId);
+
+            if (hotels == null || hotels.isEmpty()) {
+                return ApiResponse.notFound("No hotels found");
+            }
+
+            // ✅ NO URL PREFIXING – BASE64 ONLY
+            hotels.forEach(hotel -> {
+                Object imagesObj = hotel.get("images");
+
+                if (imagesObj instanceof String base64 && !base64.isBlank()) {
+                    // Single Base64 image
+                    hotel.put("images", base64);
+                } else if (imagesObj instanceof List<?> list) {
+                    // Multiple Base64 images
+                    hotel.put("images", list);
+                } else {
+                    hotel.put("images", List.of());
+                }
+            });
+
+            return ApiResponse.success(hotels, "Hotels fetched successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to fetch hotels");
+        }
+    }
 }

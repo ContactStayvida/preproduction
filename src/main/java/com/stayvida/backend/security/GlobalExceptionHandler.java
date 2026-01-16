@@ -6,6 +6,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,4 +43,27 @@ public class GlobalExceptionHandler {
         response.put("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex) {
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("parameter", ex.getName());
+        details.put(
+                "expectedType",
+                ex.getRequiredType() != null
+                        ? ex.getRequiredType().getSimpleName()
+                        : "unknown");
+        details.put("receivedValue", ex.getValue());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", 400);
+        response.put("error", "Bad Request");
+        response.put("message", "Invalid request parameter type");
+        response.put("data", details);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
 }
