@@ -634,6 +634,73 @@ public class OwnerDashboardService {
         return rows > 0;
     }
 
+    /// admin version
+    public boolean updateRoom(String roomId, String hotelId, Map<String, Object> updates) {
+
+        if (updates == null || updates.isEmpty()) {
+            throw new IllegalArgumentException("No fields provided for update");
+        }
+
+        StringBuilder sql = new StringBuilder("""
+                    UPDATE rooms r
+                    INNER JOIN hotels h ON r.hotel_ID = h.hotel_ID
+                    SET
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (updates.containsKey("room_NO")) {
+            sql.append(" r.room_NO = ?,");
+            params.add(updates.get("room_NO"));
+        }
+
+        if (updates.containsKey("roomType")) {
+            sql.append(" r.room_Type = ?,");
+            params.add(updates.get("roomType"));
+        }
+
+        if (updates.containsKey("features")) {
+            sql.append(" r.features = ?,");
+            params.add(updates.get("features"));
+        }
+
+        if (updates.containsKey("price")) {
+            sql.append(" r.price = ?,");
+            params.add(updates.get("price"));
+        }
+
+        if (updates.containsKey("maxAdults")) {
+            sql.append(" r.max_adults = ?,");
+            params.add(updates.get("maxAdults"));
+        }
+
+        if (updates.containsKey("maxChildren")) {
+            sql.append(" r.max_children = ?,");
+            params.add(updates.get("maxChildren"));
+        }
+
+        if (updates.containsKey("bedCount")) {
+            sql.append(" r.bed_count = ?,");
+            params.add(updates.get("bedCount"));
+        }
+
+        // Remove trailing comma
+        if (sql.charAt(sql.length() - 1) == ',') {
+            sql.deleteCharAt(sql.length() - 1);
+        }
+
+        // Always update timestamp
+        sql.append(", r.updatedAt = NOW()");
+
+        // Ownership check
+        sql.append(" WHERE r.room_ID = ? AND h.hotel_ID = ?");
+        params.add(roomId);
+        params.add(hotelId);
+
+        int rows = jdbcTemplate.update(sql.toString(), params.toArray());
+        return rows > 0;
+    }
+
     // room image update helper
     public Map<Integer, String> getRoomImagesBase64WithId(String roomId, int ownerId) {
 
@@ -674,12 +741,95 @@ public class OwnerDashboardService {
         }
     }
 
-    // delet room images
+    // admin version
+
+    public Map<Integer, String> getRoomImagesBase64WithId(String roomId, String hotelId) {
+
+        String sql = "SELECT r.images FROM rooms r INNER JOIN hotels h ON r.hotel_ID = h.hotel_ID WHERE r.room_ID = ? AND h.hotel_ID = ?";
+
+        String imagesJson = jdbcTemplate.queryForObject(
+                sql,
+                String.class,
+                roomId,
+                hotelId);
+
+        if (imagesJson == null || imagesJson.isBlank()) {
+            return Map.of();
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+
+            List<String> images = mapper.readValue(
+                    imagesJson,
+                    new TypeReference<List<String>>() {
+                    });
+
+            Map<Integer, String> result = new LinkedHashMap<>();
+
+            int index = 1;
+            for (String img : images) {
+                if (img != null && !img.isBlank()) {
+                    result.put(index++, img);
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Map.of();
+        }
+    }
+
+    // delete room images
     public boolean removeRoomImage(String roomId, Integer imageIndex, String base64Image, int ownerId) {
         try {
             // 1️⃣ Fetch current JSON array
             String sqlFetch = "SELECT r.images FROM rooms r INNER JOIN hotels h ON r.hotel_ID = h.hotel_ID WHERE r.room_ID = ? AND h.owner_ID = ?";
             String imagesJson = jdbcTemplate.queryForObject(sqlFetch, String.class, roomId, ownerId);
+
+            if (imagesJson == null || imagesJson.isBlank())
+                return false;
+
+            ObjectMapper mapper = new ObjectMapper();
+            List<String> images = mapper.readValue(imagesJson, new TypeReference<List<String>>() {
+            });
+
+            boolean removed = false;
+
+            if (imageIndex != null) {
+                // 1-based index
+                if (imageIndex >= 1 && imageIndex <= images.size()) {
+                    images.remove(imageIndex - 1);
+                    removed = true;
+                }
+            } else if (base64Image != null) {
+                removed = images.removeIf(img -> img.equals(base64Image));
+            }
+
+            if (!removed)
+                return false;
+
+            // 2️⃣ Update DB with modified JSON array
+            String updatedJson = mapper.writeValueAsString(images);
+            String sqlUpdate = "UPDATE rooms SET images = ? WHERE room_ID = ?";
+            int rows = jdbcTemplate.update(sqlUpdate, updatedJson, roomId);
+
+            return rows > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // admin version
+    public boolean removeRoomImage(String roomId, Integer imageIndex, String base64Image) {
+        try {
+            // 1️⃣ Fetch current JSON array
+            String sqlFetch = "SELECT r.images FROM rooms r INNER JOIN hotels h ON r.hotel_ID = h.hotel_ID WHERE r.room_ID = ?";
+            String imagesJson = jdbcTemplate.queryForObject(sqlFetch, String.class, roomId);
 
             if (imagesJson == null || imagesJson.isBlank())
                 return false;
@@ -722,6 +872,48 @@ public class OwnerDashboardService {
             String selectSql = "SELECT r.images FROM rooms r INNER JOIN hotels h ON r.hotel_ID = h.hotel_ID WHERE r.room_ID = ? AND h.owner_ID = ?";
             String imagesJson = jdbcTemplate.queryForObject(
                     selectSql, String.class, roomId, ownerId);
+
+            ObjectMapper mapper = new ObjectMapper();
+            List<String> images;
+
+            if (imagesJson == null || imagesJson.isBlank()) {
+                images = new ArrayList<>();
+            } else {
+                images = mapper.readValue(
+                        imagesJson,
+                        new TypeReference<List<String>>() {
+                        });
+            }
+
+            // ✅ Add ALL images individually
+            images.addAll(newImages);
+
+            String updateSql = """
+                    UPDATE rooms
+                    SET images = ?, updatedAt = NOW()
+                    WHERE room_ID = ?
+                    """;
+
+            int rows = jdbcTemplate.update(
+                    updateSql,
+                    mapper.writeValueAsString(images),
+                    roomId);
+
+            return rows > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // admin version
+    public boolean appendRoomImages(String roomId, List<String> newImages) {
+
+        try {
+            String selectSql = "SELECT images FROM rooms WHERE room_ID = ?";
+            String imagesJson = jdbcTemplate.queryForObject(
+                    selectSql, String.class, roomId);
 
             ObjectMapper mapper = new ObjectMapper();
             List<String> images;
@@ -830,6 +1022,85 @@ public class OwnerDashboardService {
         // Ownership + hotel condition
         sql.append(" WHERE h.owner_ID = ?");
         params.add(ownerId);
+
+        int rows = jdbcTemplate.update(sql.toString(), params.toArray());
+        return rows > 0;
+    }
+
+    /// admin version
+    public boolean updateHotel(String hotelId, Map<String, Object> updates) {
+
+        if (updates == null || updates.isEmpty()) {
+            throw new IllegalArgumentException("No fields provided for update");
+        }
+
+        StringBuilder sql = new StringBuilder("""
+                    UPDATE hotels h
+                    SET
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (updates.containsKey("name")) {
+            sql.append(" h.name = ?,");
+            params.add(updates.get("name"));
+        }
+        if (updates.containsKey("type")) {
+            sql.append(" h.type = ?,");
+            params.add(updates.get("type"));
+        }
+        if (updates.containsKey("destination")) {
+            sql.append(" h.destination = ?,");
+            params.add(updates.get("destination"));
+        }
+        if (updates.containsKey("isForEvent")) {
+            sql.append(" h.isForEvent = ?,");
+            params.add(updates.get("isForEvent"));
+        }
+        if (updates.containsKey("description")) {
+            sql.append(" h.description = ?,");
+            params.add(updates.get("description"));
+        }
+        if (updates.containsKey("phone_NO")) {
+            sql.append(" h.phone_NO = ?,");
+            params.add(updates.get("phone_NO"));
+        }
+        if (updates.containsKey("country_code")) {
+            sql.append(" h.country_code = ?,");
+            params.add(updates.get("country_code"));
+        }
+        if (updates.containsKey("tags")) {
+            sql.append(" h.tags = ?,");
+            params.add(updates.get("tags"));
+        }
+        if (updates.containsKey("amenities")) {
+            sql.append(" h.amenities = ?,");
+            params.add(updates.get("amenities"));
+        }
+        if (updates.containsKey("longitude")) {
+            sql.append(" h.longitude = ?,");
+            params.add(updates.get("longitude"));
+        }
+        if (updates.containsKey("latitude")) {
+            sql.append(" h.latitude = ?,");
+            params.add(updates.get("latitude"));
+        }
+        if (updates.containsKey("images")) {
+            sql.append(" h.images = ?,");
+            params.add(updates.get("images"));
+        }
+
+        // Remove trailing comma
+        if (sql.charAt(sql.length() - 1) == ',') {
+            sql.deleteCharAt(sql.length() - 1);
+        }
+
+        // Always update timestamp
+        sql.append(", h.updatedAt = NOW()");
+
+        // Ownership + hotel condition
+        sql.append(" WHERE h.hotel_ID = ?");
+        params.add(hotelId);
 
         int rows = jdbcTemplate.update(sql.toString(), params.toArray());
         return rows > 0;

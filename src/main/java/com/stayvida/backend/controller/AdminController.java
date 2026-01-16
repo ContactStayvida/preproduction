@@ -5,7 +5,9 @@ import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,18 +16,25 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
+import com.stayvida.backend.model.Register;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.AdminDashboardService;
+import com.stayvida.backend.service.ImageCompressionUtil;
 import com.stayvida.backend.service.LookupService;
 import com.stayvida.backend.service.OwnerDashboardService;
 import com.stayvida.backend.repository.HotelRepository;
+import com.stayvida.backend.repository.RegisterRepository;
+import com.stayvida.backend.repository.RoomregisterRepository;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -41,6 +50,10 @@ public class AdminController {
 
     @Autowired
     private OwnerDashboardService dashboardService;
+    @Autowired
+    private RegisterRepository registerRepository;
+    @Autowired
+    private RoomregisterRepository roomRegisterRepository; // 🔹 inject here
 
     @GetMapping("/monthly-revenue")
     public Map<String, Object> getMonthlyRevenue() {
@@ -268,6 +281,7 @@ public class AdminController {
         }
     }
 
+    // fetch booking details
     @GetMapping("/{bookingId}/details") // admin dashboard all pages where booking is shown open booking fetch details
     public ResponseEntity<?> getBookingDetails(@PathVariable String bookingId) {
         try {
@@ -287,6 +301,7 @@ public class AdminController {
         }
     }
 
+    // update booking status
     @PutMapping("/booking/{bookingId}/status") // owner dashboard dashbord page and booking page update booking status
     public ResponseEntity<?> updateBookingStatus(
             @PathVariable String bookingId,
@@ -309,6 +324,7 @@ public class AdminController {
         }
     }
 
+    // enable-dissable room aka delete
     @PatchMapping("/{roomId}/{hotelId}/status/{isEnable}") // enable-dissable room aka delete
     public ResponseEntity<?> updateRoomStatus(
             @PathVariable String roomId,
@@ -330,6 +346,7 @@ public class AdminController {
                 isEnable ? "Room enabled successfully" : "Room disabled successfully");
     }
 
+    // fetch hotel profile
     @GetMapping("/hotels-profile/{hotelId}")
     public ResponseEntity<?> getOwnerHotels(@PathVariable String hotelId) {
         try {
@@ -360,6 +377,337 @@ public class AdminController {
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.serverError("Failed to fetch hotels");
+        }
+    }
+
+    /// ==============================///
+    /// add hotel ///
+    /// ==============================///
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Object>> registerHotel(
+            @RequestPart("data") String hotelJson,
+            @RequestPart("OwnerId") int OwnerId,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile) {
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Register register = mapper.readValue(hotelJson, Register.class);
+
+            register.setOwner_ID(OwnerId);
+            register.setHotel_ID("H-" + OwnerId);
+
+            String imageBase64 = null;
+
+            if (imageFile != null && !imageFile.isEmpty()) {
+                imageBase64 = ImageCompressionUtil
+                        .processImageToBase64(imageFile.getBytes());
+
+                // ✅ store BASE64 directly
+                register.setImages(imageBase64);
+            }
+
+            String existingHotelId = registerRepository.findHotelIdByOwnerId(register.getOwner_ID());
+
+            String hotelId = registerRepository.saveHotel(register);
+
+            Map<String, Object> responseBody = new HashMap<>();
+            responseBody.put("hotelId", hotelId);
+            // responseBody.put("imageBase64", imageBase64);
+
+            if (existingHotelId != null) {
+                return ApiResponse.success(
+                        responseBody,
+                        "Hotel already exists. You can add or edit rooms.");
+            }
+
+            return ApiResponse.created(responseBody, "Hotel registered successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Error registering hotel: " + e.getMessage());
+        }
+    }
+
+    /// ==============================///
+    /// add room ///
+    /// ==============================///
+    @PostMapping("/register_room_with_images")
+    public ResponseEntity<Map<String, Object>> registerRoomWithImages(
+
+            @RequestParam("hotelId") String hotelId,
+            @RequestParam("roomType") String roomType,
+            @RequestParam("roomNumber") String roomNumber,
+            @RequestParam("features") String featuresJson,
+            @RequestParam("maxAdults") int maxAdults,
+            @RequestParam("maxChildren") int maxChildren,
+            @RequestParam("bedCount") int bedCount,
+            @RequestParam("price") int price,
+            @RequestParam("images") MultipartFile[] files) {
+
+        try {
+
+            // 🔴 DUPLICATE CHECK (before upload)
+
+            if (roomRegisterRepository.roomExists(hotelId, roomNumber)) {
+                return ApiResponse.badRequest(
+                        "Room already exists for this hotel with room number: " + roomNumber);
+            }
+
+            if (files == null || files.length == 0) {
+                return ApiResponse.badRequest("At least one image file is required");
+            }
+
+            List<String> imageNames = new ArrayList<>();
+            List<String> imageUrls = new ArrayList<>();
+
+            List<String> imageBase64List = new ArrayList<>();
+
+            for (MultipartFile file : files) {
+                if (file.isEmpty())
+                    continue;
+
+                String base64 = ImageCompressionUtil
+                        .processImageToBase64(file.getBytes());
+
+                imageBase64List.add(base64);
+            }
+
+            if (imageBase64List.isEmpty()) {
+                return ApiResponse.badRequest("No valid images uploaded");
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            String imagesJsonStr = mapper.writeValueAsString(imageBase64List);
+
+            String roomId = roomRegisterRepository.saveRoomWithJson(
+                    hotelId, roomNumber, roomType, featuresJson,
+                    imagesJsonStr, price, maxAdults, maxChildren, bedCount);
+
+            return ApiResponse.created(
+                    Map.of(
+                            "roomId", roomId,
+                            "hotelId", hotelId,
+                            "roomNumber", roomNumber),
+                    "Room registered successfully");
+
+        } catch (Exception e) {
+
+            // 🔒 SAFETY: DB-level unique constraint catch
+            if (e.getMessage().contains("unique_room_per_hotel")) {
+                return ApiResponse.badRequest(
+                        "Room already exists for this hotel with room number: " + roomNumber);
+            }
+
+            return ApiResponse.serverError("Error registering room: " + e.getMessage());
+        }
+    }
+
+    /// ==============================///
+    /// ====================================/// Updates
+    /// ///======================================================
+    /// ==============================///
+
+    @PutMapping("/rooms/{roomId}/{hotelId}") // update room (NO IMAGES)
+    public ResponseEntity<?> updateRoom(
+            @PathVariable String roomId,
+            @PathVariable String hotelId,
+            @RequestParam(required = false) String room_NO,
+            @RequestParam(required = false) String roomType,
+            @RequestParam(required = false) String features, // JSON string
+            @RequestParam(required = false) Integer price,
+            @RequestParam(required = false) Integer maxAdults,
+            @RequestParam(required = false) Integer maxChildren,
+            @RequestParam(required = false) Integer bedCount) {
+
+        try {
+
+            Map<String, Object> updates = new HashMap<>();
+
+            if (room_NO != null)
+                updates.put("room_NO", room_NO);
+            if (roomType != null)
+                updates.put("roomType", roomType);
+            if (features != null)
+                updates.put("features", features);
+            if (price != null)
+                updates.put("price", price);
+            if (maxAdults != null)
+                updates.put("maxAdults", maxAdults);
+            if (maxChildren != null)
+                updates.put("maxChildren", maxChildren);
+            if (bedCount != null)
+                updates.put("bedCount", bedCount);
+
+            if (updates.isEmpty()) {
+                return ApiResponse.badRequest("No fields provided for update");
+            }
+
+            boolean updated = dashboardService.updateRoom(roomId, hotelId, updates);
+
+            if (!updated) {
+                return ApiResponse.notFound("Room not found or not owned by you");
+            }
+
+            return ApiResponse.success(updates, "Room updated successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to update room: " + e.getMessage());
+        }
+    }
+
+    // ROOMIMAGE UPDATE HELPER FETCH ALL ROOM IMAGE
+    @GetMapping("/rooms/{roomId}/images")
+    public ResponseEntity<?> getRoomImagesBase64(@PathVariable String roomId,
+            @PathVariable String hotelId) {
+
+        Map<Integer, String> images = dashboardService.getRoomImagesBase64WithId(roomId, hotelId);
+
+        if (images.isEmpty()) {
+            return ApiResponse.notFound("No images found for this room");
+        }
+
+        return ApiResponse.success(
+                images,
+                "Room images fetched successfully");
+    }
+
+    // delete image from room
+    @DeleteMapping("/rooms/remove-image")
+    public ResponseEntity<?> removeRoomImage(@RequestBody Map<String, Object> request) {
+        try {
+            String roomId = (String) request.get("roomId");
+            Integer imageIndex = (Integer) request.get("imageIndex"); // optional, 1-based
+            String base64Image = (String) request.get("base64Image"); // optional alternative
+
+            if (roomId == null || (imageIndex == null && base64Image == null)) {
+                return ApiResponse.badRequest("roomId and either imageIndex or base64Image are required");
+            }
+            boolean removed = dashboardService.removeRoomImage(roomId, imageIndex, base64Image);
+
+            if (!removed) {
+                return ApiResponse.notFound("Image not found or already removed");
+            }
+
+            return ApiResponse.success(null, "Image removed successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to remove image: " + e.getMessage());
+        }
+    }
+
+    // insert image in room
+    @PostMapping("/rooms/{roomId}/update-image")
+    public ResponseEntity<?> addRoomImages(
+            @PathVariable String roomId,
+            @RequestParam("images") MultipartFile[] images) {
+
+        try {
+            if (images == null || images.length == 0) {
+                return ApiResponse.badRequest("At least one image is required");
+            }
+
+            List<String> base64Images = new ArrayList<>();
+
+            for (MultipartFile image : images) {
+                if (image.isEmpty())
+                    continue;
+
+                // ✅ Compress EACH image separately
+                String base64 = ImageCompressionUtil
+                        .processImageToBase64(image.getBytes());
+
+                base64Images.add(base64);
+            }
+
+            if (base64Images.isEmpty()) {
+                return ApiResponse.badRequest("No valid images found");
+            }
+
+            boolean updated = dashboardService.appendRoomImages(roomId, base64Images);
+
+            if (!updated) {
+                return ApiResponse.notFound("Room not found");
+            }
+
+            return ApiResponse.success(
+                    Map.of("count", base64Images.size()),
+                    "Images added successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to add images");
+        }
+    }
+
+    @PutMapping(value = "/hotels/{hotelId}/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateHotel(
+            @PathVariable String hotelId,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String destination,
+            @RequestParam(required = false) Boolean isForEvent,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String phone_NO,
+            @RequestParam(required = false) String country_code,
+            @RequestParam(required = false) String tags,
+            @RequestParam(required = false) MultipartFile image,
+            @RequestParam(required = false) String amenities,
+            @RequestParam(required = false) String longitude,
+            @RequestParam(required = false) String latitude) {
+
+        try {
+
+            Map<String, Object> updates = new HashMap<>();
+
+            if (name != null)
+                updates.put("name", name);
+            if (type != null)
+                updates.put("type", type);
+            if (destination != null)
+                updates.put("destination", destination);
+            if (isForEvent != null)
+                updates.put("isForEvent", isForEvent);
+            if (description != null)
+                updates.put("description", description);
+            if (phone_NO != null)
+                updates.put("phone_NO", phone_NO);
+            if (country_code != null)
+                updates.put("country_code", country_code);
+            if (tags != null)
+                updates.put("tags", tags);
+            if (amenities != null)
+                updates.put("amenities", amenities);
+            if (longitude != null)
+                updates.put("longitude", longitude);
+            if (latitude != null)
+                updates.put("latitude", latitude);
+
+            // ✅ BASE64 IMAGE HANDLING
+            if (image != null && !image.isEmpty()) {
+
+                String base64Image = ImageCompressionUtil
+                        .processImageToBase64(image.getBytes());
+
+                updates.put("images", base64Image);
+            }
+
+            if (updates.isEmpty()) {
+                return ApiResponse.badRequest("No fields provided for update");
+            }
+
+            boolean updated = dashboardService.updateHotel(hotelId, updates);
+
+            if (!updated) {
+                return ApiResponse.notFound("Hotel not found or not owned by you");
+            }
+
+            return ApiResponse.success(updates, "Hotel updated successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to update hotel: " + e.getMessage());
         }
     }
 }
