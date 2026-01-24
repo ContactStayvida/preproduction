@@ -2,6 +2,9 @@ package com.stayvida.backend.controller;
 
 import java.util.*;
 import org.springframework.beans.factory.annotation.Value;
+
+import com.stayvida.backend.service.BookingFlowService;
+import com.stayvida.backend.service.BookingService;
 import com.stayvida.backend.service.CloudinaryService;
 import com.stayvida.backend.service.ImageCompressionUtil;
 import com.stayvida.backend.service.JwtUtil;
@@ -13,6 +16,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stayvida.backend.dto.BookingRequest;
+import com.stayvida.backend.dto.BookingResponse;
+import com.stayvida.backend.dto.LockRoomRequest;
+import com.stayvida.backend.dto.LockRoomResponse;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.OwnerDashboardService;
 
@@ -24,6 +31,14 @@ public class OwnerDashboardController {
     private OwnerDashboardService dashboardService;
     @Autowired
     private JwtUtil jwtUtil;
+
+    private final BookingService bookingService;
+    private final BookingFlowService bookingFlowService;
+
+    public OwnerDashboardController(BookingService bookingService, BookingFlowService bookingFlowService) {
+        this.bookingService = bookingService;
+        this.bookingFlowService = bookingFlowService;
+    }
 
     @GetMapping("/monthly-bookings") // owner dashbord dashbord page
     public ResponseEntity<?> getMonthlyBookings() {
@@ -500,6 +515,55 @@ public class OwnerDashboardController {
             e.printStackTrace();
             return ApiResponse.serverError("Failed to fetch rooms");
         }
+    }
+
+    @PostMapping("/lock-room")
+    public ResponseEntity<LockRoomResponse> lockRoomod(
+            @RequestBody LockRoomRequest request) {
+
+        Integer ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        LockRoomResponse response = bookingService.lockRoomod(ownerId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    // @PostMapping("/create")
+    // public ResponseEntity<BookingResponse> createBooking(
+    // @RequestBody BookingRequest request) {
+
+    // Integer userId = (int) SecurityContextHolder
+    // .getContext()
+    // .getAuthentication()
+    // .getPrincipal();
+
+    // BookingResponse response = bookingService.createBooking(userId, request);
+    // return ResponseEntity.ok(response);
+    // }
+
+    @PostMapping("/create")
+    public ResponseEntity<?> initiateBooking(
+            @RequestBody BookingRequest request) {
+        try {
+            BookingResponse response = bookingFlowService.initiateBooking(request);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.ok(
+                    Map.of(
+                            "status", "OTP_REQUIRED",
+                            "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/roomdetails/{roomID}")
+    public ResponseEntity<Map<String, Object>> getRoomDetails(
+            @PathVariable String roomID) {
+        List<Map<String, Object>> data = dashboardService.getRoomDetails(roomID);
+        return ApiResponse.success(data, "Room details fetched successfully");
     }
 
 }

@@ -27,6 +27,12 @@ public class BookingController {
     @PostMapping("/lock-room")
     public ResponseEntity<LockRoomResponse> lockRoom(
             @RequestBody LockRoomRequest request) {
+
+        Integer ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
         LockRoomResponse response = bookingService.lockRoom(request);
         return ResponseEntity.ok(response);
     }

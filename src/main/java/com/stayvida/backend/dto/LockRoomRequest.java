@@ -4,17 +4,18 @@ import java.time.LocalDate;
 
 public class LockRoomRequest {
 
-    private String hotelId;
+    private String roomId;
     private String roomType;
     private LocalDate checkIn;
     private LocalDate checkOut;
+    private String hotelId;
 
-    public String getHotelId() {
-        return hotelId;
+    public String getRoomId() {
+        return roomId;
     }
 
-    public void setHotelId(String hotelId) {
-        this.hotelId = hotelId;
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
     }
 
     public String getRoomType() {
@@ -39,5 +40,13 @@ public class LockRoomRequest {
 
     public void setCheckOut(LocalDate checkOut) {
         this.checkOut = checkOut;
+    }
+
+    public String getHotelId() {
+        return hotelId;
+    }
+
+    public void setHotelId(String hotelId) {
+        this.hotelId = hotelId;
     }
 }

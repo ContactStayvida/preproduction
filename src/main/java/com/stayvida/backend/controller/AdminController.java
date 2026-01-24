@@ -710,4 +710,5 @@ public class AdminController {
             return ApiResponse.serverError("Failed to update hotel: " + e.getMessage());
         }
     }
+
 }

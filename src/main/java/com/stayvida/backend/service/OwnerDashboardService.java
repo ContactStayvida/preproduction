@@ -1515,4 +1515,82 @@ public class OwnerDashboardService {
         });
     }
 
+    public List<Map<String, Object>> getRoomDetails(String roomID) {
+
+        String sql = """
+                SELECT
+                    room_ID,
+                    room_NO,
+                    room_Type,
+                    hotel_ID,
+                    features,
+                    price,
+                    images,
+                    isEnable,
+                    createdAt,
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1
+                            FROM bookings b
+                            WHERE b.room_ID = r.room_ID
+                              AND b.checkIn <= CURRENT_DATE()
+                              AND b.checkOut >= CURRENT_DATE()
+                              AND b.booking_Status NOT IN ('Cancelled')
+                        )
+                        THEN 'Occupied'
+                        ELSE 'Available'
+                    END AS Status
+                FROM rooms r
+                WHERE r.room_ID = ?
+                """;
+
+        return jdbcTemplate.query(sql, new Object[] { roomID }, (rs, rowNum) -> {
+
+            Map<String, Object> room = new HashMap<>();
+
+            room.put("room_ID", rs.getString("room_ID"));
+            room.put("room_NO", rs.getInt("room_NO"));
+            room.put("room_Type", rs.getString("room_Type"));
+            room.put("hotel_ID", rs.getString("hotel_ID"));
+            room.put("price", rs.getInt("price"));
+            room.put("Status", rs.getString("Status"));
+            room.put("isEnable", rs.getBoolean("isEnable"));
+            room.put("createdAt", rs.getTimestamp("createdAt").toLocalDateTime());
+
+            // -------- Parse features JSON --------
+            String featuresJson = rs.getString("features");
+            if (featuresJson != null && !featuresJson.isBlank()) {
+                try {
+                    List<String> features = objectMapper.readValue(
+                            featuresJson,
+                            new TypeReference<List<String>>() {
+                            });
+                    room.put("features", features);
+                } catch (Exception e) {
+                    room.put("features", List.of());
+                }
+            } else {
+                room.put("features", List.of());
+            }
+
+            // -------- Parse images JSON --------
+            String imagesJson = rs.getString("images");
+            if (imagesJson != null && !imagesJson.isBlank()) {
+                try {
+                    List<String> images = objectMapper.readValue(
+                            imagesJson,
+                            new TypeReference<List<String>>() {
+                            });
+                    room.put("images", images);
+                } catch (Exception e) {
+                    room.put("images", List.of());
+                }
+            } else {
+                room.put("images", List.of());
+            }
+
+            return room;
+        });
+    }
+
 }
