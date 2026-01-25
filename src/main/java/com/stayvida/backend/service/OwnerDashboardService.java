@@ -1459,29 +1459,28 @@ public class OwnerDashboardService {
     public List<Map<String, Object>> getallhotels() {
 
         String sql = """
-                SELECT
-                    hotel_ID,
-                    owner_ID,
-                    name,
-                    type,
-                    destination,
-                    isForEvent,
-                    description,
-                    phone_no,
-                    tags,
-                    images,
-                    amenities,
-                    longitude,
-                    latitude,
-                    status,
-                    onArrivalPayment,
-                    remark,
-                    createdAt,
-                    updatedAt,
-                    country_code
-                FROM hotels
-                ORDER BY createdAt DESC
-                """;
+                                SELECT
+                    h.hotel_ID,
+                    h.owner_ID,
+                    h.name,
+                    h.destination,
+                    h.images,
+                    COALESCE(r.avg_rating, 0) AS rating,
+                    COALESCE(rm.totalRooms, 0) AS totalRooms
+                FROM hotels h
+                LEFT JOIN (
+                    SELECT hotel_ID, AVG(rating_Value) AS avg_rating
+                    FROM rating
+                    GROUP BY hotel_ID
+                ) r ON r.hotel_ID = h.hotel_ID
+                LEFT JOIN (
+                    SELECT hotel_ID, COUNT(room_ID) AS totalRooms
+                    FROM rooms
+                    GROUP BY hotel_ID
+                ) rm ON rm.hotel_ID = h.hotel_ID
+                ORDER BY h.createdAt DESC;
+
+                                """;
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Map<String, Object> hotel = new HashMap<>();
@@ -1489,27 +1488,10 @@ public class OwnerDashboardService {
             hotel.put("hotel_ID", rs.getString("hotel_ID"));
             hotel.put("owner_ID", rs.getInt("owner_ID"));
             hotel.put("name", rs.getString("name"));
-            hotel.put("type", rs.getString("type"));
             hotel.put("destination", rs.getString("destination"));
-            hotel.put("isForEvent", rs.getBoolean("isForEvent"));
-            hotel.put("description", rs.getString("description"));
-            hotel.put("phone_no", rs.getString("phone_no"));
-
-            // JSON columns (leave as raw JSON string)
-            hotel.put("tags", rs.getString("tags"));
-            hotel.put("amenities", rs.getString("amenities"));
-
-            // ✅ Single Base64 image
             hotel.put("images", rs.getString("images"));
-
-            hotel.put("longitude", rs.getString("longitude"));
-            hotel.put("latitude", rs.getString("latitude"));
-            hotel.put("status", rs.getString("status"));
-            hotel.put("onArrivalPayment", rs.getBoolean("onArrivalPayment"));
-            hotel.put("remark", rs.getString("remark"));
-            hotel.put("createdAt", rs.getTimestamp("createdAt"));
-            hotel.put("updatedAt", rs.getTimestamp("updatedAt"));
-            hotel.put("country_code", rs.getString("country_code"));
+            hotel.put("rating", rs.getDouble("rating"));
+            hotel.put("totalRooms", rs.getInt("totalRooms"));
 
             return hotel;
         });
