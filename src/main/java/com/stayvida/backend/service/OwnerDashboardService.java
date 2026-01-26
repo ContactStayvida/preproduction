@@ -1465,6 +1465,7 @@ public class OwnerDashboardService {
                     h.name,
                     h.destination,
                     h.images,
+                    h.status,
                     COALESCE(r.avg_rating, 0) AS rating,
                     COALESCE(rm.totalRooms, 0) AS totalRooms
                 FROM hotels h
@@ -1492,6 +1493,53 @@ public class OwnerDashboardService {
             hotel.put("images", rs.getString("images"));
             hotel.put("rating", rs.getDouble("rating"));
             hotel.put("totalRooms", rs.getInt("totalRooms"));
+            hotel.put("status", rs.getString("status"));
+
+            return hotel;
+        });
+    }
+
+    public List<Map<String, Object>> getpendinghotels() {
+
+        String sql = """
+                                SELECT
+                    h.hotel_ID,
+                    h.owner_ID,
+                    h.name,
+                    h.destination,
+                    h.images,
+                    h.createdAt,
+                    h.status,
+                    COALESCE(r.avg_rating, 0) AS rating,
+                    COALESCE(rm.totalRooms, 0) AS totalRooms
+                FROM hotels h
+                LEFT JOIN (
+                    SELECT hotel_ID, AVG(rating_Value) AS avg_rating
+                    FROM rating
+                    GROUP BY hotel_ID
+                ) r ON r.hotel_ID = h.hotel_ID
+                LEFT JOIN (
+                    SELECT hotel_ID, COUNT(room_ID) AS totalRooms
+                    FROM rooms
+                    GROUP BY hotel_ID
+                ) rm ON rm.hotel_ID = h.hotel_ID
+                WHERE h.status = 'Pending'
+                ORDER BY h.createdAt DESC;
+
+                                """;
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Map<String, Object> hotel = new LinkedHashMap<>();
+
+            hotel.put("hotel_ID", rs.getString("hotel_ID"));
+            hotel.put("owner_ID", rs.getInt("owner_ID"));
+            hotel.put("name", rs.getString("name"));
+            hotel.put("destination", rs.getString("destination"));
+            hotel.put("images", rs.getString("images"));
+            hotel.put("rating", rs.getDouble("rating"));
+            hotel.put("totalRooms", rs.getInt("totalRooms"));
+            hotel.put("createdAt", rs.getTimestamp("createdAt").toLocalDateTime());
+            hotel.put("status", rs.getString("status"));
 
             return hotel;
         });
