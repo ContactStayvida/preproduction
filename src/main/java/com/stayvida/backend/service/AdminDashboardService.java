@@ -39,63 +39,66 @@ public class AdminDashboardService {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    public Map<String, Map<String, BigDecimal>> getLast6MonthRevenue() {
+    // public Map<String, Map<String, BigDecimal>> getLast6MonthRevenue() {
 
-        // Step 1: Prepare last 6 months with ZERO values
-        Map<String, Map<String, BigDecimal>> result = new LinkedHashMap<>();
+    // // Step 1: Prepare last 6 months with ZERO values
+    // Map<String, Map<String, BigDecimal>> result = new LinkedHashMap<>();
 
-        LocalDate now = LocalDate.now().withDayOfMonth(1);
+    // LocalDate now = LocalDate.now().withDayOfMonth(1);
 
-        for (int i = 5; i >= 0; i--) {
-            LocalDate monthDate = now.minusMonths(i);
-            String key = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+    // for (int i = 5; i >= 0; i--) {
+    // LocalDate monthDate = now.minusMonths(i);
+    // String key = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
-            Map<String, BigDecimal> emptyData = new HashMap<>();
-            // emptyData.put("totalCommission", BigDecimal.ZERO.setScale(2));
-            // emptyData.put("totalPlatformFee", BigDecimal.ZERO.setScale(2));
-            emptyData.put("totalRevenue", BigDecimal.ZERO.setScale(2));
+    // Map<String, BigDecimal> emptyData = new HashMap<>();
+    // // emptyData.put("totalCommission", BigDecimal.ZERO.setScale(2));
+    // // emptyData.put("totalPlatformFee", BigDecimal.ZERO.setScale(2));
+    // emptyData.put("totalRevenue", BigDecimal.ZERO.setScale(2));
 
-            result.put(key, emptyData);
-        }
+    // result.put(key, emptyData);
+    // }
 
-        // Step 2: Fetch actual data
-        String sql = """
-                SELECT
-                    YEAR(createdAt) AS year,
-                    MONTH(createdAt) AS month,
-                    COALESCE(SUM(commision_Amount), 0) AS totalCommission,
-                    COALESCE(SUM(platformFee), 0) AS totalPlatformFee
-                FROM bookings
-                WHERE createdAt >= DATE_SUB(CURRENT_DATE, INTERVAL 6 MONTH)
-                GROUP BY YEAR(createdAt), MONTH(createdAt)
-                """;
+    // // Step 2: Fetch actual data
+    // String sql = """
+    // SELECT
+    // YEAR(createdAt) AS year,
+    // MONTH(createdAt) AS month,
+    // COALESCE(SUM(commision_Amount), 0) AS totalCommission,
+    // COALESCE(SUM(platformFee), 0) AS totalPlatformFee
+    // FROM bookings
+    // WHERE createdAt >= DATE_SUB(CURRENT_DATE, INTERVAL 6 MONTH)
+    // GROUP BY YEAR(createdAt), MONTH(createdAt)
+    // """;
 
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
+    // List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
-        // Step 3: Overlay real data
-        for (Map<String, Object> row : rows) {
+    // // Step 3: Overlay real data
+    // for (Map<String, Object> row : rows) {
 
-            int year = ((Number) row.get("year")).intValue();
-            int month = ((Number) row.get("month")).intValue();
+    // int year = ((Number) row.get("year")).intValue();
+    // int month = ((Number) row.get("month")).intValue();
 
-            String key = String.format("%04d-%02d", year, month);
+    // String key = String.format("%04d-%02d", year, month);
 
-            BigDecimal totalCommission = ((BigDecimal) row.get("totalCommission")).setScale(2, RoundingMode.HALF_UP);
+    // BigDecimal totalCommission = ((BigDecimal)
+    // row.get("totalCommission")).setScale(2, RoundingMode.HALF_UP);
 
-            BigDecimal totalPlatformFee = ((BigDecimal) row.get("totalPlatformFee")).setScale(2, RoundingMode.HALF_UP);
+    // BigDecimal totalPlatformFee = ((BigDecimal)
+    // row.get("totalPlatformFee")).setScale(2, RoundingMode.HALF_UP);
 
-            BigDecimal totalRevenue = totalCommission.add(totalPlatformFee).setScale(2, RoundingMode.HALF_UP);
+    // BigDecimal totalRevenue = totalCommission.add(totalPlatformFee).setScale(2,
+    // RoundingMode.HALF_UP);
 
-            Map<String, BigDecimal> monthlyData = new HashMap<>();
-            // monthlyData.put("totalCommission", totalCommission);
-            // monthlyData.put("totalPlatformFee", totalPlatformFee);
-            monthlyData.put("totalRevenue", totalRevenue);
+    // Map<String, BigDecimal> monthlyData = new HashMap<>();
+    // // monthlyData.put("totalCommission", totalCommission);
+    // // monthlyData.put("totalPlatformFee", totalPlatformFee);
+    // monthlyData.put("totalRevenue", totalRevenue);
 
-            result.put(key, monthlyData);
-        }
+    // result.put(key, monthlyData);
+    // }
 
-        return result;
-    }
+    // return result;
+    // }
 
     public long totalBooking() {
         String sql = """
@@ -158,6 +161,125 @@ public class AdminDashboardService {
                 """;
 
         return ((Number) jdbcTemplate.queryForMap(sql).get("totalRoom")).longValue();
+    }
+
+    /// new service dashbord
+
+    public Map<String, Object> getDashboardData() {
+
+        Map<String, Object> response = new HashMap<>();
+
+        // ---------- STATS CARDS ----------
+        List<Map<String, String>> statsData = List.of(
+                Map.of(
+                        "title", "Total Revenue",
+                        "value", "₹" + getCurrentMonthRevenue().setScale(0, RoundingMode.HALF_UP)),
+                Map.of(
+                        "title", "Total Bookings",
+                        "value", String.valueOf(totalBooking())),
+                Map.of(
+                        "title", "Active Hotels",
+                        "value", String.valueOf(hotelCount())),
+                Map.of(
+                        "title", "Occupancy Rate",
+                        "value", totalOccupancy().setScale(0, RoundingMode.HALF_UP) + "%"));
+
+        // ---------- LAST 6 MONTH REVENUE ----------
+        List<Map<String, Object>> revenueData = new java.util.ArrayList<>();
+        List<Map<String, Object>> bookingsData = new java.util.ArrayList<>();
+
+        Map<String, BigDecimal> revenueMap = getLast6MonthRevenueFlat();
+        Map<String, Long> bookingMap = getLast6MonthBookings();
+
+        revenueMap.forEach((month, revenue) -> {
+            revenueData.add(Map.of(
+                    "month", month,
+                    "revenue", revenue));
+        });
+
+        bookingMap.forEach((month, bookings) -> {
+            bookingsData.add(Map.of(
+                    "month", month,
+                    "bookings", bookings));
+        });
+
+        response.put("statsData", statsData);
+        response.put("revenueData", revenueData);
+        response.put("bookingsData", bookingsData);
+
+        return response;
+    }
+
+    public Map<String, BigDecimal> getLast6MonthRevenueFlat() {
+
+        Map<String, BigDecimal> result = new LinkedHashMap<>();
+
+        LocalDate now = LocalDate.now().withDayOfMonth(1);
+
+        for (int i = 5; i >= 0; i--) {
+            LocalDate date = now.minusMonths(i);
+            String month = date.format(DateTimeFormatter.ofPattern("MMM"));
+            result.put(month, BigDecimal.ZERO);
+        }
+
+        String sql = """
+                SELECT
+                    MONTH(createdAt) AS month,
+                    SUM(commision_Amount + platformFee) AS revenue
+                FROM bookings
+                WHERE createdAt >= DATE_SUB(CURRENT_DATE, INTERVAL 6 MONTH)
+                GROUP BY MONTH(createdAt)
+                """;
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
+
+        for (Map<String, Object> row : rows) {
+            int monthNum = ((Number) row.get("month")).intValue();
+            String monthName = LocalDate.of(2000, monthNum, 1)
+                    .format(DateTimeFormatter.ofPattern("MMM"));
+
+            BigDecimal revenue = ((BigDecimal) row.get("revenue"))
+                    .setScale(0, RoundingMode.HALF_UP);
+
+            result.put(monthName, revenue);
+        }
+
+        return result;
+    }
+
+    public Map<String, Long> getLast6MonthBookings() {
+
+        Map<String, Long> result = new LinkedHashMap<>();
+
+        LocalDate now = LocalDate.now().withDayOfMonth(1);
+
+        for (int i = 5; i >= 0; i--) {
+            LocalDate date = now.minusMonths(i);
+            String month = date.format(DateTimeFormatter.ofPattern("MMM"));
+            result.put(month, 0L);
+        }
+
+        String sql = """
+                SELECT
+                    MONTH(createdAt) AS month,
+                    COUNT(*) AS bookings
+                FROM bookings
+                WHERE createdAt >= DATE_SUB(CURRENT_DATE, INTERVAL 6 MONTH)
+                GROUP BY MONTH(createdAt)
+                """;
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
+
+        for (Map<String, Object> row : rows) {
+            int monthNum = ((Number) row.get("month")).intValue();
+            String monthName = LocalDate.of(2000, monthNum, 1)
+                    .format(DateTimeFormatter.ofPattern("MMM"));
+
+            long bookings = ((Number) row.get("bookings")).longValue();
+            result.put(monthName, bookings);
+        }
+
+        return result;
     }
 
 }

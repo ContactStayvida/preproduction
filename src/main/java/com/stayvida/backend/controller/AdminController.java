@@ -26,7 +26,10 @@ import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
+import com.stayvida.backend.model.Amenity;
+import com.stayvida.backend.model.Feature;
 import com.stayvida.backend.model.Register;
+import com.stayvida.backend.model.Tag;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.AdminDashboardService;
 import com.stayvida.backend.service.ImageCompressionUtil;
@@ -55,14 +58,20 @@ public class AdminController {
     @Autowired
     private RoomregisterRepository roomRegisterRepository; // 🔹 inject here
 
+    // @GetMapping("/monthly-revenue")
+    // public Map<String, Object> getMonthlyRevenue() {
+    // return Map.of(
+    // "totalRevenue (Current Month)",
+    // adminDashboardService.getCurrentMonthRevenue(),
+    // "totalBooking", adminDashboardService.totalBooking(),
+    // "last 6 MonthRevenue", adminDashboardService.getLast6MonthRevenue(),
+    // "hotelCount", adminDashboardService.hotelCount(),
+    // "totalOccupancy", adminDashboardService.totalOccupancy());
+    // }
+
     @GetMapping("/monthly-revenue")
-    public Map<String, Object> getMonthlyRevenue() {
-        return Map.of(
-                "totalRevenue (Current Month)", adminDashboardService.getCurrentMonthRevenue(),
-                "totalBooking", adminDashboardService.totalBooking(),
-                "last 6 MonthRevenue", adminDashboardService.getLast6MonthRevenue(),
-                "hotelCount", adminDashboardService.hotelCount(),
-                "totalOccupancy", adminDashboardService.totalOccupancy());
+    public Map<String, Object> getDashboardData() {
+        return adminDashboardService.getDashboardData();
     }
 
     // update verification status OF HOTEL
@@ -156,6 +165,23 @@ public class AdminController {
     public String addTag(@RequestParam String name) {
         service.addTag(name);
         return "Tag added successfully";
+    }
+
+    // FETCH ALL FEATURES AMENITIES AND TAGS
+
+    @GetMapping("/features")
+    public List<Feature> getFeatures() {
+        return service.getFeatures();
+    }
+
+    @GetMapping("/amenities")
+    public List<Amenity> getAmenities() {
+        return service.getAmenities();
+    }
+
+    @GetMapping("/tags")
+    public List<Tag> getTags() {
+        return service.getTags();
     }
 
     // fetch all room of thee hotel by hotel ID
