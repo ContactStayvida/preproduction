@@ -155,7 +155,7 @@ public class SecurityConfig {
                 // "https://sv-website-frontend.vercel.app/"
                 // ));
                 configuration.setAllowedOriginPatterns(allowedOrigins);
-                configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                configuration.setAllowedMethods(List.of("GET", "PATCH", "POST", "PUT", "DELETE", "OPTIONS"));
                 configuration.setAllowedHeaders(List.of("*"));
                 configuration.setAllowCredentials(true);
 
