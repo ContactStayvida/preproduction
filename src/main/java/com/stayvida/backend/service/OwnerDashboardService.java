@@ -1273,7 +1273,7 @@ public class OwnerDashboardService {
 
     // admin version
     public boolean updateRoomStatusad(
-            int hotelId, String roomId, boolean isEnable) {
+            String hotelId, String roomId, boolean isEnable) {
 
         String sql = """
                     UPDATE rooms r

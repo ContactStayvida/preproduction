@@ -390,7 +390,7 @@ public class AdminController {
     @PatchMapping("/{roomId}/{hotelId}/status/{isEnable}") // enable-dissable room aka delete
     public ResponseEntity<?> updateRoomStatus(
             @PathVariable String roomId,
-            @PathVariable int hotelId,
+            @PathVariable String hotelId,
             @PathVariable boolean isEnable) {
 
         boolean updated = dashboardService.updateRoomStatusad(

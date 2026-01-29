@@ -288,7 +288,7 @@ public class BookingService {
                 request.getCheckIn(),
                 request.getCheckOut(),
                 "Pending",
-                "Pending",
+                "Conformed",
                 roomPrice,
                 platformCharges,
                 taxRate, // in table the column name is still tax_amount
