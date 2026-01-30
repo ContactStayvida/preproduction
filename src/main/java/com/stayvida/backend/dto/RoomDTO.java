@@ -6,9 +6,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 public class RoomDTO {
-    private String roomId;
-    private Integer room_NO;
-    private String hotelId;
+    // private String roomId;
+    // private Integer room_NO;
+    // private String hotelId;
     private String type;
     private BigDecimal price;
     private BigDecimal platformCharges;
@@ -28,15 +28,16 @@ public class RoomDTO {
             "bedCount",
             "features",
             "roomImages" })
-    public RoomDTO(String roomId, Integer room_NO, String hotelId, String type, BigDecimal price,
+    public RoomDTO(String type, BigDecimal price,
             BigDecimal platformCharges, BigDecimal taxRate, BigDecimal advanceRate, BigDecimal totalAmount,
             BigDecimal advanceAmount,
             long stayDuration, int adultsMax,
             int childrenMax,
-            int bedCount) {
-        this.roomId = roomId;
-        this.room_NO = room_NO;
-        this.hotelId = hotelId;
+            int bedCount)// String roomId, Integer room_NO, String hotelId,
+    {
+        // this.roomId = roomId;
+        // this.room_NO = room_NO;
+        // this.hotelId = hotelId;
         this.type = type;
         this.price = price;
         this.platformCharges = platformCharges;
@@ -51,30 +52,30 @@ public class RoomDTO {
 
     }
 
-    // Getters & Setters
-    public String getRoomId() {
-        return roomId;
-    }
+    // // Getters & Setters
+    // public String getRoomId() {
+    // return roomId;
+    // }
 
-    public void setRoomId(String roomId) {
-        this.roomId = roomId;
-    }
+    // public void setRoomId(String roomId) {
+    // this.roomId = roomId;
+    // }
 
-    public void setRoom_NO(Integer room_NO) {
-        this.room_NO = room_NO;
-    }
+    // public void setRoom_NO(Integer room_NO) {
+    // this.room_NO = room_NO;
+    // }
 
-    public Integer getRoom_NO() {
-        return room_NO;
-    }
+    // public Integer getRoom_NO() {
+    // return room_NO;
+    // }
 
-    public String getHotelId() {
-        return hotelId;
-    }
+    // public String getHotelId() {
+    // return hotelId;
+    // }
 
-    public void setHotelId(String hotelId) {
-        this.hotelId = hotelId;
-    }
+    // public void setHotelId(String hotelId) {
+    // this.hotelId = hotelId;
+    // }
 
     public String getType() {
         return type;

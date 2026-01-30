@@ -20,21 +20,18 @@ public class HotelDTO {
     private String phoneNo;
     private List<GroupedRoomDTO> rooms; // List of all rooms for this hotel
 
-    @JsonIgnore
-    private List<RoomDTO> rawRooms; // 👈 repository fills this
-
     // Getters & Setters
     public String getHotelId() {
         return hotelId;
     }
 
-    public List<RoomDTO> getRawRooms() {
-        return rawRooms;
-    }
+    // public List<RoomDTO> getRawRooms() {
+    // return rawRooms;
+    // }
 
-    public void setRawRooms(List<RoomDTO> rawRooms) {
-        this.rawRooms = rawRooms;
-    }
+    // public void setRawRooms(List<RoomDTO> rawRooms) {
+    // this.rawRooms = rawRooms;
+    // }
 
     public void setHotelId(String hotelId) {
         this.hotelId = hotelId;

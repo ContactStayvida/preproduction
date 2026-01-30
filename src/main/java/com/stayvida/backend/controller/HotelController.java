@@ -17,7 +17,7 @@ import com.stayvida.backend.repository.RoomregisterRepository;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.CloudinaryService;
 import com.stayvida.backend.service.ImageCompressionUtil;
-import com.stayvida.backend.service.RoomService;
+// import com.stayvida.backend.service.RoomService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,8 +53,8 @@ public class HotelController {
     private HotelRepository hotelRepository;
     @Autowired
     private RoomRepository roomRepository;
-    @Autowired
-    private RoomService roomService;
+    // @Autowired
+    // private RoomService roomService;
 
     // @Autowired
     // private RoomImageRepository roomImageRepository;
@@ -228,7 +228,7 @@ public class HotelController {
                 });
             }
 
-            roomService.groupRoomsByType(result);
+            // roomService.groupRoomsByType(result);
 
             return ApiResponse.success(result, "Hotel rooms fetched successfully");
 

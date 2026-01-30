@@ -1324,7 +1324,7 @@ public class OwnerDashboardService {
                     SELECT r2.room_ID
                     FROM rooms r2
                     INNER JOIN hotels h2 ON h2.hotel_ID = r2.hotel_ID
-                    WHERE h2.owner_ID = ?
+                    WHERE h2.owner_ID = ? and r2.isEnable = true
                     ORDER BY r2.room_NO DESC
                 ) sorted ON sorted.room_ID = r.room_ID
                 INNER JOIN hotels h ON h.hotel_ID = r.hotel_ID

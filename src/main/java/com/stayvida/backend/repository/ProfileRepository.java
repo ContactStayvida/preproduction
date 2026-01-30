@@ -1,6 +1,9 @@
 package com.stayvida.backend.repository;
 
 import com.stayvida.backend.model.Profile;
+
+import java.sql.Timestamp;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -12,6 +15,7 @@ public class ProfileRepository {
     private JdbcTemplate jdbcTemplate;
 
     public Profile createOrUpdate(Profile profile) {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
 
         String sql = """
                     INSERT INTO profile (user_ID, name, phone_number, address, bio, gender)
@@ -22,7 +26,7 @@ public class ProfileRepository {
                         address = VALUES(address),
                         bio = VALUES(bio),
                         gender = VALUES(gender),
-                        updated_at = CURRENT_TIMESTAMP
+                        updated_at =
                 """;
 
         jdbcTemplate.update(
@@ -32,7 +36,8 @@ public class ProfileRepository {
                 profile.getPhoneNumber(),
                 profile.getAddress(),
                 profile.getBio(),
-                profile.getGender()
+                profile.getGender(),
+                now
 
         );
 
@@ -78,6 +83,7 @@ public class ProfileRepository {
     }
 
     public Profile partialUpdate(int userID, Profile profile) {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
 
         String sql = """
                 UPDATE profile
@@ -87,7 +93,7 @@ public class ProfileRepository {
                     address = COALESCE(?, address),
                     bio = COALESCE(?, bio),
                     gender = COALESCE(?, gender),
-                    updated_at = CURRENT_TIMESTAMP
+                    updated_at = ?
                 WHERE user_ID = ?
                 """;
 
@@ -98,6 +104,7 @@ public class ProfileRepository {
                 profile.getAddress(),
                 profile.getBio(),
                 profile.getGender(),
+                now,
                 userID);
 
         if (updatedRows == 0) {

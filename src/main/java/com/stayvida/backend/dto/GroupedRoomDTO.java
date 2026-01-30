@@ -6,7 +6,6 @@ import java.util.List;
 public class GroupedRoomDTO {
 
     private String type;
-    private List<RoomBasicDTO> rooms;
 
     private BigDecimal price;
     private BigDecimal platformCharges;
@@ -31,13 +30,13 @@ public class GroupedRoomDTO {
         this.type = type;
     }
 
-    public List<RoomBasicDTO> getRooms() {
-        return rooms;
-    }
+    // public List<RoomBasicDTO> getRooms() {
+    // return rooms;
+    // }
 
-    public void setRooms(List<RoomBasicDTO> rooms) {
-        this.rooms = rooms;
-    }
+    // public void setRooms(List<RoomBasicDTO> rooms) {
+    // this.rooms = rooms;
+    // }
 
     public BigDecimal getPrice() {
         return price;

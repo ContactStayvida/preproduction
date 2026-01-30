@@ -2,6 +2,7 @@ package com.stayvida.backend.repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stayvida.backend.dto.GroupedRoomDTO;
 import com.stayvida.backend.dto.HotelDTO;
 import com.stayvida.backend.dto.RoomDTO;
 import com.stayvida.backend.model.Charges;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Repository
 public class RoomRepository {
@@ -164,9 +166,6 @@ public class RoomRepository {
                 new Object[] { hotelId, checkInDate, checkInDate, checkOutDate },
                 (ResultSet rs, int rowNum) -> {
                     RoomDTO room = new RoomDTO(
-                            rs.getString("room_ID"),
-                            rs.getInt("room_NO"),
-                            rs.getString("hotel_ID"),
                             rs.getString("room_Type"),
                             rs.getBigDecimal("price"), // base room price
                             platformChargesWithTax, // platform charges with tax
@@ -215,7 +214,32 @@ public class RoomRepository {
                     return room;
                 });
 
-        hotel.setRawRooms(rooms);
+        Map<String, List<RoomDTO>> grouped = rooms.stream().collect(Collectors.groupingBy(RoomDTO::getType));
+
+        List<GroupedRoomDTO> groupedRooms = new ArrayList<>();
+
+        for (Map.Entry<String, List<RoomDTO>> entry : grouped.entrySet()) {
+            RoomDTO sample = entry.getValue().get(0);
+
+            GroupedRoomDTO dto = new GroupedRoomDTO();
+            dto.setType(entry.getKey());
+            dto.setPrice(sample.getPrice());
+            dto.setPlatformCharges(sample.getPlatformCharges());
+            dto.setTaxRate(sample.getTaxRate());
+            dto.setAdvanceRate(sample.getAdvanceRate());
+            dto.setTotalAmount(sample.getTotalAmount());
+            dto.setAdvanceAmount(sample.getAdvanceAmount());
+            dto.setAdultsMax(sample.getAdultsMax());
+            dto.setChildrenMax(sample.getChildrenMax());
+            dto.setBedCount(sample.getBedCount());
+            dto.setFeatures(sample.getFeatures());
+            dto.setRoomImages(sample.getRoomImages());
+
+            groupedRooms.add(dto);
+        }
+
+        hotel.setRooms(groupedRooms);
+
         return hotel;
     }
 
