@@ -29,6 +29,7 @@ public class BookingService {
     private final JdbcTemplate jdbcTemplate;
 
     public BookingService(JdbcTemplate jdbcTemplate) {
+
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -214,6 +215,7 @@ public class BookingService {
         String hotelId = null;
         String roomId = null;
         Integer roomNo = null;
+        String paymentType = request.getPaymentType();
         try {
             // 1️⃣ Validate room lock
             String lockSql = """
@@ -240,6 +242,7 @@ public class BookingService {
             e.printStackTrace();
             throw new RuntimeException("room lock not found");
         }
+
         // 2️⃣ Fetch charges
         Map<String, BigDecimal> charges = fetchCharges();
         BigDecimal platformCharges = charges.get("platform_charges"); // platform charges
@@ -255,14 +258,24 @@ public class BookingService {
         if (totalDays <= 0) {
             throw new RuntimeException("Invalid check-in/check-out dates");
         }
+
+        BigDecimal commissionAmount = null;
+        BigDecimal totalAmount = null;
         roomPrice = roomPrice.multiply(new BigDecimal(totalDays));
-        BigDecimal commissionAmount = roomPrice.multiply(commissionRate); // commission amount
-        commissionAmount = commissionAmount.add(commissionAmount.multiply(taxRate)); // commission amount with tax
-        BigDecimal totalAmount = roomPrice.add(platformCharges);
         BigDecimal totalAmount_ADV = roomPrice.multiply(charges.get("Advance")).add(platformCharges);
         // 3️⃣ Generate Booking ID
         String bookingId = "B-" + System.currentTimeMillis();
 
+        if (paymentType.equals("Advance")) {
+            commissionAmount = roomPrice.multiply(commissionRate); // commission amount
+            commissionAmount = commissionAmount.add(commissionAmount.multiply(taxRate)); // commission amount with tax
+            totalAmount = roomPrice.add(platformCharges);
+            totalAmount_ADV = roomPrice.multiply(charges.get("Advance")).add(platformCharges);
+        } else if (paymentType.equals("OnArrival")) {
+            commissionAmount = BigDecimal.ZERO; // commission amount
+            totalAmount = roomPrice.add(platformCharges);
+            totalAmount_ADV = BigDecimal.ZERO;
+        }
         // 4️⃣ Insert booking
         String insertBooking = """
                     INSERT INTO bookings (
@@ -313,6 +326,7 @@ public class BookingService {
         response.setPlatformCharges(platformCharges);
         response.setTaxAmount(taxRate);
         response.setAdvanceRate(charges.get("Advance"));
+        response.setPaymentType(paymentType);
         response.setTotalAmount_ADV(totalAmount_ADV);
         response.setTotalAmount(totalAmount);
         response.setCheckIn(request.getCheckIn());
@@ -320,6 +334,7 @@ public class BookingService {
         response.setCreatedAt(LocalDateTime.now());
 
         return response;
+
     }
 
     // owner dashbord booking service
@@ -330,6 +345,7 @@ public class BookingService {
         String roomId = null;
         Integer roomNo = null;
         Integer userId = validateUserbyEmail(Email);
+        String paymentType = request.getPaymentType();
         try {
             // 1️⃣ Validate room lock
             String lockSql = """
@@ -372,10 +388,9 @@ public class BookingService {
             throw new RuntimeException("Invalid check-in/check-out dates");
         }
         roomPrice = roomPrice.multiply(new BigDecimal(totalDays));
-        BigDecimal commissionAmount = roomPrice.multiply(commissionRate); // commission amount
-        commissionAmount = commissionAmount.add(commissionAmount.multiply(taxRate)); // commission amount with tax
+        BigDecimal commissionAmount = BigDecimal.ZERO; // commission amount
         BigDecimal totalAmount = roomPrice.add(platformCharges);
-        BigDecimal totalAmount_ADV = roomPrice.multiply(charges.get("Advance")).add(platformCharges);
+        BigDecimal totalAmount_ADV = null;
         // 3️⃣ Generate Booking ID
         String bookingId = "B-" + System.currentTimeMillis();
 
@@ -392,6 +407,11 @@ public class BookingService {
                     )
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(),?)
                 """;
+        if (paymentType.equals("Advance")) {
+            totalAmount_ADV = roomPrice.multiply(charges.get("Advance")).add(platformCharges);
+        } else if (paymentType.equals("OnArrival")) {
+            totalAmount_ADV = BigDecimal.ZERO;
+        }
 
         jdbcTemplate.update(insertBooking,
                 bookingId,
@@ -429,6 +449,7 @@ public class BookingService {
         response.setPlatformCharges(platformCharges);
         response.setTaxAmount(taxRate);
         response.setAdvanceRate(charges.get("Advance"));
+        response.setPaymentType(paymentType);
         response.setTotalAmount_ADV(totalAmount_ADV);
         response.setTotalAmount(totalAmount);
         response.setCheckIn(request.getCheckIn());

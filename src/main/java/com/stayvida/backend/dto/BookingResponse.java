@@ -19,6 +19,7 @@ public class BookingResponse {
     private BigDecimal advanceRate;
     private BigDecimal totalAmount_ADV;
     private BigDecimal totalAmount;
+    private String paymentType;
 
     // getters & setters
     public String getBookingId() {
@@ -131,5 +132,13 @@ public class BookingResponse {
 
     public void setDuration(long duration) {
         this.duration = duration;
+    }
+
+    public String getPaymentType() {
+        return paymentType;
+    }
+
+    public void setPaymentType(String paymentType) {
+        this.paymentType = paymentType;
     }
 }
