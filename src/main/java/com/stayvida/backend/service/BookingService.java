@@ -392,7 +392,7 @@ public class BookingService {
         BigDecimal totalAmount = roomPrice.add(platformCharges);
         BigDecimal totalAmount_ADV = null;
         // 3️⃣ Generate Booking ID
-        String bookingId = "B-" + System.currentTimeMillis();
+        String bookingId = "OFFLINE-B-" + System.currentTimeMillis();
 
         // 4️⃣ Insert booking
         String insertBooking = """
