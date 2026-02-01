@@ -20,7 +20,7 @@ public class RatingRepository {
         Rating rating = new Rating();
         rating.setRating_ID(rs.getInt("rating_ID"));
         rating.setUser_ID(rs.getInt("user_ID"));
-        rating.setHotel_ID(rs.getInt("hotel_ID"));
+        rating.setHotel_ID(rs.getString("hotel_ID"));
         rating.setBooking_ID(rs.getString("booking_ID"));
         rating.setRating_Value(rs.getDouble("rating_Value"));
         rating.setComment(rs.getString("comment"));
@@ -53,7 +53,7 @@ public class RatingRepository {
 
         jdbcTemplate.update(sql,
                 request.getUserId().intValue(),
-                request.getHotelId().intValue(),
+                request.getHotelId(),
                 request.getBookingId(),
                 request.getRatingValue(),
                 request.getComment(),
