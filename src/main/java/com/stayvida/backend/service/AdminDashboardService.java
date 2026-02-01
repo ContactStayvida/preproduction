@@ -169,27 +169,10 @@ public class AdminDashboardService {
 
         Map<String, Object> response = new HashMap<>();
 
-        // // ---------- STATS CARDS ----------
-        // List<Map<String, String>> statsData = List.of(
-        // Map.of(
-        // "title", "Total Revenue",
-        // "value", "₹" + getCurrentMonthRevenue().setScale(0, RoundingMode.HALF_UP)),
-        // Map.of(
-        // "title", "Total Bookings",
-        // "value", String.valueOf(totalBooking())),
-        // Map.of(
-        // "title", "Active Hotels",
-        // "value", String.valueOf(hotelCount())),
-        // Map.of(
-        // "title", "Occupancy Rate",
-        // "value", totalOccupancy().setScale(0, RoundingMode.HALF_UP) + "%"));
-
         // ---------- LAST 6 MONTH REVENUE ----------
         List<Map<String, Object>> revenueData = new java.util.ArrayList<>();
-        // List<Map<String, Object>> bookingsData = new java.util.ArrayList<>();
 
         Map<String, BigDecimal> revenueMap = getLast6MonthRevenueFlat();
-        Map<String, Long> bookingMap = getLast6MonthBookings();
 
         revenueMap.forEach((month, revenue) -> {
             revenueData.add(Map.of(
@@ -197,17 +180,48 @@ public class AdminDashboardService {
                     "revenue", revenue));
         });
 
-        // bookingMap.forEach((month, bookings) -> {
-        // bookingsData.add(Map.of(
-        // "month", month,
-        // "bookings", bookings));
-        // });
-
-        // response.put("statsData", statsData);
         response.put("revenueData", revenueData);
-        // response.put("bookingsData", bookingsData);
 
         return response;
+    }
+
+    public Map<String, Object> getDashStaticData() {
+        Map<String, Object> response = new HashMap<>();
+        // // ---------- STATS CARDS ----------
+        List<Map<String, String>> statsData = List.of(
+                Map.of(
+                        "title", "Total Revenue",
+                        "value", "₹" + getCurrentMonthRevenue().setScale(0, RoundingMode.HALF_UP)),
+                Map.of(
+                        "title", "Total Bookings",
+                        "value", String.valueOf(totalBooking())),
+                Map.of(
+                        "title", "Active Hotels",
+                        "value", String.valueOf(hotelCount())),
+                Map.of(
+                        "title", "Occupancy Rate",
+                        "value", totalOccupancy().setScale(0, RoundingMode.HALF_UP) + "%"));
+
+        response.put("statsData", statsData);
+        return response;
+
+    }
+
+    public Map<String, Object> getDashBookingData() {
+        Map<String, Object> response = new HashMap<>();
+        // ---------- LAST 6 MONTH BOOKINGS ----------
+        List<Map<String, Object>> bookingsData = new java.util.ArrayList<>();
+        Map<String, Long> bookingMap = getLast6MonthBookings();
+
+        bookingMap.forEach((month, bookings) -> {
+            bookingsData.add(Map.of(
+                    "month", month,
+                    "bookings", bookings));
+        });
+
+        response.put("bookingsData", bookingsData);
+        return response;
+
     }
 
     public Map<String, BigDecimal> getLast6MonthRevenueFlat() {

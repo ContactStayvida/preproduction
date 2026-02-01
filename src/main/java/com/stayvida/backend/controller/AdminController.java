@@ -74,6 +74,16 @@ public class AdminController {
         return adminDashboardService.getDashboardData();
     }
 
+    @GetMapping("/static-data")
+    public Map<String, Object> getDashStaticData() {
+        return adminDashboardService.getDashStaticData();
+    }
+
+    @GetMapping("/booking-data")
+    public Map<String, Object> getDashBookingData() {
+        return adminDashboardService.getDashBookingData();
+    }
+
     // update verification status OF HOTEL
     @PutMapping("/update-verification")
     public ResponseEntity<?> updateVerificationStatus(@RequestBody HotelVerificationUpdate request) {
