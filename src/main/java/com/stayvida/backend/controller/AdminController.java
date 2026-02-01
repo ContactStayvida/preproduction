@@ -26,6 +26,7 @@ import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
+import com.stayvida.backend.dto.UserListDTO;
 import com.stayvida.backend.model.Amenity;
 import com.stayvida.backend.model.Feature;
 import com.stayvida.backend.model.Register;
@@ -35,6 +36,7 @@ import com.stayvida.backend.service.AdminDashboardService;
 import com.stayvida.backend.service.ImageCompressionUtil;
 import com.stayvida.backend.service.LookupService;
 import com.stayvida.backend.service.OwnerDashboardService;
+import com.stayvida.backend.service.UserService;
 import com.stayvida.backend.repository.HotelRepository;
 import com.stayvida.backend.repository.RegisterRepository;
 import com.stayvida.backend.repository.RoomregisterRepository;
@@ -57,6 +59,11 @@ public class AdminController {
     private RegisterRepository registerRepository;
     @Autowired
     private RoomregisterRepository roomRegisterRepository; // 🔹 inject here
+    private final UserService userService;
+
+    public AdminController(UserService userService) {
+        this.userService = userService;
+    }
 
     // @GetMapping("/monthly-revenue")
     // public Map<String, Object> getMonthlyRevenue() {
@@ -788,6 +795,11 @@ public class AdminController {
             @PathVariable String roomID) {
         List<Map<String, Object>> data = dashboardService.getRoomDetails(roomID);
         return ApiResponse.success(data, "Room details fetched successfully");
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<UserListDTO>> getUsers() {
+        return ResponseEntity.ok(userService.getUserList());
     }
 
 }
