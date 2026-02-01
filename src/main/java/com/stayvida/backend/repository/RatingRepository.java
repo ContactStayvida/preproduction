@@ -29,13 +29,13 @@ public class RatingRepository {
     };
 
     // Fetch all ratings for a hotel
-    public List<Rating> findAllByHotelId(int hotelId) {
+    public List<Rating> findAllByHotelId(String hotelId) {
         String sql = "SELECT * FROM rating WHERE hotel_ID = ?";
         return jdbcTemplate.query(sql, ratingRowMapper, hotelId);
     }
 
     // Fetch average rating rounded to 1 decimal
-    public Double findAverageRatingByHotelId(int hotelId) {
+    public Double findAverageRatingByHotelId(String hotelId) {
         String sql = "SELECT ROUND(AVG(rating_Value),1) FROM rating WHERE hotel_ID = ?";
         return jdbcTemplate.queryForObject(sql, Double.class, hotelId);
     }
@@ -43,13 +43,13 @@ public class RatingRepository {
     // Save a new rating using RatingRequest
     public void saveRating(RatingRequest request) {
         String sql = """
-            INSERT INTO ratings (user_ID, hotel_ID, booking_ID, rating_Value, comment, rated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """;
+                    INSERT INTO ratings (user_ID, hotel_ID, booking_ID, rating_Value, comment, rated_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """;
 
-        java.time.LocalDateTime timestamp = request.getRated_at() != null 
-            ? request.getRated_at() 
-            : java.time.LocalDateTime.now(); // fallback
+        java.time.LocalDateTime timestamp = request.getRated_at() != null
+                ? request.getRated_at()
+                : java.time.LocalDateTime.now(); // fallback
 
         jdbcTemplate.update(sql,
                 request.getUserId().intValue(),

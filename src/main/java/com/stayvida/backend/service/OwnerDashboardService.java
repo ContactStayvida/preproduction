@@ -1380,7 +1380,7 @@ public class OwnerDashboardService {
         ObjectMapper mapper = new ObjectMapper();
 
         String sql = """
-                               SELECT
+                    SELECT
                     r.room_ID,
                     r.room_NO,
                     r.room_Type,

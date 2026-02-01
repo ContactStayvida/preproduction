@@ -34,7 +34,7 @@ public class RatingController {
                     .getContext()
                     .getAuthentication()
                     .getPrincipal();
-            int hotelId = (int) body.get("hotel_id");
+            String hotelId = (String) body.get("hotel_id");
             double ratingValue = Double.parseDouble(body.get("rating_value").toString());
             String comment = (String) body.get("comment");
 
@@ -66,7 +66,7 @@ public class RatingController {
     }
 
     @GetMapping("/hotel/{hotelId}")
-    public ResponseEntity<?> getRatingsByHotel(@PathVariable int hotelId) {
+    public ResponseEntity<?> getRatingsByHotel(@PathVariable String hotelId) {
         List<Rating> ratings = ratingRepository.findAllByHotelId(hotelId);
         Double avgRating = ratingRepository.findAverageRatingByHotelId(hotelId);
         if (avgRating == null)
