@@ -90,7 +90,6 @@ public class SecurityConfig {
                                                                 "/api/contact/all",
                                                                 "/api/events/list",
                                                                 "/api/events/details",
-                                                                "/api/profile/**",
                                                                 "/test/upload",
                                                                 "/api/admin/**",
                                                                 "/api/auth/login",

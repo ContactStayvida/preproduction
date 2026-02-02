@@ -80,6 +80,7 @@ public class UserRepository {
                         u.email,
                         u.role,
                         p.phone_number,
+                        p.name,
                         u.createdAt
                     FROM users u
                     LEFT JOIN profile p ON u.user_ID = p.user_ID
@@ -87,6 +88,7 @@ public class UserRepository {
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> new UserListDTO(
                 rs.getInt("user_ID"),
+                rs.getString("name"),
                 rs.getString("email"),
                 rs.getString("role"),
                 rs.getString("phone_number"),

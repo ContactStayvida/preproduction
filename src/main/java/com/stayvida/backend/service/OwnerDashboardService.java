@@ -1183,23 +1183,24 @@ public class OwnerDashboardService {
 
         String sql = """
                 SELECT
-                    hotel_ID,
-                    name,
-                    type,
-                    destination,
-                    description,
-                    country_code,
-                    phone_no,
-                    tags,
-                    images,
-                    amenities,
-                    longitude,
-                    latitude,
-                    status,
-                    remark
-                FROM hotels
-                WHERE hotel_ID = ?
-                ORDER BY hotel_ID DESC
+                    h.hotel_ID,
+                    h.name,
+                    h.type,
+                    h.destination,
+                    h.description,
+                    h.country_code,
+                    h.phone_no,
+                    h.tags,
+                    h.images,
+                    h.amenities,
+                    h.longitude,
+                    h.latitude,
+                    h.status,
+                    h.remark,
+                    p.name as ownerName
+                FROM hotels h left join profile p on h.owner_ID = p.user_ID
+                WHERE h.hotel_ID = ?
+                ORDER BY h.hotel_ID DESC
                 """;
 
         ObjectMapper mapper = new ObjectMapper();
@@ -1210,6 +1211,7 @@ public class OwnerDashboardService {
 
             map.put("hotel_ID", rs.getString("hotel_ID"));
             map.put("name", rs.getString("name"));
+            map.put("ownerName", rs.getString("ownerName"));
             map.put("type", rs.getString("type"));
             map.put("destination", rs.getString("destination"));
             map.put("description", rs.getString("description"));

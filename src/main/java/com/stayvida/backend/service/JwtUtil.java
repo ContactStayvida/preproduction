@@ -17,8 +17,8 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
-    // @Value("${jwt.expiration}")
-    // private long expiration;
+    @Value("${jwt.expiration}")
+    private long expiration;
 
     private Key key;
 
@@ -33,7 +33,7 @@ public class JwtUtil {
                 .claim("ID", ID)
                 .claim("role", role)
                 .setIssuedAt(new Date())
-                // .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }

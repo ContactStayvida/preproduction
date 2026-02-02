@@ -5,14 +5,16 @@ import java.sql.Timestamp;
 public class UserListDTO {
 
     private int userId;
+    private String name;
     private String email;
     private String role;
     private String phoneNumber;
     private Timestamp createdAt;
 
-    public UserListDTO(int userId, String email, String role,
+    public UserListDTO(int userId, String name, String email, String role,
             String phoneNumber, Timestamp createdAt) {
         this.userId = userId;
+        this.name = name;
         this.email = email;
         this.role = role;
         this.phoneNumber = phoneNumber;
@@ -25,6 +27,14 @@ public class UserListDTO {
 
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getEmail() {

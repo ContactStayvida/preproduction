@@ -38,6 +38,9 @@ public class RatingController {
             double ratingValue = Double.parseDouble(body.get("rating_value").toString());
             String comment = (String) body.get("comment");
 
+            System.out.println("This is user id " + userId);
+            System.out.println(((Object) userId).getClass().getSimpleName());
+
             // ✅ SQL query
             String sql = "INSERT INTO rating (booking_ID, user_ID, hotel_ID, rating_value, comment, rated_at) " +
                     "VALUES (?, ?, ?, ?, ?, ?)";
