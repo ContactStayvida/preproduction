@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.stayvida.backend.dto.RazorpayVerifyRequest;
 import com.stayvida.backend.service.RazorpayPaymentService;
 
 @RestController
@@ -27,4 +28,11 @@ public class RazorpayPaymentController {
 
         return ResponseEntity.ok(paymentService.createOrder(bookingId, amount));
     }
+
+    @PostMapping("/verify")
+    public ResponseEntity<?> verify(@RequestBody RazorpayVerifyRequest req) {
+        paymentService.verifyPayment(req);
+        return ResponseEntity.ok("Payment verified");
+    }
+
 }

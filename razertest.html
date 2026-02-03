@@ -18,24 +18,43 @@
                 currency: "INR",
                 name: "StayVida",
                 description: "Hotel Booking Payment",
-                order_id: "order_S9kf2AzERL5PW5",
+                order_id: "order_SBchhy6IJBpR19",
 
                 handler: function (response) {
-                    console.log("Payment Success", response);
 
-                    // Send this to backend for verification
+                    const payload = {
+                        razorpayOrderId: response.razorpay_order_id,
+                        razorpayPaymentId: response.razorpay_payment_id,
+                        razorpaySignature: response.razorpay_signature
+                    };
+
                     fetch("http://localhost:8080/api/payments/razorpay/verify", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(response)
-                    });
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-api-key": "sf2b4hMNAQBNZI3zR0VtXeTUp5463YpV"
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(res => res.text())
+                        .then(data => console.log("Backend:", data))
+                        .catch(err => console.error(err));
+
+
+
                 }
+
             };
 
             var rzp = new Razorpay(options);
             rzp.open();
+
         };
     </script>
+
+    <p>
+
+    </p>
 </body>
 
 </html>
