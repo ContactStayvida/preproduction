@@ -120,13 +120,13 @@ public class RazorpayPaymentService {
 
         @Transactional
         public void verifyPayment(RazorpayVerifyRequest req) {
-                System.out.println("VERIFY HIT >>> " + req);
+                // System.out.println("VERIFY HIT >>> " + req);
 
                 boolean valid = verifySignature(
                                 req.getRazorpayOrderId(),
                                 req.getRazorpayPaymentId(),
                                 req.getRazorpaySignature());
-                System.out.println("SIGNATURE VALID = " + valid);
+                // System.out.println("SIGNATURE VALID = " + valid);
 
                 if (!valid) {
                         markPaymentFailed(req.getRazorpayOrderId());
@@ -173,9 +173,9 @@ public class RazorpayPaymentService {
                 if (paid.compareTo(required) >= 0) {
                         jdbcTemplate.update("""
                                             UPDATE bookings
-                                            SET payment_Status='Completed'
+                                            SET payment_Status='Completed',transaction_ID = ?
                                             WHERE booking_ID=?
-                                        """, bookingId);
+                                        """, req.getRazorpayPaymentId(), bookingId);
                 }
         }
 
