@@ -22,6 +22,8 @@ import com.stayvida.backend.dto.LockRoomRequest;
 import com.stayvida.backend.dto.LockRoomResponse;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.OwnerDashboardService;
+import com.stayvida.backend.exception.BookingExceptions.RoomLockException;
+import com.stayvida.backend.exception.BookingExceptions.OtpRequiredException;
 
 @RestController
 @RequestMapping("/owner/dashboard")
@@ -544,18 +546,19 @@ public class OwnerDashboardController {
     // }
 
     @PostMapping("/create")
-    public ResponseEntity<?> initiateBooking(
-            @RequestBody BookingRequest request) {
+    public ResponseEntity<?> initiateBooking(@RequestBody BookingRequest request) {
         try {
             BookingResponse response = bookingFlowService.initiateBooking(request);
+            return ApiResponse.success(response, "Booking created");
 
-            return ResponseEntity.ok(response);
+        } catch (OtpRequiredException e) {
+            return ApiResponse.success(request.getEmail(), e.getMessage());
 
-        } catch (RuntimeException e) {
-            return ResponseEntity.ok(
-                    Map.of(
-                            "status", "OTP_REQUIRED",
-                            "message", e.getMessage()));
+        } catch (RoomLockException e) {
+            return ApiResponse.badRequest(e.getMessage());
+
+        } catch (Exception e) {
+            return ApiResponse.badRequest(e.getMessage());
         }
     }
 

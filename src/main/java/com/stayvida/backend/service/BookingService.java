@@ -22,6 +22,7 @@ import com.stayvida.backend.dto.BookingRequest;
 import com.stayvida.backend.dto.BookingResponse;
 import com.stayvida.backend.dto.LockRoomRequest;
 import com.stayvida.backend.dto.LockRoomResponse;
+import com.stayvida.backend.exception.BookingExceptions.RoomLockException;
 
 @Service
 public class BookingService {
@@ -370,7 +371,7 @@ public class BookingService {
             roomNo = (Integer) lock.get("room_NO");
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("room lock not found");
+            throw new RoomLockException("room lock not found");
         }
         // 2️⃣ Fetch charges
         Map<String, BigDecimal> charges = fetchCharges();
@@ -389,8 +390,10 @@ public class BookingService {
         }
         roomPrice = roomPrice.multiply(new BigDecimal(totalDays));
         BigDecimal commissionAmount = BigDecimal.ZERO; // commission amount
-        BigDecimal totalAmount = roomPrice.add(platformCharges);
-        BigDecimal totalAmount_ADV = null;
+        platformCharges = BigDecimal.ZERO;
+        BigDecimal totalAmount = roomPrice;
+        BigDecimal totalAmount_ADV = BigDecimal.ZERO;
+
         // 3️⃣ Generate Booking ID
         String bookingId = "OFFLINE-B-" + System.currentTimeMillis();
 
@@ -408,7 +411,7 @@ public class BookingService {
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(),?)
                 """;
         if (paymentType.equals("Advance")) {
-            totalAmount_ADV = roomPrice.multiply(charges.get("Advance")).add(platformCharges);
+            totalAmount_ADV = roomPrice.multiply(charges.get("Advance"));
         } else if (paymentType.equals("OnArrival")) {
             totalAmount_ADV = BigDecimal.ZERO;
         }
@@ -426,14 +429,13 @@ public class BookingService {
                 "Pending",
                 "CheckIn",
                 roomPrice,
-                platformCharges,
+                platformCharges, // ZERO
                 taxRate, // in table the column name is still tax_amount
                 request.getPaymentType(),
                 request.getName(),
                 request.getCountryCode(),
                 request.getPhoneNo(),
-                commissionAmount);
-        System.out.println(commissionAmount);
+                commissionAmount);// ZERO
         // 5️⃣ Remove room lock
         jdbcTemplate.update(
                 "DELETE FROM room_locks WHERE room_id = ?",

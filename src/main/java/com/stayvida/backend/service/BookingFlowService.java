@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 
 import com.stayvida.backend.dto.BookingRequest;
 import com.stayvida.backend.dto.BookingResponse;
+import com.stayvida.backend.exception.BookingExceptions.OtpRequiredException;
 
 @Service
 public class BookingFlowService {
@@ -31,11 +32,12 @@ public class BookingFlowService {
             String otp = otpService.generateOtp(email);
             emailService.sendOtpEmail(email, otp);
 
-            throw new RuntimeException(
+            throw new OtpRequiredException(
                     "OTP sent to email. Please verify to continue booking.");
         }
 
         // 2️⃣ OTP provided → validate
+        otpService.verifyLoginWithOtp(email, request.getOtp());
         boolean validOtp = otpService.validateOtp(email, request.getOtp());
 
         if (!validOtp) {

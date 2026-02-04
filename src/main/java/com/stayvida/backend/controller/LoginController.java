@@ -43,57 +43,70 @@ public class LoginController {
     }
 
     // Step 2️⃣: Verify OTP and login / signup
+    // @PostMapping("/verify-otp")
+    // public ResponseEntity<LoginResponse> verifyOtp(@RequestBody LoginRequest
+    // request) {
+    // String email = request.getEmail();
+    // String otp = request.getOtp();
+
+    // // ❌ Invalid OTP
+    // if (!otpService.validateOtp(email, otp)) {
+    // return ResponseEntity.badRequest().body(new LoginResponse(
+    // false,
+    // null,
+    // 0,
+    // email,
+    // null,
+    // "Invalid or expired OTP"));
+    // }
+
+    // // 🔍 Check if user exists
+    // User user = userRepo.findByEmail(email);
+    // boolean isNew = (user == null);
+
+    // // 🆕 Insert new user only if not exists
+    // if (isNew) {
+    // user = new User();
+    // user.setEmail(email);
+    // user.setPassword("OTP_LOGIN");
+    // user.setRole("user");
+    // userRepo.saveOrUpdate(user);
+    // } else {
+    // System.out.println("Existing user login: " + email);
+    // }
+
+    // // ⭐ ADD THIS: Check if profile exists
+    // boolean profileExists = profileRepo.profileExists(user.getuserID());
+
+    // // 🧾 Generate JWT
+    // String token = jwtUtil.generateToken(
+    // user.getEmail(),
+    // user.getuserID(),
+    // user.getRole());
+
+    // // 🎯 Return success response
+    // LoginResponse response = new LoginResponse(
+    // true,
+    // token,
+    // user.getuserID(),
+    // user.getEmail(),
+    // user.getRole(),
+    // isNew ? "Signup successful!" : "Login successful!");
+
+    // // ⭐ ADD THIS: include result in response
+    // response.setProfileExists(profileExists);
+
+    // return ResponseEntity.ok(response);
+    // }
+
     @PostMapping("/verify-otp")
     public ResponseEntity<LoginResponse> verifyOtp(@RequestBody LoginRequest request) {
-        String email = request.getEmail();
-        String otp = request.getOtp();
 
-        // ❌ Invalid OTP
-        if (!otpService.validateOtp(email, otp)) {
-            return ResponseEntity.badRequest().body(new LoginResponse(
-                    false,
-                    null,
-                    0,
-                    email,
-                    null,
-                    "Invalid or expired OTP"));
+        LoginResponse response = otpService.verifyLoginWithOtp(request.getEmail(), request.getOtp());
+
+        if (!response.isSuccess()) {
+            return ResponseEntity.badRequest().body(response);
         }
-
-        // 🔍 Check if user exists
-        User user = userRepo.findByEmail(email);
-        boolean isNew = (user == null);
-
-        // 🆕 Insert new user only if not exists
-        if (isNew) {
-            user = new User();
-            user.setEmail(email);
-            user.setPassword("OTP_LOGIN");
-            user.setRole("user");
-            userRepo.saveOrUpdate(user);
-        } else {
-            System.out.println("Existing user login: " + email);
-        }
-
-        // ⭐ ADD THIS: Check if profile exists
-        boolean profileExists = profileRepo.profileExists(user.getuserID());
-
-        // 🧾 Generate JWT
-        String token = jwtUtil.generateToken(
-                user.getEmail(),
-                user.getuserID(),
-                user.getRole());
-
-        // 🎯 Return success response
-        LoginResponse response = new LoginResponse(
-                true,
-                token,
-                user.getuserID(),
-                user.getEmail(),
-                user.getRole(),
-                isNew ? "Signup successful!" : "Login successful!");
-
-        // ⭐ ADD THIS: include result in response
-        response.setProfileExists(profileExists);
 
         return ResponseEntity.ok(response);
     }
