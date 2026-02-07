@@ -119,63 +119,76 @@ public class RazorpayPaymentService {
         }
 
         @Transactional
-        public void verifyPayment(RazorpayVerifyRequest req) {
-                // System.out.println("VERIFY HIT >>> " + req);
+        public String verifyPayment(RazorpayVerifyRequest req) {
+                try {
+                        boolean valid = verifySignature(
+                                        req.getRazorpayOrderId(),
+                                        req.getRazorpayPaymentId(),
+                                        req.getRazorpaySignature());
 
-                boolean valid = verifySignature(
-                                req.getRazorpayOrderId(),
-                                req.getRazorpayPaymentId(),
-                                req.getRazorpaySignature());
-                // System.out.println("SIGNATURE VALID = " + valid);
+                        if (!valid) {
+                                markPaymentFailed(req.getRazorpayOrderId());
+                                throw new RuntimeException("Invalid Razorpay signature");
+                        }
 
-                if (!valid) {
-                        markPaymentFailed(req.getRazorpayOrderId());
-                        throw new RuntimeException("Invalid Razorpay signature");
-                }
-                System.out.println("LOOKING FOR ORDER >>> " + req.getRazorpayOrderId());
+                        Map<String, Object> payment = jdbcTemplate.queryForMap("""
+                                            SELECT payment_ID, booking_ID, amount, payment_Status
+                                            FROM payments
+                                            WHERE JSON_UNQUOTE(JSON_EXTRACT(split_Details,'$.razorpay_order_id')) = ?
+                                        """, req.getRazorpayOrderId());
 
-                Map<String, Object> payment = jdbcTemplate.queryForMap(
-                                "SELECT payment_ID, booking_ID, amount FROM payments WHERE JSON_UNQUOTE(JSON_EXTRACT(split_Details,'$.razorpay_order_id')) = ?",
-                                req.getRazorpayOrderId());
-                System.out.println("PAYMENT FOUND >>> " + payment);
+                        String status = (String) payment.get("payment_Status");
 
-                String paymentId = (String) payment.get("payment_ID");
-                String bookingId = (String) payment.get("booking_ID");
-                BigDecimal amount = (BigDecimal) payment.get("amount");
+                        // ✅ already processed — idempotent return
+                        if ("Success".equalsIgnoreCase(status)) {
+                                return "already paid";
+                        }
 
-                // 1️⃣ Update payment table
-                jdbcTemplate.update("""
-                                    UPDATE payments
-                                    SET payment_Status='Success',
-                                        transaction_ID=?,
-                                        updatedAt=NOW()
-                                    WHERE payment_ID=?
-                                """, req.getRazorpayPaymentId(), paymentId);
+                        String paymentId = (String) payment.get("payment_ID");
+                        String bookingId = (String) payment.get("booking_ID");
+                        BigDecimal amount = (BigDecimal) payment.get("amount");
 
-                // 2️⃣ Add to booking payment_amount
-                jdbcTemplate.update("""
-                                    UPDATE bookings
-                                    SET payment_amount = COALESCE(payment_amount,0) + ?
-                                    WHERE booking_ID=?
-                                """, amount, bookingId);
+                        // 1️⃣ Update payment table
+                        jdbcTemplate.update("""
+                                            UPDATE payments
+                                            SET payment_Status='Success',
+                                                transaction_ID=?,
+                                                updatedAt=NOW()
+                                            WHERE payment_ID=?
+                                        """, req.getRazorpayPaymentId(), paymentId);
 
-                // 3️⃣ Check if booking fully paid
-                Map<String, Object> booking = jdbcTemplate.queryForMap("""
-                                    SELECT payment_amount,
-                                           (totalAmount + platformFee) AS required
-                                    FROM bookings
-                                    WHERE booking_ID=?
-                                """, bookingId);
-
-                BigDecimal paid = (BigDecimal) booking.get("payment_amount");
-                BigDecimal required = (BigDecimal) booking.get("required");
-
-                if (paid.compareTo(required) >= 0) {
+                        // 2️⃣ Add to booking payment_amount
                         jdbcTemplate.update("""
                                             UPDATE bookings
-                                            SET payment_Status='Completed',transaction_ID = ?
+                                            SET payment_amount = COALESCE(payment_amount,0) + ?
                                             WHERE booking_ID=?
-                                        """, req.getRazorpayPaymentId(), bookingId);
+                                        """, amount, bookingId);
+
+                        // 3️⃣ Check if booking fully paid
+                        Map<String, Object> booking = jdbcTemplate.queryForMap("""
+                                            SELECT payment_amount,
+                                                   (totalAmount + platformFee) AS required
+                                            FROM bookings
+                                            WHERE booking_ID=?
+                                        """, bookingId);
+
+                        BigDecimal paid = (BigDecimal) booking.get("payment_amount");
+                        BigDecimal required = (BigDecimal) booking.get("required");
+
+                        if (paid.compareTo(required) >= 0) {
+                                jdbcTemplate.update("""
+                                                    UPDATE bookings
+                                                    SET payment_Status='Completed', transaction_ID=?
+                                                    WHERE booking_ID=?
+                                                """, req.getRazorpayPaymentId(), bookingId);
+                        }
+
+                        return "200: payment verified";
+
+                } catch (Exception e) {
+                        // log properly in real code
+                        System.out.println("VERIFY ERROR >>> " + e.getMessage());
+                        throw e; // let transaction roll back
                 }
         }
 

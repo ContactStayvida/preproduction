@@ -18,7 +18,7 @@
                 currency: "INR",
                 name: "StayVida",
                 description: "Hotel Booking Payment",
-                order_id: "order_SBid72jeRt4IHC",
+                order_id: "order_SDHzL1EPkk5SoN",
 
                 handler: function (response) {
 
@@ -27,6 +27,10 @@
                         razorpayPaymentId: response.razorpay_payment_id,
                         razorpaySignature: response.razorpay_signature
                     };
+
+                    console.log("Razorpay Order ID: " + response.razorpay_order_id);
+                    console.log("Razorpay Payment ID: " + response.razorpay_payment_id);
+                    console.log("Razorpay Signature: " + response.razorpay_signature);
 
                     fetch("http://localhost:8080/api/payments/razorpay/verify", {
                         method: "POST",

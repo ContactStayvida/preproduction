@@ -30,9 +30,9 @@ public class RazorpayPaymentController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<?> verify(@RequestBody RazorpayVerifyRequest req) {
-        paymentService.verifyPayment(req);
-        return ResponseEntity.ok("Payment verified");
+    public ResponseEntity<Map<String, String>> verify(@RequestBody RazorpayVerifyRequest req) {
+        String message = paymentService.verifyPayment(req);
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
 }
