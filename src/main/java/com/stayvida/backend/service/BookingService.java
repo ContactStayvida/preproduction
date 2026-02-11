@@ -221,7 +221,7 @@ public class BookingService {
             // 1️⃣ Validate room lock
             String lockSql = """
                         SELECT rl.room_id, rl.lock_expiry,
-                               r.hotel_ID, r.room_NO, r7.price
+                               r.hotel_ID, r.room_NO, r.price
                         FROM room_locks rl
                         JOIN rooms r ON r.room_ID = rl.room_id
                         WHERE rl.room_id = ?

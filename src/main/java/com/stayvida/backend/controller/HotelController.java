@@ -302,8 +302,6 @@ public class HotelController {
             @RequestParam("bedCount") int bedCount,
             @RequestParam("price") int price,
             @RequestParam("images") MultipartFile[] files) {
-        System.out.println("🔥 CONTROLLER HIT");
-
         try {
 
             int ownerId = (int) SecurityContextHolder
