@@ -1,5 +1,7 @@
 package com.stayvida.backend.controller;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.stayvida.backend.model.Profile;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.ProfileService;
+import com.stayvida.backend.service.OwnerDashboardService;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -21,6 +24,9 @@ public class ProfileController {
 
     @Autowired
     private ProfileService profileService;
+
+    @Autowired
+    private OwnerDashboardService dashboardService;
 
     @PostMapping("/UserID")
     public ResponseEntity<?> createOrUpdate(
@@ -51,6 +57,25 @@ public class ProfileController {
         }
 
         return ApiResponse.success(profile, "Profile fetched successfully");
+    }
+
+    @GetMapping("/{bookingId}/details") // admin dashboard all pages where booking is shown open booking fetch details
+    public ResponseEntity<?> getBookingDetails(@PathVariable String bookingId) {
+        try {
+            Map<String, Object> data = dashboardService.getBookingDetails(bookingId);
+
+            if (data == null) {
+                return ApiResponse.notFound("Booking not found");
+            }
+
+            return ApiResponse.success(
+                    data,
+                    "Booking details fetched successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to fetch booking details");
+        }
     }
 
     @PatchMapping("/Update") // UPDATE PROFILE
