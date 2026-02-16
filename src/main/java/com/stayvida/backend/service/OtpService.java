@@ -42,7 +42,7 @@ public class OtpService {
             return "1234";
         } else {
             // 🛡️ Generate real OTP for production
-            String otp = String.format("%06d", new Random().nextInt(999999));
+            String otp = String.format("%04d", new Random().nextInt(9999));
             otpStore.put(email, new OtpData(otp, LocalDateTime.now().plusMinutes(1)));
             return otp;
         }
