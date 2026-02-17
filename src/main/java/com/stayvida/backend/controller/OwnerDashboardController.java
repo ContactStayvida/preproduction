@@ -1,11 +1,11 @@
 package com.stayvida.backend.controller;
 
 import java.util.*;
-import org.springframework.beans.factory.annotation.Value;
+// import org.springframework.beans.factory.annotation.Value;`
 
 import com.stayvida.backend.service.BookingFlowService;
 import com.stayvida.backend.service.BookingService;
-import com.stayvida.backend.service.CloudinaryService;
+// import com.stayvida.backend.service.CloudinaryService;
 import com.stayvida.backend.service.ImageCompressionUtil;
 import com.stayvida.backend.service.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,13 +15,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+// import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.dto.BookingRequest;
 import com.stayvida.backend.dto.BookingResponse;
 import com.stayvida.backend.dto.LockRoomRequest;
 import com.stayvida.backend.dto.LockRoomResponse;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.OwnerDashboardService;
+import com.stayvida.backend.service.WalletService;
 import com.stayvida.backend.exception.BookingExceptions.RoomLockException;
 import com.stayvida.backend.exception.BookingExceptions.OtpRequiredException;
 
@@ -36,14 +37,18 @@ public class OwnerDashboardController {
 
     private final BookingService bookingService;
     private final BookingFlowService bookingFlowService;
+    private final WalletService walletService;
 
-    public OwnerDashboardController(BookingService bookingService, BookingFlowService bookingFlowService) {
+    public OwnerDashboardController(BookingService bookingService, BookingFlowService bookingFlowService,
+            WalletService walletService) {
         this.bookingService = bookingService;
         this.bookingFlowService = bookingFlowService;
+        this.walletService = walletService;
     }
 
     @GetMapping("/monthly-bookings") // owner dashbord dashbord page
     public ResponseEntity<?> getMonthlyBookings() {
+
         try {
             int ownerId = (int) SecurityContextHolder
                     .getContext()
@@ -119,7 +124,6 @@ public class OwnerDashboardController {
                     .getContext()
                     .getAuthentication()
                     .getPrincipal();
-
             List<Map<String, Object>> data = dashboardService.getAllBookingsForOwner(ownerId);
 
             if (data == null || data.isEmpty()) {
@@ -144,7 +148,6 @@ public class OwnerDashboardController {
                     .getContext()
                     .getAuthentication()
                     .getPrincipal();
-
             List<Map<String, Object>> data = dashboardService.getUpcomingBookings(ownerId);
 
             if (data == null || data.isEmpty()) {
@@ -168,7 +171,6 @@ public class OwnerDashboardController {
                     .getContext()
                     .getAuthentication()
                     .getPrincipal();
-
             Map<String, Object> data = dashboardService.getBookingDetails(bookingId, ownerId);
 
             if (data == null) {
@@ -190,12 +192,10 @@ public class OwnerDashboardController {
             @PathVariable String roomId,
             @PathVariable String hotelId,
             @PathVariable boolean isEnable) {
-
         int ownerId = (int) SecurityContextHolder
                 .getContext()
                 .getAuthentication()
                 .getPrincipal();
-
         boolean updated = dashboardService.updateRoomStatus(
                 ownerId, roomId, isEnable);
 
@@ -221,12 +221,11 @@ public class OwnerDashboardController {
             @RequestParam(required = false) Integer maxAdults,
             @RequestParam(required = false) Integer maxChildren,
             @RequestParam(required = false) Integer bedCount) {
-
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
         try {
-            int ownerId = (int) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
-                    .getPrincipal();
 
             Map<String, Object> updates = new HashMap<>();
 
@@ -266,11 +265,11 @@ public class OwnerDashboardController {
     // ROOMIMAGE UPDATE HELPER FETCH ALL ROOM IMAGE
     @GetMapping("/rooms/{roomId}/images")
     public ResponseEntity<?> getRoomImagesBase64(@PathVariable String roomId) {
+
         int ownerId = (int) SecurityContextHolder
                 .getContext()
                 .getAuthentication()
                 .getPrincipal();
-
         Map<Integer, String> images = dashboardService.getRoomImagesBase64WithId(roomId, ownerId);
 
         if (images.isEmpty()) {
@@ -286,6 +285,10 @@ public class OwnerDashboardController {
     @DeleteMapping("/rooms/remove-image")
     public ResponseEntity<?> removeRoomImage(@RequestBody Map<String, Object> request) {
         try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
             String roomId = (String) request.get("roomId");
             Integer imageIndex = (Integer) request.get("imageIndex"); // optional, 1-based
             String base64Image = (String) request.get("base64Image"); // optional alternative
@@ -293,10 +296,7 @@ public class OwnerDashboardController {
             if (roomId == null || (imageIndex == null && base64Image == null)) {
                 return ApiResponse.badRequest("roomId and either imageIndex or base64Image are required");
             }
-            int ownerId = (int) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
-                    .getPrincipal();
+
             boolean removed = dashboardService.removeRoomImage(roomId, imageIndex, base64Image, ownerId);
 
             if (!removed) {
@@ -318,6 +318,10 @@ public class OwnerDashboardController {
             @RequestParam("images") MultipartFile[] images) {
 
         try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
             if (images == null || images.length == 0) {
                 return ApiResponse.badRequest("At least one image is required");
             }
@@ -338,11 +342,6 @@ public class OwnerDashboardController {
             if (base64Images.isEmpty()) {
                 return ApiResponse.badRequest("No valid images found");
             }
-
-            int ownerId = (int) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
-                    .getPrincipal();
 
             boolean updated = dashboardService.appendRoomImages(roomId, base64Images, ownerId);
 
@@ -377,10 +376,6 @@ public class OwnerDashboardController {
             @RequestParam(required = false) String latitude) {
 
         try {
-            int ownerId = (int) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
-                    .getPrincipal();
 
             Map<String, Object> updates = new HashMap<>();
 
@@ -419,6 +414,10 @@ public class OwnerDashboardController {
             if (updates.isEmpty()) {
                 return ApiResponse.badRequest("No fields provided for update");
             }
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
 
             boolean updated = dashboardService.updateHotel(ownerId, updates);
 
@@ -536,8 +535,7 @@ public class OwnerDashboardController {
     // public ResponseEntity<BookingResponse> createBooking(
     // @RequestBody BookingRequest request) {
 
-    // Integer userId = (int) SecurityContextHolder
-    // .getContext()
+    // Integer _ID"H-"+ ownerIdt()
     // .getAuthentication()
     // .getPrincipal();
 
@@ -567,6 +565,37 @@ public class OwnerDashboardController {
             @PathVariable String roomID) {
         List<Map<String, Object>> data = dashboardService.getRoomDetails(roomID);
         return ApiResponse.success(data, "Room details fetched successfully");
+    }
+
+    @GetMapping("/wallet")
+    public ResponseEntity<?> getWallet() {
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        String hotel_ID = "H-" + ownerId;
+        return ApiResponse.success(walletService.getWallet(hotel_ID), "Wallet fetched successfully");
+    }
+
+    @PostMapping("/wallet/create")
+    public ResponseEntity<?> createWalletAccount() {
+        try {
+            int ownerId = (int) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+            String hotel_ID = "H-" + ownerId;
+
+            walletService.createAccount(hotel_ID);
+
+            return ApiResponse.success(
+                    Map.of("hotelId", hotel_ID),
+                    "Wallet account created successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.serverError("Failed to create wallet account");
+        }
     }
 
 }

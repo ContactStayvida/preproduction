@@ -22,11 +22,6 @@ public class RazorpayPaymentService {
         private final RazorpayConfig razorpayConfig;
         private final WalletService walletService;
 
-        int userId = (int) SecurityContextHolder
-                        .getContext()
-                        .getAuthentication()
-                        .getPrincipal();
-
         // ✅ Constructor injection (CORRECT)
         public RazorpayPaymentService(
                         JdbcTemplate jdbcTemplate,
@@ -72,6 +67,11 @@ public class RazorpayPaymentService {
         }
 
         private void insertPayment(String bookingId, BigDecimal amount, String orderId) {
+
+                int userId = (int) SecurityContextHolder
+                                .getContext()
+                                .getAuthentication()
+                                .getPrincipal();
 
                 String paymentId = "PAY-" + System.currentTimeMillis();
 
@@ -125,6 +125,11 @@ public class RazorpayPaymentService {
         @Transactional
         public String verifyPayment(RazorpayVerifyRequest req) {
                 try {
+                        int userId = (int) SecurityContextHolder
+                                        .getContext()
+                                        .getAuthentication()
+                                        .getPrincipal();
+
                         boolean valid = verifySignature(
                                         req.getRazorpayOrderId(),
                                         req.getRazorpayPaymentId(),
