@@ -20,14 +20,22 @@ public class RazorpayPaymentService {
 
         private final JdbcTemplate jdbcTemplate;
         private final RazorpayConfig razorpayConfig;
+        private final WalletService walletService;
+
+        int userId = (int) SecurityContextHolder
+                        .getContext()
+                        .getAuthentication()
+                        .getPrincipal();
 
         // ✅ Constructor injection (CORRECT)
         public RazorpayPaymentService(
                         JdbcTemplate jdbcTemplate,
-                        RazorpayConfig razorpayConfig) {
+                        RazorpayConfig razorpayConfig,
+                        WalletService walletService) {
 
                 this.jdbcTemplate = jdbcTemplate;
                 this.razorpayConfig = razorpayConfig;
+                this.walletService = walletService;
         }
 
         // STEP 1: Create Razorpay Order
@@ -69,10 +77,6 @@ public class RazorpayPaymentService {
 
                 JSONObject split = new JSONObject();
                 split.put("razorpay_order_id", orderId);
-                int userId = (int) SecurityContextHolder
-                                .getContext()
-                                .getAuthentication()
-                                .getPrincipal();
 
                 jdbcTemplate.update(
                                 """
@@ -182,6 +186,17 @@ public class RazorpayPaymentService {
                                                     WHERE booking_ID=?
                                                 """, req.getRazorpayPaymentId(), bookingId);
                         }
+
+                        String hotelId = "H-" + userId;
+
+                        // 4️⃣ Add to wallet
+                        walletService.wallet(
+                                        hotelId,
+                                        bookingId,
+                                        amount,
+                                        "CR",
+                                        "Razorpay",
+                                        req.getRazorpayPaymentId());
 
                         return "200: payment verified";
 
