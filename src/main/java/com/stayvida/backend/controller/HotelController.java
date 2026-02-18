@@ -18,6 +18,7 @@ import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.CloudinaryService;
 import com.stayvida.backend.service.ImageCompressionUtil;
 // import com.stayvida.backend.service.RoomService;
+import com.stayvida.backend.service.WalletService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,6 +61,8 @@ public class HotelController {
     // private RoomImageRepository roomImageRepository;
     @Autowired
     private RoomregisterRepository roomRegisterRepository; // 🔹 inject here
+    @Autowired
+    private WalletService walletService;
 
     @PostMapping("/search")
     public ResponseEntity<Map<String, Object>> searchHotels(
@@ -271,6 +274,7 @@ public class HotelController {
             String existingHotelId = registerRepository.findHotelIdByOwnerId(register.getOwner_ID());
 
             String hotelId = registerRepository.saveHotel(register);
+            walletService.createAccount(hotelId);
 
             Map<String, Object> responseBody = new HashMap<>();
             responseBody.put("hotelId", hotelId);
