@@ -1,5 +1,6 @@
 package com.stayvida.backend.controller;
 
+import java.math.BigDecimal;
 import java.util.*;
 // import org.springframework.beans.factory.annotation.Value;`
 
@@ -598,4 +599,38 @@ public class OwnerDashboardController {
         }
     }
 
+    @PostMapping("/withdraw")
+    public ResponseEntity<?> requestWithdraw(@RequestBody Map<String, Object> body) {
+
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        String hotelId = "H-" + ownerId;
+
+        try {
+
+            BigDecimal amount = new BigDecimal(body.get("amount").toString());
+
+            walletService.requestWithdraw(
+                    hotelId,
+                    amount);
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "hotelId", hotelId,
+                            "amount", amount,
+                            "status", "PENDING",
+                            "message", "Withdraw request submitted successfully"));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Internal server error"));
+        }
+    }
 }

@@ -22,9 +22,11 @@ public class WalletService {
             String hotelId,
             String bookingId,
             BigDecimal amount,
-            String type, // "CR" or "DR"
+            String type, // "CR" or "DR" or "WITHDRAW" only
             String via,
             String transactionId) {
+
+        createAccount(hotelId);
 
         // 1️⃣ ensure wallet exists
         jdbcTemplate.update("""
@@ -32,8 +34,6 @@ public class WalletService {
                     VALUES (?, 0)
                     ON DUPLICATE KEY UPDATE hotel_id=hotel_id
                 """, hotelId);
-
-        createAccount(hotelId);
 
         // 2️⃣ mutate balance safely
         if ("CR".equalsIgnoreCase(type)) {
@@ -44,7 +44,8 @@ public class WalletService {
                         WHERE hotel_id = ?
                     """, amount, hotelId);
 
-        } else if ("DR".equalsIgnoreCase(type)) {
+        } else if ("DR".equalsIgnoreCase(type)
+                || "WITHDRAW".equalsIgnoreCase(type)) {
 
             int updated = jdbcTemplate.update("""
                         UPDATE balance
@@ -79,6 +80,71 @@ public class WalletService {
                 type,
                 amount,
                 newBalance);
+    }
+
+    @Transactional // withdraw request
+    public void requestWithdraw(
+            String hotelId,
+            BigDecimal amount) {
+
+        // Optional: check current balance to avoid useless requests
+        BigDecimal balance = jdbcTemplate.queryForObject("""
+                    SELECT balance FROM balance WHERE hotel_id=?
+                """, BigDecimal.class, hotelId);
+
+        if (balance.compareTo(amount) < 0) {
+            throw new RuntimeException("Insufficient balance to request withdraw");
+        }
+
+        jdbcTemplate.update("""
+                    INSERT INTO withdraw_request
+                    (hotel_id, txn_date, type, amount, status)
+                    VALUES (?, NOW(), 'WITHDRAW', ?, 'PENDING')
+                """,
+                hotelId,
+                amount);
+    }
+
+    @Transactional
+    public void processWithdraw(long requestId, String decision, String transactionId) {
+
+        Map<String, Object> request = jdbcTemplate.queryForMap("""
+                    SELECT hotel_id, amount, status
+                    FROM withdraw_request
+                    WHERE sr=?
+                """, requestId);
+
+        String currentStatus = (String) request.get("status");
+
+        if (!"PENDING".equalsIgnoreCase(currentStatus)) {
+            throw new RuntimeException("Request already processed");
+        }
+
+        if ("APPROVE".equalsIgnoreCase(decision)) {
+
+            String hotelId = (String) request.get("hotel_id");
+            BigDecimal amount = (BigDecimal) request.get("amount");
+
+            // Execute real withdraw (this updates ledger + balance)
+            wallet(hotelId, null, amount, "WITHDRAW", "BANK", transactionId);
+
+            jdbcTemplate.update("""
+                        UPDATE withdraw_request
+                        SET status='APPROVED'
+                        WHERE sr=?
+                    """, requestId);
+
+        } else if ("REJECT".equalsIgnoreCase(decision)) {
+
+            jdbcTemplate.update("""
+                        UPDATE withdraw_request
+                        SET status='REJECTED'
+                        WHERE sr=?
+                    """, requestId);
+
+        } else {
+            throw new IllegalArgumentException("Invalid decision type");
+        }
     }
 
     public Map<String, Object> getWallet(String hotelId) {
@@ -123,6 +189,39 @@ public class WalletService {
                 """, hotelId);
 
         // optional: you can log if already exists
+    }
+
+    public List<Map<String, Object>> getWithdrawRequests(String status) {
+
+        if (status == null || status.isBlank()) {
+
+            return jdbcTemplate.queryForList("""
+                        SELECT sr,
+                               hotel_id,
+                               txn_date,
+                               via,
+                               transaction_id,
+                               amount,
+                               status
+                        FROM withdraw_request
+                        ORDER BY sr DESC
+                    """);
+
+        } else {
+
+            return jdbcTemplate.queryForList("""
+                        SELECT sr,
+                               hotel_id,
+                               txn_date,
+                               via,
+                               transaction_id,
+                               amount,
+                               status
+                        FROM withdraw_request
+                        WHERE status = ?
+                        ORDER BY sr DESC
+                    """, status);
+        }
     }
 
 }

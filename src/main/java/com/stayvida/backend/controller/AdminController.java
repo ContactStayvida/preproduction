@@ -40,6 +40,7 @@ import com.stayvida.backend.service.UserService;
 import com.stayvida.backend.repository.HotelRepository;
 import com.stayvida.backend.repository.RegisterRepository;
 import com.stayvida.backend.repository.RoomregisterRepository;
+import com.stayvida.backend.service.WalletService;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -52,6 +53,8 @@ public class AdminController {
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private LookupService service;
+    @Autowired
+    private WalletService walletService;
 
     @Autowired
     private OwnerDashboardService dashboardService;
@@ -61,8 +64,9 @@ public class AdminController {
     private RoomregisterRepository roomRegisterRepository; // 🔹 inject here
     private final UserService userService;
 
-    public AdminController(UserService userService) {
+    public AdminController(UserService userService, WalletService walletService) {
         this.userService = userService;
+        this.walletService = walletService;
     }
 
     // @GetMapping("/monthly-revenue")
@@ -802,4 +806,57 @@ public class AdminController {
         return ResponseEntity.ok(userService.getUserList());
     }
 
+    @PostMapping("/{requestId}")
+    public ResponseEntity<?> processWithdraw(
+            @PathVariable long requestId,
+            @RequestBody Map<String, Object> body) {
+
+        try {
+
+            String decision = body.get("decision").toString();
+            String transactionId = body.get("transactionId").toString();
+
+            walletService.processWithdraw(requestId, decision, transactionId);
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "requestId", requestId,
+                            "decision", decision.toUpperCase(),
+                            "transactionId", transactionId,
+                            "message", "Withdraw request processed successfully"));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Internal server error"));
+        }
+    }
+
+    @GetMapping("/fetch_requests") // fetch all withdraw requests
+    public ResponseEntity<?> getWithdrawRequests(
+            @RequestParam(required = false) String status) {
+
+        try {
+
+            List<Map<String, Object>> requests = walletService.getWithdrawRequests(status);
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "count", requests.size(),
+                            "data", requests));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Internal server error"));
+        }
+    }
 }
