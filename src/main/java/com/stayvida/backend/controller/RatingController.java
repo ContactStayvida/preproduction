@@ -68,16 +68,46 @@ public class RatingController {
         }
     }
 
-    @GetMapping("/hotel/{hotelId}")
-    public ResponseEntity<?> getRatingsByHotel(@PathVariable String hotelId) {
-        List<Rating> ratings = ratingRepository.findAllByHotelId(hotelId);
-        Double avgRating = ratingRepository.findAverageRatingByHotelId(hotelId);
-        if (avgRating == null)
-            avgRating = 0.0;
+    // @GetMapping("/hotel/{hotelId}")
+    // public ResponseEntity<?> getRatingsByHotel(@PathVariable String hotelId) {
+    // List<Rating> ratings = ratingRepository.findAllByHotelId(hotelId);
+    // Double avgRating = ratingRepository.findAverageRatingByHotelId(hotelId);
+    // if (avgRating == null)
+    // avgRating = 0.0;
 
+    // Map<String, Object> response = new HashMap<>();
+    // response.put("ratings", ratings);
+    // response.put("averageRating", avgRating);
+
+    // return ResponseEntity.ok(response);
+    // }
+
+    @GetMapping("/hotel")
+    public ResponseEntity<?> getRatings(
+            @RequestParam(required = false) String hotelId) {
+
+        List<Rating> ratings;
         Map<String, Object> response = new HashMap<>();
-        response.put("ratings", ratings);
-        response.put("averageRating", avgRating);
+
+        if (hotelId == null || hotelId.isBlank()) {
+
+            // Fetch all ratings
+            ratings = ratingRepository.findAll();
+            response.put("ratings", ratings);
+
+        } else {
+
+            // Fetch ratings for specific hotel
+            ratings = ratingRepository.findAllByHotelId(hotelId);
+            Double avgRating = ratingRepository.findAverageRatingByHotelId(hotelId);
+
+            if (avgRating == null) {
+                avgRating = 0.0;
+            }
+
+            response.put("ratings", ratings);
+            response.put("averageRating", avgRating);
+        }
 
         return ResponseEntity.ok(response);
     }

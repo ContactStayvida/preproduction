@@ -12,6 +12,7 @@ public class Rating {
     private Integer rating_ID;
 
     private Integer user_ID;
+    private String user_name;
     private String hotel_ID;
     private String booking_ID;
 
@@ -37,6 +38,14 @@ public class Rating {
 
     public void setUser_ID(Integer user_ID) {
         this.user_ID = user_ID;
+    }
+
+    public void setUser_Name(String user_name) {
+        this.user_name = user_name;
+    }
+
+    public String getUser_Name() {
+        return user_name;
     }
 
     public String getHotel_ID() {

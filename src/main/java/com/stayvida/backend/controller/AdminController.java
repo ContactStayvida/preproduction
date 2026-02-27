@@ -840,13 +840,18 @@ public class AdminController {
         }
     }
 
-    @GetMapping("/fetch_requests") // fetch all withdraw requests
+    @GetMapping("/fetch_requests")
     public ResponseEntity<?> getWithdrawRequests(
             @RequestParam(required = false) String status) {
 
         try {
 
             List<Map<String, Object>> requests = walletService.getWithdrawRequests(status);
+
+            if (requests == null || requests.isEmpty()) {
+                return ResponseEntity.status(404)
+                        .body(Map.of("error", "No requests found"));
+            }
 
             return ResponseEntity.ok(
                     Map.of(
@@ -856,7 +861,7 @@ public class AdminController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500)
-                    .body(Map.of("error", "Internal server error"));
+                    .body(Map.of("error", "Something went wrong"));
         }
     }
 }

@@ -20,6 +20,7 @@ public class RatingRepository {
         Rating rating = new Rating();
         rating.setRating_ID(rs.getInt("rating_ID"));
         rating.setUser_ID(rs.getInt("user_ID"));
+        rating.setUser_Name(rs.getString("name"));
         rating.setHotel_ID(rs.getString("hotel_ID"));
         rating.setBooking_ID(rs.getString("booking_ID"));
         rating.setRating_Value(rs.getDouble("rating_Value"));
@@ -30,14 +31,24 @@ public class RatingRepository {
 
     // Fetch all ratings for a hotel
     public List<Rating> findAllByHotelId(String hotelId) {
-        String sql = "SELECT * FROM rating WHERE hotel_ID = ?";
+        String sql = "SELECT r.*, p.name FROM rating r INNER JOIN profile p ON r.user_ID = p.user_ID WHERE r.hotel_ID = ? ";
         return jdbcTemplate.query(sql, ratingRowMapper, hotelId);
     }
 
     // Fetch average rating rounded to 1 decimal
     public Double findAverageRatingByHotelId(String hotelId) {
-        String sql = "SELECT ROUND(AVG(rating_Value),1) FROM rating WHERE hotel_ID = ?";
+        String sql = "SELECT ROUND(AVG(rating_Value),1) FROM rating WHERE r.hotel_ID = ?";
         return jdbcTemplate.queryForObject(sql, Double.class, hotelId);
+    }
+
+    public Double findAverageRating() {
+        String sql = "SELECT ROUND(AVG(rating_Value),1) FROM rating";
+        return jdbcTemplate.queryForObject(sql, Double.class);
+    }
+
+    public List<Rating> findAll() {
+        String sql = "SELECT r.*,p.name FROM rating r INNER JOIN profile p ON r.user_ID = p.user_ID";
+        return jdbcTemplate.query(sql, ratingRowMapper);
     }
 
     // Save a new rating using RatingRequest

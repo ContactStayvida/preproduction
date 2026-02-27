@@ -633,4 +633,33 @@ public class OwnerDashboardController {
                     .body(Map.of("error", "Internal server error"));
         }
     }
+
+    @GetMapping("/fetch_requests") // fetch all withdraw requests
+    public ResponseEntity<?> getWithdrawRequests(
+            @RequestParam(required = false) String status) {
+
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        String hotelId = "H-" + ownerId;
+
+        try {
+
+            List<Map<String, Object>> requests = walletService.getWithdrawRequests(status, hotelId);
+            if (requests == null || requests.isEmpty()) {
+                return ResponseEntity.status(404)
+                        .body(Map.of("error", "No requests found"));
+            }
+            return ResponseEntity.ok(
+                    Map.of(
+                            "count", requests.size(),
+                            "data", requests));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "someething went wrong"));
+        }
+    }
 }

@@ -199,10 +199,9 @@ public class WalletService {
                         SELECT sr,
                                hotel_id,
                                txn_date,
-                               via,
-                               transaction_id,
                                amount,
-                               status
+                               status,
+                               remark
                         FROM withdraw_request
                         ORDER BY sr DESC
                     """);
@@ -213,14 +212,45 @@ public class WalletService {
                         SELECT sr,
                                hotel_id,
                                txn_date,
-                               via,
-                               transaction_id,
                                amount,
-                               status
+                               status,
+                               remark
                         FROM withdraw_request
                         WHERE status = ?
                         ORDER BY sr DESC
                     """, status);
+        }
+    }
+
+    // OWNER VERSION
+    public List<Map<String, Object>> getWithdrawRequests(String status, String hotelId) {
+
+        if (status == null || status.isBlank()) {
+
+            return jdbcTemplate.queryForList("""
+                        SELECT sr,
+                               hotel_id,
+                               txn_date,
+                               amount,
+                               status,
+                               remark
+                        FROM withdraw_request WHERE hotel_id = ?
+                        ORDER BY sr DESC
+                    """, hotelId);
+
+        } else {
+
+            return jdbcTemplate.queryForList("""
+                        SELECT sr,
+                               hotel_id,
+                               txn_date,
+                               amount,
+                               status,
+                               remark
+                        FROM withdraw_request
+                        WHERE status = ? and hotel_id = ?
+                        ORDER BY sr DESC
+                    """, status, hotelId);
         }
     }
 
