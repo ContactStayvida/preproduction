@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -865,5 +866,23 @@ public class AdminController {
             return ResponseEntity.status(500)
                     .body(Map.of("error", "Something went wrong"));
         }
+    }
+
+    @GetMapping("/details")
+    public ResponseEntity<?> getAllBankDetails(@RequestParam String hotelId) {
+
+        List<Map<String, Object>> bankDetails = walletService.getAllBankDetails(hotelId);
+
+        if (bankDetails == null || bankDetails.isEmpty()) {
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "error");
+            response.put("message", "No bank details found for hotel");
+            response.put("hotel_id", hotelId);
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        return ResponseEntity.ok(bankDetails);
     }
 }

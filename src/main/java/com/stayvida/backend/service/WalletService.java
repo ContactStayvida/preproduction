@@ -1,9 +1,11 @@
 package com.stayvida.backend.service;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -197,27 +199,35 @@ public class WalletService {
 
             return jdbcTemplate.queryForList("""
                         SELECT sr,
-                               hotel_id,
-                               txn_date,
-                               amount,
-                               status,
-                               remark
-                        FROM withdraw_request
-                        ORDER BY sr DESC
+                               w.hotel_id,
+                               w.txn_date,
+                               w.amount,
+                               w.status,
+                               w.remark,
+                               h.*,
+                               ht.name
+                        FROM withdraw_request w LEFT JOIN
+                        hotel_bank_details h on w.hotel_id = h.hotel_id
+                        LEFT JOIN hotels ht on w.hotel_id = ht.hotel_ID
+                        ORDER BY w.sr DESC
                     """);
 
         } else {
 
             return jdbcTemplate.queryForList("""
                         SELECT sr,
-                               hotel_id,
-                               txn_date,
-                               amount,
-                               status,
-                               remark
-                        FROM withdraw_request
+                               w.hotel_id,
+                               w.txn_date,
+                               w.amount,
+                               w.status,
+                               w.remark,
+                               h.*,
+                               ht.name
+                        FROM withdraw_request w
+                        LEFT JOIN hotel_bank_details h on w.hotel_id = h.hotel_id
+                        LEFT JOIN hotels ht on w.hotel_id = ht.hotel_ID
                         WHERE status = ?
-                        ORDER BY sr DESC
+                        ORDER BY w.sr DESC
                     """, status);
         }
     }
@@ -234,7 +244,7 @@ public class WalletService {
                                amount,
                                status,
                                remark
-                        FROM withdraw_request WHERE hotel_id = ?
+                        FROM withdraw_request w WHERE hotel_id = ?
                         ORDER BY sr DESC
                     """, hotelId);
 
@@ -252,6 +262,86 @@ public class WalletService {
                         ORDER BY sr DESC
                     """, status, hotelId);
         }
+    }
+
+    // 1️⃣ INSERT
+    public Map<String, Object> insertBankDetails(String hotelId,
+            String accountNo,
+            String ifsc,
+            String upi,
+            String bankName) {
+
+        Map<String, Object> response = new LinkedHashMap<>();
+
+        try {
+
+            String sql = """
+                    INSERT INTO hotel_bank_details
+                    (hotel_id, bank_account_no, ifsc_code, upi_id, bank_name)
+                    VALUES (?, ?, ?, ?, ?)
+                    """;
+
+            int rows = jdbcTemplate.update(sql, hotelId, accountNo, ifsc, upi, bankName);
+
+            response.put("status", "success");
+            response.put("message", "Bank details inserted successfully");
+            response.put("hotel_id", hotelId);
+            response.put("rows_affected", rows);
+
+        } catch (DuplicateKeyException e) {
+
+            response.put("status", "error");
+            response.put("message", "Bank details already exist for this hotel");
+            response.put("hotel_id", hotelId);
+
+        } catch (Exception e) {
+
+            response.put("status", "error");
+            response.put("message", "Something went wrong");
+        }
+
+        return response;
+    }
+
+    // 2️⃣ UPDATE
+    public Map<String, Object> updateBankDetails(String hotelId,
+            String accountNo,
+            String ifsc,
+            String upi,
+            String bankName) {
+
+        String sql = """
+                UPDATE hotel_bank_details
+                SET bank_account_no = ?,
+                    ifsc_code = ?,
+                    upi_id = ?,
+                    bank_name = ?
+                WHERE hotel_id = ?
+                """;
+
+        int rows = jdbcTemplate.update(sql, accountNo, ifsc, upi, bankName, hotelId);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+
+        if (rows == 0) {
+            response.put("status", "error");
+            response.put("message", "Hotel not found");
+        } else {
+            response.put("status", "success");
+            response.put("message", "Bank details updated successfully");
+            response.put("hotel_id", hotelId);
+            response.put("rows_affected", rows);
+        }
+
+        return response;
+    }
+
+    // 3️⃣ FETCH ALL
+    public List<Map<String, Object>> getAllBankDetails(String hotel_id) {
+
+        String sql = "SELECT * FROM hotel_bank_details WHERE hotel_id = ?";
+
+        return jdbcTemplate.queryForList(sql, hotel_id);
     }
 
 }

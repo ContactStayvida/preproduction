@@ -662,4 +662,56 @@ public class OwnerDashboardController {
                     .body(Map.of("error", "someething went wrong"));
         }
     }
+
+    // Insert
+    @PostMapping("/add")
+    public ResponseEntity<?> addBankDetails(@RequestBody Map<String, String> request) {
+
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        String hotelId = "H-" + ownerId;
+
+        return ResponseEntity.ok(
+                walletService.insertBankDetails(
+                        hotelId,
+                        request.get("bank_account_no"),
+                        request.get("ifsc_code"),
+                        request.get("upi_id"),
+                        request.get("bank_name")));
+    }
+
+    // Update
+    @PutMapping("/update/{hotelId}")
+    public ResponseEntity<?> updateBankDetails(
+            @RequestBody Map<String, String> request) {
+
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        String hotelId = "H-" + ownerId;
+
+        return ResponseEntity.ok(
+                walletService.updateBankDetails(
+                        hotelId,
+                        request.get("bank_account_no"),
+                        request.get("ifsc_code"),
+                        request.get("upi_id"),
+                        request.get("bank_name")));
+    }
+
+    // Fetch All
+    @GetMapping("/details")
+    public ResponseEntity<?> getAllBankDetails() {
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        String hotelId = "H-" + ownerId;
+        return ResponseEntity.ok(
+                walletService.getAllBankDetails(hotelId));
+    }
+
 }
