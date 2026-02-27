@@ -31,13 +31,13 @@ public class RatingRepository {
 
     // Fetch all ratings for a hotel
     public List<Rating> findAllByHotelId(String hotelId) {
-        String sql = "SELECT r.*, p.name FROM rating r INNER JOIN profile p ON r.user_ID = p.user_ID WHERE r.hotel_ID = ? ";
+        String sql = "SELECT r.*, COALESCE(p.name, 'Random Pappu') AS name FROM rating r LEFT JOIN profile p ON r.user_ID = p.user_ID WHERE r.hotel_ID = ? ";
         return jdbcTemplate.query(sql, ratingRowMapper, hotelId);
     }
 
     // Fetch average rating rounded to 1 decimal
     public Double findAverageRatingByHotelId(String hotelId) {
-        String sql = "SELECT ROUND(AVG(rating_Value),1) FROM rating WHERE r.hotel_ID = ?";
+        String sql = "SELECT ROUND(AVG(rating_Value),1) FROM rating WHERE hotel_ID = ?";
         return jdbcTemplate.queryForObject(sql, Double.class, hotelId);
     }
 
@@ -47,7 +47,7 @@ public class RatingRepository {
     }
 
     public List<Rating> findAll() {
-        String sql = "SELECT r.*,p.name FROM rating r INNER JOIN profile p ON r.user_ID = p.user_ID";
+        String sql = "SELECT r.*,COALESCE(p.name, 'Random Pappu') AS name FROM rating r LEFT JOIN profile p ON r.user_ID = p.user_ID";
         return jdbcTemplate.query(sql, ratingRowMapper);
     }
 
