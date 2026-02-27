@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.stayvida.backend.model.Profile;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.ProfileService;
+import com.stayvida.backend.service.BookingService;
 import com.stayvida.backend.service.OwnerDashboardService;
 
 @RestController
@@ -112,4 +113,12 @@ public class ProfileController {
         return ApiResponse.success(updated, "Profile updated successfully");
     }
 
+    @GetMapping("/history")
+    public ResponseEntity<?> getLatestBookings() {
+        int UserID = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        return ResponseEntity.ok(dashboardService.getLatestBookingsByUser(UserID));
+    }
 }

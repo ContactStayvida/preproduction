@@ -385,6 +385,63 @@ public class OwnerDashboardService {
         });
     }
 
+    public List<Map<String, Object>> getLatestBookingsByUser(int userId) {
+
+        String sql = """
+                SELECT
+                    b.booking_ID,
+                    b.user_ID,
+                    b.hotel_ID,
+                    b.room_ID,
+                    r.room_NO,
+                    b.booking_Status,
+                    b.checkIn,
+                    b.checkOut,
+                    b.payment_Status,
+                    b.payment_amount,
+                    b.totalAmount,
+                    b.tax_amount,
+                    b.platformFee,
+                    b.is_refundable,
+                    b.name,
+                    b.phone_no
+                FROM bookings b
+                JOIN hotels h ON b.hotel_ID = h.hotel_ID
+                LEFT JOIN rooms r ON r.room_ID = b.room_ID
+                WHERE b.user_ID = ?
+                ORDER BY b.createdAt DESC
+                LIMIT 2
+                """;
+
+        return jdbcTemplate.query(sql, new Object[] { userId }, (rs, rowNum) -> {
+
+            Map<String, Object> map = new LinkedHashMap<>();
+
+            double totalAmount = rs.getDouble("totalAmount");
+            double taxAmount = rs.getDouble("tax_amount");
+            double platformFee = rs.getDouble("platformFee");
+            double paid = rs.getDouble("payment_amount");
+
+            double paymentLeft = totalAmount - (paid - platformFee);
+            double grossAmount = totalAmount + platformFee;
+
+            map.put("booking_ID", rs.getString("booking_ID"));
+            map.put("user_ID", rs.getInt("user_ID"));
+            map.put("hotel_ID", rs.getString("hotel_ID"));
+            map.put("room_ID", rs.getString("room_ID"));
+            map.put("RoomNumber", rs.getInt("room_NO"));
+            map.put("booking_Status", rs.getString("booking_Status"));
+            map.put("checkIn", rs.getDate("checkIn"));
+            map.put("checkOut", rs.getDate("checkOut"));
+            map.put("payment_Status", rs.getString("payment_Status"));
+            map.put("name", rs.getString("name"));
+            map.put("payment left", paymentLeft);
+            map.put("gross amount", grossAmount);
+
+            return map;
+        });
+    }
+
     // ===============================
     // UPCOMING RECENT 5 BOOKINGS
     // ===============================
