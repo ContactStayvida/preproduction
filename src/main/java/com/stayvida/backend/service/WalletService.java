@@ -106,7 +106,7 @@ public class WalletService {
     }
 
     @Transactional
-    public void processWithdraw(long requestId, String decision, String transactionId) {
+    public void processWithdraw(long requestId, String decision, String transactionId, String remark) {
 
         Map<String, Object> request = jdbcTemplate.queryForMap("""
                     SELECT hotel_id, amount, status
@@ -130,17 +130,17 @@ public class WalletService {
 
             jdbcTemplate.update("""
                         UPDATE withdraw_request
-                        SET status='APPROVED'
+                        SET status='APPROVED',  remark=?
                         WHERE sr=?
-                    """, requestId);
+                    """, remark, requestId);
 
         } else if ("REJECT".equalsIgnoreCase(decision)) {
 
             jdbcTemplate.update("""
                         UPDATE withdraw_request
-                        SET status='REJECTED'
+                        SET status='REJECTED', remark=?
                         WHERE sr=?
-                    """, requestId);
+                    """, remark, requestId);
 
         } else {
             throw new IllegalArgumentException("Invalid decision type");

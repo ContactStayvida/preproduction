@@ -815,15 +815,17 @@ public class AdminController {
 
             String decision = body.get("decision").toString();
             String transactionId = body.get("transactionId").toString();
+            String remark = body.get("remark").toString();
 
-            walletService.processWithdraw(requestId, decision, transactionId);
+            walletService.processWithdraw(requestId, decision, transactionId, remark);
 
             return ResponseEntity.ok(
                     Map.of(
                             "requestId", requestId,
                             "decision", decision.toUpperCase(),
                             "transactionId", transactionId,
-                            "message", "Withdraw request processed successfully"));
+                            "Remark", remark,
+                            "message", "Withdraw request processed " + decision.toUpperCase()));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
