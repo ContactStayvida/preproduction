@@ -42,6 +42,7 @@ import com.stayvida.backend.repository.HotelRepository;
 import com.stayvida.backend.repository.RegisterRepository;
 import com.stayvida.backend.repository.RoomregisterRepository;
 import com.stayvida.backend.service.WalletService;
+import com.stayvida.backend.service.ledgerService;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -56,6 +57,8 @@ public class AdminController {
     private LookupService service;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private ledgerService ledgerservice;
 
     @Autowired
     private OwnerDashboardService dashboardService;
@@ -63,11 +66,13 @@ public class AdminController {
     private RegisterRepository registerRepository;
     @Autowired
     private RoomregisterRepository roomRegisterRepository; // 🔹 inject here
+    @Autowired
     private final UserService userService;
 
-    public AdminController(UserService userService, WalletService walletService) {
+    public AdminController(UserService userService, WalletService walletService, ledgerService ledgerService) {
         this.userService = userService;
         this.walletService = walletService;
+        this.ledgerservice = ledgerService;
     }
 
     // @GetMapping("/monthly-revenue")
@@ -807,7 +812,7 @@ public class AdminController {
         return ResponseEntity.ok(userService.getUserList());
     }
 
-    @PostMapping("/{requestId}")
+    @PutMapping("/{requestId}")
     public ResponseEntity<?> processWithdraw(
             @PathVariable long requestId,
             @RequestBody Map<String, Object> body) {
@@ -910,5 +915,30 @@ public class AdminController {
         }
 
         return ResponseEntity.ok(bankDetails);
+    }
+
+    @GetMapping("/hotels/{hotelId}/ledger")
+    public ResponseEntity<?> getLedger(
+            @PathVariable String hotelId,
+            @RequestParam(required = false) String type) {
+
+        try {
+            List<Map<String, Object>> ledger = ledgerservice.getLedgerByHotel(hotelId, type);
+
+            if (ledger.isEmpty()) {
+                return ResponseEntity.status(404)
+                        .body(Map.of("error", "No ledger records found"));
+            }
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "count", ledger.size(),
+                            "data", ledger));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Something went wrong"));
+        }
     }
 }

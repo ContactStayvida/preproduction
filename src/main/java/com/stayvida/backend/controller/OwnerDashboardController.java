@@ -24,6 +24,7 @@ import com.stayvida.backend.dto.LockRoomResponse;
 import com.stayvida.backend.security.ApiResponse;
 import com.stayvida.backend.service.OwnerDashboardService;
 import com.stayvida.backend.service.WalletService;
+import com.stayvida.backend.service.ledgerService;
 import com.stayvida.backend.exception.BookingExceptions.RoomLockException;
 import com.stayvida.backend.exception.BookingExceptions.OtpRequiredException;
 
@@ -39,12 +40,14 @@ public class OwnerDashboardController {
     private final BookingService bookingService;
     private final BookingFlowService bookingFlowService;
     private final WalletService walletService;
+    private final ledgerService ledgerservice;
 
     public OwnerDashboardController(BookingService bookingService, BookingFlowService bookingFlowService,
-            WalletService walletService) {
+            WalletService walletService, ledgerService ledgerservice) {
         this.bookingService = bookingService;
         this.bookingFlowService = bookingFlowService;
         this.walletService = walletService;
+        this.ledgerservice = ledgerservice;
     }
 
     @GetMapping("/monthly-bookings") // owner dashbord dashbord page
@@ -712,6 +715,57 @@ public class OwnerDashboardController {
         String hotelId = "H-" + ownerId;
         return ResponseEntity.ok(
                 walletService.getAllBankDetails(hotelId));
+    }
+
+    @GetMapping("/hotels/ledger")
+    public ResponseEntity<?> getLedger(
+            @RequestParam(required = false) String type) {
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        String hotelId = "H-" + ownerId;
+
+        try {
+            List<Map<String, Object>> ledger = ledgerservice.getLedgerByHotel(hotelId, type);
+
+            if (ledger.isEmpty()) {
+                return ResponseEntity.status(404)
+                        .body(Map.of("error", "No ledger records found"));
+            }
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "count", ledger.size(),
+                            "data", ledger));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Something went wrong"));
+        }
+    }
+
+    @GetMapping("/hotels/financial-summary")
+    public ResponseEntity<?> getFinancialSummary(
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
+
+        int ownerId = (int) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        String hotelId = "H-" + ownerId;
+
+        try {
+            Map<String, Object> summary = ledgerservice.getFinancialSummary(hotelId, month, year);
+            return ResponseEntity.ok(summary);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Something went wrong"));
+        }
     }
 
 }

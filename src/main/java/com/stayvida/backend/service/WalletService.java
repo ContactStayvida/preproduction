@@ -204,10 +204,8 @@ public class WalletService {
                                w.amount,
                                w.status,
                                w.remark,
-                               h.*,
                                ht.name
-                        FROM withdraw_request w LEFT JOIN
-                        hotel_bank_details h on w.hotel_id = h.hotel_id
+                        FROM withdraw_request w
                         LEFT JOIN hotels ht on w.hotel_id = ht.hotel_ID
                         ORDER BY w.sr DESC
                     """);
@@ -221,10 +219,8 @@ public class WalletService {
                                w.amount,
                                w.status,
                                w.remark,
-                               h.*,
                                ht.name
                         FROM withdraw_request w
-                        LEFT JOIN hotel_bank_details h on w.hotel_id = h.hotel_id
                         LEFT JOIN hotels ht on w.hotel_id = ht.hotel_ID
                         WHERE status = ?
                         ORDER BY w.sr DESC
