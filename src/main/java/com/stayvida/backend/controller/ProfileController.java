@@ -29,7 +29,7 @@ public class ProfileController {
     @Autowired
     private OwnerDashboardService dashboardService;
 
-    @PostMapping("/UserID")
+    @PostMapping("/create")
     public ResponseEntity<?> createOrUpdate(
             // @PathVariable Integer UserID,
             @RequestBody Profile profile) {

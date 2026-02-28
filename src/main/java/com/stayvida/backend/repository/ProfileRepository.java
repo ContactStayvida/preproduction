@@ -5,6 +5,7 @@ import com.stayvida.backend.model.Profile;
 import java.sql.Timestamp;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -18,15 +19,12 @@ public class ProfileRepository {
         Timestamp now = new Timestamp(System.currentTimeMillis());
 
         String sql = """
-                    INSERT INTO profile (user_ID, name, phone_number, address, bio, gender)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO profile (user_ID, name, phone_number)
+                    VALUES (?, ?, ?)
                     ON DUPLICATE KEY UPDATE
                         name = VALUES(name),
                         phone_number = VALUES(phone_number),
-                        address = VALUES(address),
-                        bio = VALUES(bio),
-                        gender = VALUES(gender),
-                        updated_at =
+                        updated_at = ?
                 """;
 
         jdbcTemplate.update(
@@ -34,9 +32,6 @@ public class ProfileRepository {
                 profile.getUserID(),
                 profile.getName(),
                 profile.getPhoneNumber(),
-                profile.getAddress(),
-                profile.getBio(),
-                profile.getGender(),
                 now
 
         );
@@ -46,33 +41,61 @@ public class ProfileRepository {
     }
 
     public Profile getProfile(Integer userId) {
+
         String sql = """
-                    SELECT p.*, u.email, u.role
-                    FROM profile p
-                    JOIN users u ON p.user_ID = u.user_ID
-                    WHERE p.user_ID = ?
+                    SELECT u.user_ID,
+                           u.email,
+                           u.role,
+                           p.name,
+                           p.phone_number,
+                           p.created_at,
+                           p.updated_at
+                    FROM users u
+                    LEFT JOIN profile p ON u.user_ID = p.user_ID
+                    WHERE u.user_ID = ?
                 """;
 
         try {
             return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+
                 Profile p = new Profile();
                 p.setUserID(rs.getInt("user_ID"));
-                p.setName(rs.getString("name"));
-                p.setPhoneNumber(rs.getString("phone_number"));
-                p.setAddress(rs.getString("address"));
-                p.setBio(rs.getString("bio"));
-                p.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-                p.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
 
-                // extra fields from users table
+                // These ALWAYS exist
                 p.setEmail(rs.getString("email"));
                 p.setRole(rs.getString("role"));
-                p.setGender(rs.getString("gender"));
+
+                // Profile fields may be null
+                String name = rs.getString("name");
+                String phone = rs.getString("phone_number");
+
+                if (name == null) {
+                    p.setName("Random Pappu");
+                } else {
+                    p.setName(name);
+                }
+
+                if (phone == null) {
+                    p.setPhoneNumber("80085 80085");
+                } else {
+                    p.setPhoneNumber(phone);
+                }
+
+                Timestamp created = rs.getTimestamp("created_at");
+                if (created != null) {
+                    p.setCreatedAt(created.toLocalDateTime());
+                }
+
+                Timestamp updated = rs.getTimestamp("updated_at");
+                if (updated != null) {
+                    p.setUpdatedAt(updated.toLocalDateTime());
+                }
 
                 return p;
             }, userId);
-        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
-            return null; // return null when no data found
+
+        } catch (EmptyResultDataAccessException e) {
+            return null; // means user itself not found
         }
     }
 
@@ -90,9 +113,6 @@ public class ProfileRepository {
                 SET
                     name = COALESCE(?, name),
                     phone_number = COALESCE(?, phone_number),
-                    address = COALESCE(?, address),
-                    bio = COALESCE(?, bio),
-                    gender = COALESCE(?, gender),
                     updated_at = ?
                 WHERE user_ID = ?
                 """;
@@ -101,9 +121,7 @@ public class ProfileRepository {
                 sql,
                 profile.getName(),
                 profile.getPhoneNumber(),
-                profile.getAddress(),
-                profile.getBio(),
-                profile.getGender(),
+
                 now,
                 userID);
 
