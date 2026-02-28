@@ -232,6 +232,46 @@ public class WalletService {
         }
     }
 
+    public List<Map<String, Object>> getWithdrawRequestsadmin(String status, int id) {
+
+        if (status == null || status.isBlank()) {
+
+            return jdbcTemplate.queryForList("""
+                        SELECT sr,
+                               w.hotel_id,
+                               w.txn_date,
+                               w.amount,
+                               w.status,
+                               w.remark,
+                               h.*,
+                               ht.name
+                        FROM withdraw_request w LEFT JOIN
+                        hotel_bank_details h on w.hotel_id = h.hotel_id
+                        LEFT JOIN hotels ht on w.hotel_id = ht.hotel_ID
+                        WHERE w.sr =?
+                        ORDER BY w.sr DESC
+                    """, id);
+
+        } else {
+
+            return jdbcTemplate.queryForList("""
+                        SELECT sr,
+                               w.hotel_id,
+                               w.txn_date,
+                               w.amount,
+                               w.status,
+                               w.remark,
+                               h.*,
+                               ht.name
+                        FROM withdraw_request w
+                        LEFT JOIN hotel_bank_details h on w.hotel_id = h.hotel_id
+                        LEFT JOIN hotels ht on w.hotel_id = ht.hotel_ID
+                        WHERE w.status = ? and w.sr =?
+                        ORDER BY w.sr DESC
+                    """, status, id);
+        }
+    }
+
     // OWNER VERSION
     public List<Map<String, Object>> getWithdrawRequests(String status, String hotelId) {
 

@@ -868,6 +868,32 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/fetch_requests/{id}")
+    public ResponseEntity<?> getWithdrawRequests(
+            @RequestParam(required = false) String status,
+            @PathVariable int id) {
+
+        try {
+
+            List<Map<String, Object>> requests = walletService.getWithdrawRequestsadmin(status, id);
+
+            if (requests == null || requests.isEmpty()) {
+                return ResponseEntity.status(404)
+                        .body(Map.of("error", "No requests found"));
+            }
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "count", requests.size(),
+                            "data", requests));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Something went wrong"));
+        }
+    }
+
     @GetMapping("/details")
     public ResponseEntity<?> getAllBankDetails(@RequestParam String hotelId) {
 
