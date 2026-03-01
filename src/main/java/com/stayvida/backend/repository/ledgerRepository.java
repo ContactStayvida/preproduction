@@ -55,13 +55,17 @@ public class ledgerRepository {
 
         // 2. Sum of CR transactions for the given month/year
         String incomeSql = """
-                    SELECT COALESCE(SUM(amount), 0)
-                    FROM ledger
-                    WHERE hotel_id = ?
-                      AND type = 'CR'
-                      AND MONTH(txn_date) = ?
-                      AND YEAR(txn_date) = ?
-                """;
+                                    SELECT
+                    COALESCE(SUM(CASE
+                        WHEN type = 'CR' THEN amount
+                        WHEN type = 'DR' THEN -amount
+                        ELSE 0
+                    END), 0) AS net_amount
+                FROM ledger
+                WHERE hotel_id = ?
+                  AND MONTH(txn_date) = ?
+                  AND YEAR(txn_date) = ?
+                                """;
         BigDecimal totalIncome = jdbcTemplate.queryForObject(incomeSql, new Object[] { hotelId, month, year },
                 BigDecimal.class);
 
