@@ -850,7 +850,14 @@ public class AdminController {
 
     @GetMapping("/users")
     public ResponseEntity<List<UserListDTO>> getUsers() {
-        return ResponseEntity.ok(userService.getUserList());
+
+        List<UserListDTO> users = userService.getUserList();
+
+        if (users == null) {
+            users = Collections.emptyList();
+        }
+
+        return ResponseEntity.ok(users);
     }
 
     @PutMapping("/{requestId}")
@@ -890,54 +897,30 @@ public class AdminController {
     }
 
     @GetMapping("/fetch_requests")
-    public ResponseEntity<?> getWithdrawRequests(
+    public ResponseEntity<List<Map<String, Object>>> getWithdrawRequests(
             @RequestParam(required = false) String status) {
 
-        try {
+        List<Map<String, Object>> requests = walletService.getWithdrawRequests(status);
 
-            List<Map<String, Object>> requests = walletService.getWithdrawRequests(status);
-
-            if (requests == null || requests.isEmpty()) {
-                return ResponseEntity.status(404)
-                        .body(Map.of("error", "No requests found"));
-            }
-
-            return ResponseEntity.ok(
-                    Map.of(
-                            "count", requests.size(),
-                            "data", requests));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Something went wrong"));
+        if (requests == null) {
+            requests = Collections.emptyList();
         }
+
+        return ResponseEntity.ok(requests);
     }
 
     @GetMapping("/fetch_requests/{id}")
-    public ResponseEntity<?> getWithdrawRequests(
+    public ResponseEntity<List<Map<String, Object>>> getWithdrawRequests(
             @RequestParam(required = false) String status,
             @PathVariable int id) {
 
-        try {
+        List<Map<String, Object>> requests = walletService.getWithdrawRequestsadmin(status, id);
 
-            List<Map<String, Object>> requests = walletService.getWithdrawRequestsadmin(status, id);
-
-            if (requests == null || requests.isEmpty()) {
-                return ResponseEntity.status(404)
-                        .body(Map.of("error", "No requests found"));
-            }
-
-            return ResponseEntity.ok(
-                    Map.of(
-                            "count", requests.size(),
-                            "data", requests));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Something went wrong"));
+        if (requests == null) {
+            requests = Collections.emptyList();
         }
+
+        return ResponseEntity.ok(requests);
     }
 
     @GetMapping("/details")
