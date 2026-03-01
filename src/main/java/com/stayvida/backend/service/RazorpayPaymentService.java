@@ -175,7 +175,7 @@ public class RazorpayPaymentService {
 
                         // 3️⃣ Check if booking fully paid
                         Map<String, Object> booking = jdbcTemplate.queryForMap("""
-                                            SELECT payment_amount,commision_Amount,hotel_ID,
+                                            SELECT payment_amount,commision_Amount,hotel_ID,platformFee,
                                                    (totalAmount + platformFee) AS required
                                             FROM bookings
                                             WHERE booking_ID=?

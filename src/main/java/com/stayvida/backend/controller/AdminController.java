@@ -844,7 +844,13 @@ public class AdminController {
     @GetMapping("/roomdetails/{roomID}")
     public ResponseEntity<Map<String, Object>> getRoomDetails(
             @PathVariable String roomID) {
+
         List<Map<String, Object>> data = dashboardService.getRoomDetails(roomID);
+
+        if (data == null) {
+            data = Collections.emptyList();
+        }
+
         return ApiResponse.success(data, "Room details fetched successfully");
     }
 

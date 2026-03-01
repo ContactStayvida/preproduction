@@ -42,7 +42,7 @@ public class ledgerRepository {
             params.add(type);
         }
 
-        sql.append(" ORDER BY txn_date ASC");
+        sql.append(" ORDER BY txn_date DESC");
 
         return jdbcTemplate.queryForList(sql.toString(), params.toArray());
     }

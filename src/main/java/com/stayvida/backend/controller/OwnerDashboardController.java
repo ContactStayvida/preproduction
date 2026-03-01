@@ -686,7 +686,7 @@ public class OwnerDashboardController {
     }
 
     // Update
-    @PutMapping("/update/{hotelId}")
+    @PutMapping("/update")
     public ResponseEntity<?> updateBankDetails(
             @RequestBody Map<String, String> request) {
 
