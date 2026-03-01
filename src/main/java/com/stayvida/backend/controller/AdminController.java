@@ -941,45 +941,29 @@ public class AdminController {
     }
 
     @GetMapping("/details")
-    public ResponseEntity<?> getAllBankDetails(@RequestParam String hotelId) {
+    public ResponseEntity<List<Map<String, Object>>> getAllBankDetails(
+            @RequestParam String hotelId) {
 
         List<Map<String, Object>> bankDetails = walletService.getAllBankDetails(hotelId);
 
-        if (bankDetails == null || bankDetails.isEmpty()) {
-
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("status", "error");
-            response.put("message", "No bank details found for hotel");
-            response.put("hotel_id", hotelId);
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        if (bankDetails == null) {
+            bankDetails = Collections.emptyList();
         }
 
         return ResponseEntity.ok(bankDetails);
     }
 
     @GetMapping("/hotels/{hotelId}/ledger")
-    public ResponseEntity<?> getLedger(
+    public ResponseEntity<List<Map<String, Object>>> getLedger(
             @PathVariable String hotelId,
             @RequestParam(required = false) String type) {
 
-        try {
-            List<Map<String, Object>> ledger = ledgerservice.getLedgerByHotel(hotelId, type);
+        List<Map<String, Object>> ledger = ledgerservice.getLedgerByHotel(hotelId, type);
 
-            if (ledger.isEmpty()) {
-                return ResponseEntity.status(404)
-                        .body(Map.of("error", "No ledger records found"));
-            }
-
-            return ResponseEntity.ok(
-                    Map.of(
-                            "count", ledger.size(),
-                            "data", ledger));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Something went wrong"));
+        if (ledger == null) {
+            ledger = Collections.emptyList();
         }
+
+        return ResponseEntity.ok(ledger);
     }
 }
