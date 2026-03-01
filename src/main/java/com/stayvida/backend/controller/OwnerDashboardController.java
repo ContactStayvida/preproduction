@@ -650,10 +650,10 @@ public class OwnerDashboardController {
         try {
 
             List<Map<String, Object>> requests = walletService.getWithdrawRequests(status, hotelId);
-            if (requests == null || requests.isEmpty()) {
-                return ResponseEntity.status(404)
-                        .body(Map.of("error", "No requests found"));
+            if (requests == null) {
+                requests = Collections.emptyList();
             }
+
             return ResponseEntity.ok(
                     Map.of(
                             "count", requests.size(),
