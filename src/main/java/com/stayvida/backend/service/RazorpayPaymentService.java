@@ -175,7 +175,7 @@ public class RazorpayPaymentService {
 
                         // 3️⃣ Check if booking fully paid
                         Map<String, Object> booking = jdbcTemplate.queryForMap("""
-                                            SELECT payment_amount,
+                                            SELECT payment_amount,commision_Amount
                                                    (totalAmount + platformFee) AS required
                                             FROM bookings
                                             WHERE booking_ID=?
@@ -194,6 +194,8 @@ public class RazorpayPaymentService {
 
                         String hotelId = "H-" + userId;
 
+                        BigDecimal commision = (BigDecimal) booking.get("commision_Amount");
+
                         // 4️⃣ Add to wallet
                         walletService.wallet(
                                         hotelId,
@@ -201,6 +203,14 @@ public class RazorpayPaymentService {
                                         amount,
                                         "CR",
                                         "Razorpay",
+                                        req.getRazorpayPaymentId());
+
+                        walletService.wallet(
+                                        hotelId,
+                                        bookingId,
+                                        commision,
+                                        "DR",
+                                        "Commision",
                                         req.getRazorpayPaymentId());
 
                         return "200: payment verified";
