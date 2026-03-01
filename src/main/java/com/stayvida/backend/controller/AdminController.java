@@ -173,25 +173,66 @@ public class AdminController {
         return result;
     }
 
-    // ---------- ADD ----------
-    @PostMapping("/feature")
-    public String addFeature(@RequestParam String name) {
-        service.addFeature(name);
-        return "Feature added successfully";
+    // // ---------- ADD ----------
+    // @PostMapping("/feature")
+    // public String addFeature(@RequestParam String name) {
+    // service.addFeature(name);
+    // return "Feature added successfully";
+    // }
+
+    // // ---------- ADD ----------
+    // @PostMapping("/amenity")
+    // public String addAmenity(@RequestParam String name) {
+    // service.addAmenity(name);
+    // return "Amenity added successfully";
+    // }
+
+    // // ---------- ADD ----------
+    // @PostMapping("/tag")
+    // public String addTag(@RequestParam String name) {
+    // service.addTag(name);
+    // return "Tag added successfully";
+    // }
+
+    @PostMapping("/features")
+    public ResponseEntity<Map<String, Object>> addFeatures(
+            @RequestBody List<String> names) {
+
+        Map<String, List<String>> result = service.addFeatures(names);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("inserted", result.get("inserted"));
+        response.put("duplicates", result.get("duplicates"));
+
+        return ResponseEntity.ok(response);
     }
 
-    // ---------- ADD ----------
     @PostMapping("/amenity")
-    public String addAmenity(@RequestParam String name) {
-        service.addAmenity(name);
-        return "Amenity added successfully";
+    public ResponseEntity<Map<String, Object>> addAmenities(
+            @RequestBody List<String> names) {
+
+        Map<String, List<String>> result = service.addAmenities(names);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("inserted", result.get("inserted"));
+        response.put("duplicates", result.get("duplicates"));
+
+        return ResponseEntity.ok(response);
     }
 
-    // ---------- ADD ----------
-    @PostMapping("/tag")
-    public String addTag(@RequestParam String name) {
-        service.addTag(name);
-        return "Tag added successfully";
+    @PostMapping("/tags")
+    public ResponseEntity<Map<String, Object>> addTags(@RequestBody List<String> names) {
+
+        Map<String, List<String>> result = service.addTags(names);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("inserted", result.get("inserted"));
+        response.put("duplicates", result.get("duplicates"));
+
+        return ResponseEntity.ok(response);
     }
 
     // FETCH ALL FEATURES AMENITIES AND TAGS
