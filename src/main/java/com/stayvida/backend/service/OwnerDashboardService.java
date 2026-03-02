@@ -140,10 +140,12 @@ public class OwnerDashboardService {
                 LEFT JOIN profile p ON b.user_ID = p.user_ID
                 WHERE h.owner_ID = ?
                 AND (
-                    b.booking_Status IN ('Pending', 'Confirmed', 'CheckIn')
-                    AND b.checkOut >= CURDATE()
+                    (
+                        b.booking_Status IN ('Pending', 'Confirmed', 'CheckIn')
+                        AND b.checkOut >= CURDATE()
+                    )
+                    OR b.payment_Status = 'Pending'
                 )
-                or payment_Status = 'Pending'
                 ORDER BY b.checkIn ASC;
                 """;
 
