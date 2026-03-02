@@ -397,8 +397,9 @@ public class AdminController {
         try {
             List<Map<String, Object>> data = dashboardService.getAllBookings();
 
-            if (data == null || data.isEmpty()) {
-                return ApiResponse.notFound("No bookings found");
+            // If null, convert to empty list (defensive programming)
+            if (data == null) {
+                data = List.of();
             }
 
             return ApiResponse.success(
