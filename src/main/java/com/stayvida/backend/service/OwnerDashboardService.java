@@ -262,7 +262,7 @@ public class OwnerDashboardService {
 
         int rows = jdbcTemplate.update(sql, newStatus, bookingId, ownerId);
 
-        if (allowed.contains("CheckedOut")) {
+        if (newStatus.equals("CheckedOut")) {
 
             String sql3 = "SELECT * FROM bookings WHERE booking_ID = ?";
             Map<String, Object> booking = jdbcTemplate.queryForMap(sql3, bookingId);
@@ -307,7 +307,7 @@ public class OwnerDashboardService {
 
         int rows = jdbcTemplate.update(sql, newStatus, bookingId);
 
-        if (allowed.contains("CheckedOut")) {
+        if (newStatus.equals("CheckedOut")) {
 
             String sql3 = "SELECT * FROM bookings WHERE booking_ID = ?";
             Map<String, Object> booking = jdbcTemplate.queryForMap(sql3, bookingId);
