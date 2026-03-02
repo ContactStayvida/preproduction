@@ -278,7 +278,7 @@ public class OwnerDashboardService {
             String sql2 = "UPDATE bookings SET payment_Status= 'Completed', payment_amount = ? WHERE booking_ID = ?";
             jdbcTemplate.update(sql2, completpayment, bookingId);
             String paymentId = "PAY-" + System.currentTimeMillis();
-            String sql4 = "INSERT INTO payments (user_ID,payment_ID, booking_ID,amount, payment_Method,payment_Status, currency) VALUES (?,?, ?, ?, 'PayAtHotel','Success', 'INR')";
+            String sql4 = "INSERT INTO payments (user_ID,payment_ID, booking_ID,amount, payment_Method,payment_Status, currency,createdAt,updatedAt) VALUES (?,?, ?, ?, 'PayAtHotel','Success', 'INR', NOW(), NOW(),)";
             jdbcTemplate.update(sql4, userId, paymentId, bookingId, paymentLeft);
 
             walletService.wallet(
