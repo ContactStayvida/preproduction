@@ -262,6 +262,33 @@ public class OwnerDashboardService {
 
         int rows = jdbcTemplate.update(sql, newStatus, bookingId, ownerId);
 
+        if (allowed.contains("CheckedOut")) {
+
+            String sql3 = "SELECT * FROM bookings WHERE booking_ID = ?";
+            Map<String, Object> booking = jdbcTemplate.queryForMap(sql3, bookingId);
+            double totalAmount = (double) booking.get("totalAmount");
+            double platformFee = (double) booking.get("platformFee");
+            double paid = (double) booking.get("payment_amount");// amount paid by customer
+            BigDecimal paymentLeft = BigDecimal.valueOf(totalAmount)
+                    .subtract(BigDecimal.valueOf(paid).subtract(BigDecimal.valueOf(platformFee)));// left to pay
+            BigDecimal completpayment = paymentLeft.add(BigDecimal.valueOf(paid));
+            int userId = (int) booking.get("user_ID");
+            String hotelId = (String) booking.get("hotel_ID");
+
+            String sql2 = "UPDATE bookings SET payment_Status= 'Completed', payment_amount = ? WHERE booking_ID = ?";
+            jdbcTemplate.update(sql2, completpayment, bookingId);
+            String sql4 = "INSERT INTO payments (user_ID, booking_ID,amount, payment_Method,payment_Status, currency) VALUES (?, ?, ?, 'PayAtHotel','Success', 'INR')";
+            jdbcTemplate.update(sql4, userId, bookingId, paymentLeft);
+
+            walletService.wallet(
+                    hotelId,
+                    bookingId,
+                    paymentLeft,
+                    "CR",
+                    "PayAtHotel",
+                    "Success");
+        }
+
         return rows > 0;
     }
 
