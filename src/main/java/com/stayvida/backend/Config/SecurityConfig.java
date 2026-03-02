@@ -96,7 +96,8 @@ public class SecurityConfig {
                                                                 "/rating/hotel/**",
                                                                 "/error",
                                                                 "/api/payments/**",
-                                                                "/api/profile/{bookingId}/details")
+                                                                "/api/profile/{bookingId}/details",
+                                                                "/api/locations")
                                                 .permitAll()
                                                 .anyRequest().authenticated()
 
