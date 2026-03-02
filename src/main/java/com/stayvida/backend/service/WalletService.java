@@ -82,6 +82,8 @@ public class WalletService {
                 type,
                 amount,
                 newBalance);
+
+        System.out.println("Wallet payment added successfully");
     }
 
     @Transactional // withdraw request
