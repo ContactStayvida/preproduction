@@ -51,10 +51,10 @@ public class OtpService {
     public boolean validateOtp(String email, String inputOtp) {
         OtpData otpData = otpStore.get(email);
 
-        if ("development".equalsIgnoreCase(environment)) {
-            // ✅ In dev mode, always allow "1234"
-            return "1234".equals(inputOtp);
-        }
+        // if ("development".equalsIgnoreCase(environment)) {
+        // // ✅ In dev mode, always allow "1234"
+        // return "1234".equals(inputOtp);
+        // }
 
         if (otpData == null)
             return false;
