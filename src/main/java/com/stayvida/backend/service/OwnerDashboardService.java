@@ -266,12 +266,12 @@ public class OwnerDashboardService {
 
             String sql3 = "SELECT * FROM bookings WHERE booking_ID = ?";
             Map<String, Object> booking = jdbcTemplate.queryForMap(sql3, bookingId);
-            double totalAmount = (double) booking.get("totalAmount");
-            double platformFee = (double) booking.get("platformFee");
-            double paid = (double) booking.get("payment_amount");// amount paid by customer
-            BigDecimal paymentLeft = BigDecimal.valueOf(totalAmount)
-                    .subtract(BigDecimal.valueOf(paid).subtract(BigDecimal.valueOf(platformFee)));// left to pay
-            BigDecimal completpayment = paymentLeft.add(BigDecimal.valueOf(paid));
+            BigDecimal totalAmount = (BigDecimal) booking.get("totalAmount");
+            BigDecimal platformFee = (BigDecimal) booking.get("platformFee");
+            BigDecimal paid = (BigDecimal) booking.get("payment_amount");// amount paid by customer
+            BigDecimal paymentLeft = totalAmount
+                    .subtract(paid.subtract(platformFee));// left to pay
+            BigDecimal completpayment = paymentLeft.add(paid);
             int userId = (int) booking.get("user_ID");
             String hotelId = (String) booking.get("hotel_ID");
 
@@ -311,12 +311,12 @@ public class OwnerDashboardService {
 
             String sql3 = "SELECT * FROM bookings WHERE booking_ID = ?";
             Map<String, Object> booking = jdbcTemplate.queryForMap(sql3, bookingId);
-            double totalAmount = (double) booking.get("totalAmount");
-            double platformFee = (double) booking.get("platformFee");
-            double paid = (double) booking.get("payment_amount");// amount paid by customer
-            BigDecimal paymentLeft = BigDecimal.valueOf(totalAmount)
-                    .subtract(BigDecimal.valueOf(paid).subtract(BigDecimal.valueOf(platformFee)));// left to pay
-            BigDecimal completpayment = paymentLeft.add(BigDecimal.valueOf(paid));
+            BigDecimal totalAmount = (BigDecimal) booking.get("totalAmount");
+            BigDecimal platformFee = (BigDecimal) booking.get("platformFee");
+            BigDecimal paid = (BigDecimal) booking.get("payment_amount");// amount paid by customer
+            BigDecimal paymentLeft = totalAmount
+                    .subtract(paid.subtract(platformFee));// left to pay
+            BigDecimal completpayment = paymentLeft.add(paid);
             int userId = (int) booking.get("user_ID");
             String hotelId = (String) booking.get("hotel_ID");
 
