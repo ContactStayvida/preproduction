@@ -215,8 +215,9 @@ public class RoomRepository {
                     return room;
                 });
 
-        Map<String, List<RoomDTO>> grouped = rooms.stream().collect(Collectors.groupingBy(RoomDTO::getType));
-
+        Map<String, List<RoomDTO>> grouped = rooms.stream().collect(
+                Collectors.groupingBy(
+                        room -> room.getType()));
         List<GroupedRoomDTO> groupedRooms = new ArrayList<>();
 
         for (Map.Entry<String, List<RoomDTO>> entry : grouped.entrySet()) {
