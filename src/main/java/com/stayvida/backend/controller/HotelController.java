@@ -260,6 +260,10 @@ public class HotelController {
 
             register.setOwner_ID(ownerId);
             register.setHotel_ID("H-" + ownerId);
+            Runtime runtime = Runtime.getRuntime();
+            System.out.println("Max Memory: " + runtime.maxMemory() / (1024 * 1024) + " MB");
+            System.out.println("Total Memory: " + runtime.totalMemory() / (1024 * 1024) + " MB");
+            System.out.println("Free Memory: " + runtime.freeMemory() / (1024 * 1024) + " MB");
 
             String imageBase64 = null;
 
