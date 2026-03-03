@@ -217,14 +217,15 @@ public class RoomRepository {
 
         Map<String, List<RoomDTO>> grouped = rooms.stream().collect(
                 Collectors.groupingBy(
-                        room -> room.getType()));
+                        room -> room.getType() + "|" + room.getPrice()));
         List<GroupedRoomDTO> groupedRooms = new ArrayList<>();
 
         for (Map.Entry<String, List<RoomDTO>> entry : grouped.entrySet()) {
+
             RoomDTO sample = entry.getValue().get(0);
 
             GroupedRoomDTO dto = new GroupedRoomDTO();
-            dto.setType(entry.getKey());
+            dto.setType(sample.getType()); // ← THIS
             dto.setPrice(sample.getPrice());
             dto.setPlatformCharges(sample.getPlatformCharges());
             dto.setTaxRate(sample.getTaxRate());
