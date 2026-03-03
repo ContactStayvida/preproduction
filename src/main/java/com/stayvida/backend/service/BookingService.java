@@ -43,6 +43,7 @@ public class BookingService {
                     FROM rooms r
                     WHERE r.hotel_ID = ?
                       AND r.room_Type = ?
+                      AND r.price = ?
                       AND r.isEnable = true
                       AND NOT EXISTS (
                           SELECT 1 FROM bookings b
@@ -64,6 +65,7 @@ public class BookingService {
                 roomSql,
                 request.getHotelId(),
                 request.getRoomType(),
+                request.getPrice(),
                 request.getCheckIn(),
                 request.getCheckOut());
 

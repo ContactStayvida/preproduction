@@ -1,5 +1,6 @@
 package com.stayvida.backend.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class LockRoomRequest {
@@ -9,6 +10,7 @@ public class LockRoomRequest {
     private LocalDate checkIn;
     private LocalDate checkOut;
     private String hotelId;
+    private BigDecimal price;
 
     public String getRoomId() {
         return roomId;
@@ -48,5 +50,13 @@ public class LockRoomRequest {
 
     public void setHotelId(String hotelId) {
         this.hotelId = hotelId;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 }
