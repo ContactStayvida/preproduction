@@ -1,6 +1,8 @@
 package com.stayvida.backend.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1749,4 +1751,84 @@ public class OwnerDashboardService {
         });
     }
 
+    // for offline booking
+    public List<Map<String, Object>> getAvailableRooms(
+            String hotelId,
+            String checkIn,
+            String checkOut) {
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        LocalDate inDate = LocalDate.parse(checkIn);
+        LocalDate outDate = LocalDate.parse(checkOut);
+        long totalNights = ChronoUnit.DAYS.between(inDate, outDate);
+
+        String sql = """
+                SELECT r.room_ID,
+                       r.room_NO,
+                       r.hotel_ID,
+                       r.room_Type,
+                       r.price,
+                       r.images
+                FROM rooms r
+                JOIN (
+                    SELECT room_ID
+                    FROM rooms
+                    WHERE hotel_ID = ?
+                      AND isEnable = true
+                    ORDER BY room_NO ASC
+                ) sorted ON sorted.room_ID = r.room_ID
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM bookings b
+                    WHERE b.room_ID = r.room_ID
+                      AND b.booking_Status NOT IN ('Cancelled','CheckedOut')
+                      AND NOT (? >= b.checkOut OR ? <= b.checkIn)
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM room_locks rl
+                    WHERE rl.room_id = r.room_ID
+                      AND rl.lock_expiry > NOW()
+                )
+                """;
+
+        return jdbcTemplate.query(sql, new Object[] { hotelId, checkOut, checkIn }, (rs, rowNum) -> {
+
+            Map<String, Object> map = new LinkedHashMap<>();
+
+            BigDecimal price = rs.getBigDecimal("price");
+            BigDecimal totalPrice = price.multiply(BigDecimal.valueOf(totalNights));
+
+            map.put("room_ID", rs.getString("room_ID"));
+            map.put("room_NO", rs.getInt("room_NO"));
+            map.put("hotel_ID", rs.getString("hotel_ID"));
+            map.put("room_Type", rs.getString("room_Type"));
+
+            map.put("price_per_night", price);
+            map.put("total_nights", totalNights);
+            map.put("total_price", totalPrice);
+
+            String imagesJson = rs.getString("images");
+
+            if (imagesJson != null && !imagesJson.isBlank()) {
+                try {
+                    List<String> images = mapper.readValue(
+                            imagesJson,
+                            new TypeReference<List<String>>() {
+                            });
+
+                    List<String> formattedImages = images.stream()
+                            .map(img -> "data:image/jpeg;base64," + img)
+                            .toList();
+
+                    map.put("images", formattedImages);
+                } catch (Exception e) {
+                    map.put("images", List.of());
+                }
+            } else {
+                map.put("images", List.of());
+            }
+
+            return map;
+        });
+    }
 }

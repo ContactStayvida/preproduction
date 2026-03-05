@@ -522,31 +522,35 @@ public class OwnerDashboardController {
         }
     }
 
-    @PostMapping("/lock-room")
-    public ResponseEntity<LockRoomResponse> lockRoomod(
-            @RequestBody LockRoomRequest request) {
+    // ofline booking
+    // Step 1
+    @GetMapping("/available-rooms")
+    public ResponseEntity<?> getAvailableRooms(
+            @RequestParam String checkIn,
+            @RequestParam String checkOut) {
 
-        Integer ownerId = (int) SecurityContextHolder
+        int ownerId = (int) SecurityContextHolder
                 .getContext()
                 .getAuthentication()
                 .getPrincipal();
 
-        LockRoomResponse response = bookingService.lockRoomod(ownerId, request);
+        String hotelId = "H-" + ownerId;
+
+        List<Map<String, Object>> rooms = dashboardService.getAvailableRooms(hotelId, checkIn, checkOut);
+
+        return ApiResponse.success(rooms, "Available rooms fetched");
+    }
+
+    // Step 2
+    @PostMapping("/lock-room")
+    public ResponseEntity<LockRoomResponse> lockRoomod(
+            @RequestBody LockRoomRequest request) {
+
+        LockRoomResponse response = bookingService.lockRoomod(request);
         return ResponseEntity.ok(response);
     }
 
-    // @PostMapping("/create")
-    // public ResponseEntity<BookingResponse> createBooking(
-    // @RequestBody BookingRequest request) {
-
-    // Integer _ID"H-"+ ownerIdt()
-    // .getAuthentication()
-    // .getPrincipal();
-
-    // BookingResponse response = bookingService.createBooking(userId, request);
-    // return ResponseEntity.ok(response);
-    // }
-
+    // Step 3
     @PostMapping("/create")
     public ResponseEntity<?> initiateBooking(@RequestBody BookingRequest request) {
         try {

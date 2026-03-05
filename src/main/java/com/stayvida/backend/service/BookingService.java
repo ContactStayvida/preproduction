@@ -28,10 +28,12 @@ import com.stayvida.backend.exception.BookingExceptions.RoomLockException;
 public class BookingService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final WalletService walletService;
 
-    public BookingService(JdbcTemplate jdbcTemplate) {
+    public BookingService(JdbcTemplate jdbcTemplate, WalletService walletService) {
 
         this.jdbcTemplate = jdbcTemplate;
+        this.walletService = walletService;
     }
 
     @Transactional
@@ -121,78 +123,70 @@ public class BookingService {
 
     // owner dashbord version
     @Transactional
-    public LockRoomResponse lockRoomod(Integer ownerId, LockRoomRequest request) {
+    public LockRoomResponse lockRoomod(LockRoomRequest request) {
 
-        String hotelId = gethotelId(ownerId);
-
-        // 1️⃣ Validate the specific room
         String roomSql = """
-                SELECT r.room_ID, r.room_NO, r.hotel_ID, r.room_Type, r.price
-                FROM rooms r
-                WHERE r.hotel_ID = ?
-                  AND r.room_ID = ?
-                  AND r.isEnable = true
-                  AND NOT EXISTS (
-                      SELECT 1 FROM bookings b
-                      WHERE b.room_ID = r.room_ID
-                        AND b.booking_Status NOT IN ('Cancelled', 'CheckedOut')
-                        AND NOT (
-                            ? >= b.checkOut OR ? <= b.checkIn
-                        )
-                  )
-                  AND NOT EXISTS (
-                      SELECT 1 FROM room_locks rl
-                      WHERE rl.room_id = r.room_ID
-                  )
+                    SELECT
+                        r.hotel_ID,
+                        r.room_ID,
+                        r.room_NO,
+                        r.room_Type,
+                        r.price
+                    FROM rooms r
+                    WHERE r.room_ID = ?
+                      AND r.isEnable = true
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM bookings b
+                          WHERE b.room_ID = r.room_ID
+                            AND b.booking_Status NOT IN ('Cancelled','CheckedOut')
+                            AND NOT (? >= b.checkOut OR ? <= b.checkIn)
+                      )
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM room_locks rl
+                          WHERE rl.room_id = r.room_ID
+                            AND rl.lock_expiry > NOW()
+                      )
                 """;
 
         List<Map<String, Object>> rooms = jdbcTemplate.queryForList(
                 roomSql,
-                hotelId,
                 request.getRoomId(),
-                request.getCheckIn(),
-                request.getCheckOut());
+                request.getCheckOut(),
+                request.getCheckIn());
 
         if (rooms.isEmpty()) {
-            throw new RuntimeException("Room is not available or already locked");
+            throw new RuntimeException("Room is not available");
         }
 
         Map<String, Object> room = rooms.get(0);
 
+        String hotelId = room.get("hotel_ID").toString();
         String roomId = room.get("room_ID").toString();
         Integer roomNo = ((Number) room.get("room_NO")).intValue();
+        String roomType = room.get("room_Type").toString();
         BigDecimal price = (BigDecimal) room.get("price");
 
-        // 2️⃣ Fetch charges
-        Map<String, BigDecimal> charges = fetchCharges();
-
-        BigDecimal platformCharges = charges.get("platform_charges");
-        BigDecimal taxRate = charges.get("tax");
-        platformCharges = platformCharges.add(platformCharges.multiply(taxRate));
-
-        // 3️⃣ Lock expiry (3 minutes, IST)
+        // lock expiry (3 minutes IST)
         ZoneId istZone = ZoneId.of("Asia/Kolkata");
         LocalDateTime lockExpiry = ZonedDateTime.now(istZone).plusMinutes(3).toLocalDateTime();
 
-        // 4️⃣ Insert lock
         String lockSql = """
-                INSERT INTO room_locks (room_id, lock_expiry)
-                VALUES (?, ?)
+                    INSERT INTO room_locks (room_id, lock_expiry)
+                    VALUES (?, ?)
                 """;
 
         jdbcTemplate.update(lockSql, roomId, lockExpiry);
 
-        // 5️⃣ Build response
         LockRoomResponse response = new LockRoomResponse();
         response.setHotelId(hotelId);
         response.setRoomId(roomId);
         response.setRoomNo(roomNo);
-        response.setRoomType(request.getRoomType());
+        response.setRoomType(roomType);
         response.setCheckIn(request.getCheckIn());
         response.setCheckOut(request.getCheckOut());
         response.setRoomPrice(price);
-        response.setPlatformCharges(platformCharges);
-        response.setTaxRate(taxRate);
         response.setLockExpiry(lockExpiry);
 
         return response;
@@ -377,11 +371,6 @@ public class BookingService {
         }
         // 2️⃣ Fetch charges
         Map<String, BigDecimal> charges = fetchCharges();
-        BigDecimal platformCharges = charges.get("platform_charges"); // platform charges
-        BigDecimal taxRate = charges.get("tax"); // tax rate
-        platformCharges = platformCharges.add(platformCharges.multiply(taxRate))
-                .setScale(2, RoundingMode.HALF_UP);// platform charges with tax
-        BigDecimal commissionRate = charges.get("commission"); // commission rate
         LocalDate checkInDate = LocalDate.parse(request.getCheckIn());
         LocalDate checkOutDate = LocalDate.parse(request.getCheckOut());
 
@@ -392,8 +381,8 @@ public class BookingService {
         }
         roomPrice = roomPrice.multiply(new BigDecimal(totalDays));
         BigDecimal commissionAmount = BigDecimal.ZERO; // commission amount
-        platformCharges = BigDecimal.ZERO;
-        BigDecimal totalAmount = roomPrice;
+        BigDecimal platformCharges = BigDecimal.ZERO;
+        BigDecimal taxRate = BigDecimal.ZERO;
         BigDecimal totalAmount_ADV = BigDecimal.ZERO;
 
         // 3️⃣ Generate Booking ID
@@ -408,14 +397,21 @@ public class BookingService {
                         totalAmount, platformFee, tax_amount,
                         payment_type,
                         name, countru_code, phone_no,
-                        createdAt, updatedAt,commision_Amount
+                        createdAt, updatedAt,commision_Amount,payment_amount
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(),?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(),?,?)
                 """;
+
+        String PaymentStatus = null;
+        BigDecimal payment_amount = null;
         if (paymentType.equals("Advance")) {
             totalAmount_ADV = roomPrice.multiply(charges.get("Advance"));
+            PaymentStatus = "Pending";
+            payment_amount = totalAmount_ADV;
         } else if (paymentType.equals("OnArrival")) {
             totalAmount_ADV = BigDecimal.ZERO;
+            PaymentStatus = "Completed";
+            payment_amount = roomPrice;
         }
 
         jdbcTemplate.update(insertBooking,
@@ -428,7 +424,7 @@ public class BookingService {
                 request.getChildren(),
                 request.getCheckIn(),
                 request.getCheckOut(),
-                "Pending",
+                PaymentStatus,
                 "CheckIn",
                 roomPrice,
                 platformCharges, // ZERO
@@ -437,7 +433,8 @@ public class BookingService {
                 request.getName(),
                 request.getCountryCode(),
                 request.getPhoneNo(),
-                commissionAmount);// ZERO
+                commissionAmount,
+                payment_amount);// ZERO
         // 5️⃣ Remove room lock
         jdbcTemplate.update(
                 "DELETE FROM room_locks WHERE room_id = ?",
@@ -446,8 +443,8 @@ public class BookingService {
         // 6️⃣ Response
         BookingResponse response = new BookingResponse();
         response.setBookingId(bookingId);
-        response.setBookingStatus("Pending");
-        response.setPaymentStatus("Pending");
+        response.setBookingStatus("CheckIn");
+        response.setPaymentStatus(PaymentStatus);
         response.setDuration(totalDays);
         response.setRoomPrice(roomPrice);
         response.setPlatformCharges(platformCharges);
@@ -455,10 +452,18 @@ public class BookingService {
         response.setAdvanceRate(charges.get("Advance"));
         response.setPaymentType(paymentType);
         response.setTotalAmount_ADV(totalAmount_ADV);
-        response.setTotalAmount(totalAmount);
+        response.setTotalAmount(roomPrice);
         response.setCheckIn(request.getCheckIn());
         response.setCheckOut(request.getCheckOut());
         response.setCreatedAt(LocalDateTime.now());
+
+        walletService.wallet(
+                hotelId,
+                bookingId,
+                payment_amount,
+                "CR",
+                "Offline Payment",
+                "Offline Payment");
 
         return response;
     }

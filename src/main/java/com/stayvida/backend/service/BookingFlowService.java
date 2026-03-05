@@ -4,21 +4,16 @@ import org.springframework.stereotype.Service;
 
 import com.stayvida.backend.dto.BookingRequest;
 import com.stayvida.backend.dto.BookingResponse;
-import com.stayvida.backend.exception.BookingExceptions.OtpRequiredException;
 
 @Service
 public class BookingFlowService {
 
-    private final OtpService otpService;
-    private final EmailService emailService;
+    private final UserService userService;
     private final BookingService bookingService;
 
-    public BookingFlowService(
-            OtpService otpService,
-            EmailService emailService,
+    public BookingFlowService(UserService userService,
             BookingService bookingService) {
-        this.otpService = otpService;
-        this.emailService = emailService;
+        this.userService = userService;
         this.bookingService = bookingService;
     }
 
@@ -26,26 +21,10 @@ public class BookingFlowService {
 
         String email = request.getEmail();
 
-        // 1️⃣ OTP NOT provided → generate & send OTP
-        if (request.getOtp() == null || request.getOtp().isBlank()) {
+        // Ensure user exists
+        userService.findOrCreateUser(email);
 
-            String otp = otpService.generateOtp(email);
-            emailService.sendOtpEmail(email, otp);
-
-            throw new OtpRequiredException(
-                    "OTP sent to email. Please verify to continue booking.");
-        }
-
-        // 2️⃣ OTP provided → validate
-        otpService.verifyLoginWithOtp(email, request.getOtp());
-        boolean validOtp = otpService.validateOtp(email, request.getOtp());
-
-        if (!validOtp) {
-            throw new RuntimeException("Invalid or expired OTP");
-        }
-
-        // 3️⃣ OTP verified → proceed to booking
-        // bookingService will internally validate or create user
+        // Continue booking using email
         return bookingService.createBookingod(email, request);
     }
 }
