@@ -960,7 +960,7 @@ public class AdminController {
 
     // only for admin
 
-    @GetMapping("/init-charges")
+    @PostMapping("/init-charges")
     public ResponseEntity<?> initCharges() {
 
         adminDashboardService.initializeCharges();
