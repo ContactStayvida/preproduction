@@ -1771,27 +1771,28 @@ public class OwnerDashboardService {
                        r.price,
                        r.images
                 FROM rooms r
-                JOIN (
-                    SELECT room_ID
-                    FROM rooms
-                    WHERE hotel_ID = ?
-                      AND isEnable = true
-                    ORDER BY room_NO ASC
-                ) sorted ON sorted.room_ID = r.room_ID
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM bookings b
-                    WHERE b.room_ID = r.room_ID
-                      AND b.booking_Status NOT IN ('Cancelled','CheckedOut')
-                      AND NOT (? >= b.checkOut OR ? <= b.checkIn)
-                )
-                AND NOT EXISTS (
-                    SELECT 1 FROM room_locks rl
-                    WHERE rl.room_id = r.room_ID
-                      AND rl.lock_expiry > NOW()
-                )
+                WHERE r.hotel_ID = ?
+                  AND r.isEnable = true
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM bookings b
+                        WHERE b.room_ID = r.room_ID
+                          AND b.booking_Status NOT IN ('Cancelled','CheckedOut')
+                          AND NOT (
+                                ? >= b.checkOut
+                             OR ? <= b.checkIn
+                          )
+                  )
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM room_locks rl
+                        WHERE rl.room_id = r.room_ID
+                          AND rl.lock_expiry > NOW()
+                  )
+                ORDER BY r.room_NO ASC
                 """;
 
-        return jdbcTemplate.query(sql, new Object[] { hotelId, checkOut, checkIn }, (rs, rowNum) -> {
+        return jdbcTemplate.query(sql, new Object[] { hotelId, checkIn, checkOut }, (rs, rowNum) -> {
 
             Map<String, Object> map = new LinkedHashMap<>();
 
