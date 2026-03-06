@@ -40,11 +40,14 @@ public class WalletService {
         // 2️⃣ mutate balance safely
         if ("CR".equalsIgnoreCase(type)) {
 
-            jdbcTemplate.update("""
-                        UPDATE balance
-                        SET balance = balance + ?
-                        WHERE hotel_id = ?
-                    """, amount, hotelId);
+            if (!via.equals("Offline Payment")) {
+                jdbcTemplate.update("""
+                            UPDATE balance
+                            SET balance = balance + ?
+                            WHERE hotel_id = ?
+                        """, amount, hotelId);
+
+            }
 
         } else if ("DR".equalsIgnoreCase(type)
                 || "WITHDRAW".equalsIgnoreCase(type)) {
