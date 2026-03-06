@@ -27,6 +27,7 @@ import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
+import com.stayvida.backend.dto.UpdateAmountRequest;
 import com.stayvida.backend.dto.UserListDTO;
 import com.stayvida.backend.model.Amenity;
 import com.stayvida.backend.model.Feature;
@@ -955,5 +956,32 @@ public class AdminController {
         }
 
         return ResponseEntity.ok(ledger);
+    }
+
+    // only for admin
+
+    @GetMapping("/init-charges")
+    public ResponseEntity<?> initCharges() {
+
+        adminDashboardService.initializeCharges();
+
+        return ResponseEntity.ok("Charges initialized");
+    }
+
+    @PutMapping("/update-charges")
+    public ResponseEntity<?> updateCharges(
+            @RequestBody List<UpdateAmountRequest> request) {
+
+        adminDashboardService.updateCharges(request);
+
+        return ResponseEntity.ok("Charges updated");
+    }
+
+    @GetMapping("/charges")
+    public ResponseEntity<?> getAllCharges() {
+
+        List<Map<String, Object>> data = adminDashboardService.getAllCharges();
+
+        return ResponseEntity.ok(data);
     }
 }

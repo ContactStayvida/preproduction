@@ -2,6 +2,9 @@ package com.stayvida.backend.service;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.stayvida.backend.dto.UpdateAmountRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -296,4 +299,42 @@ public class AdminDashboardService {
         return result;
     }
 
+    // only for admin
+    @Transactional
+    public void initializeCharges() {
+
+        String sql = """
+                INSERT INTO amount (type, value)
+                SELECT ?, ?
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM amount WHERE type = ?
+                )
+                """;
+
+        jdbcTemplate.update(sql, "platform_charges", new BigDecimal("200.00"), "platform_charges");
+        jdbcTemplate.update(sql, "Advance", new BigDecimal("0.30"), "Advance");
+        jdbcTemplate.update(sql, "tax", new BigDecimal("0.18"), "tax");
+        jdbcTemplate.update(sql, "commission", new BigDecimal("0.10"), "commission");
+    }
+
+    @Transactional
+    public void updateCharges(List<UpdateAmountRequest> requests) {
+
+        String sql = "UPDATE amount SET value = ? WHERE type = ?";
+
+        for (UpdateAmountRequest r : requests) {
+            jdbcTemplate.update(sql, r.getValue(), r.getType());
+        }
+    }
+
+    public List<Map<String, Object>> getAllCharges() {
+
+        String sql = """
+                SELECT charges_ID, type, value
+                FROM amount
+                ORDER BY charges_ID
+                """;
+
+        return jdbcTemplate.queryForList(sql);
+    }
 }
