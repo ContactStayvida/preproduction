@@ -14,6 +14,7 @@ com\stayvida\backend\service\OwnerDashboardService$7.class
 com\stayvida\backend\service\OwnerDashboardService.class
 com\stayvida\backend\dto\RegisterRoom.class
 com\stayvida\backend\repository\RoomRepository$3.class
+com\stayvida\backend\service\OwnerDashboardService$13.class
 com\stayvida\backend\service\OwnerDashboardService$4.class
 com\stayvida\backend\dto\LoginRequest.class
 com\stayvida\backend\model\Rating.class
@@ -23,6 +24,7 @@ com\stayvida\backend\service\OwnerDashboardService$10.class
 com\stayvida\backend\repository\LookupRepository.class
 com\stayvida\backend\controller\GoogleLoginController.class
 com\stayvida\backend\dto\RazorpayVerifyRequest.class
+com\stayvida\backend\service\ledgerService.class
 com\stayvida\backend\service\AdminDashboardService.class
 com\stayvida\backend\model\Profile.class
 com\stayvida\backend\service\RazorpayPaymentService.class
@@ -35,6 +37,7 @@ com\stayvida\backend\Config\WebConfig.class
 com\stayvida\backend\dto\HotelAvailabilityDTO.class
 com\stayvida\backend\dto\LockRoomRequest.class
 com\stayvida\backend\model\Room.class
+com\stayvida\backend\repository\ledgerRepository.class
 com\stayvida\backend\controller\AdminController.class
 com\stayvida\backend\service\UserService.class
 com\stayvida\backend\Config\FilterConfig.class
@@ -48,6 +51,8 @@ com\stayvida\backend\dto\BookingRequest.class
 com\stayvida\backend\repository\UserRepository.class
 com\stayvida\backend\repository\RoomRepository$2.class
 com\stayvida\backend\security\GlobalExceptionHandler.class
+com\stayvida\backend\dto\HotelUpdateRequest.class
+com\stayvida\backend\controller\LocationController.class
 com\stayvida\backend\dto\RoomDTO.class
 com\stayvida\backend\Config\AppConfig.class
 com\stayvida\backend\security\JwtAuthFilter.class
@@ -66,6 +71,7 @@ com\stayvida\backend\repository\RoomRepository$4.class
 com\stayvida\backend\model\Amenity.class
 com\stayvida\backend\repository\RoomRepository$1.class
 com\stayvida\backend\model\Charges.class
+com\stayvida\backend\service\LocationService.class
 com\stayvida\backend\dto\HotelDTO.class
 com\stayvida\backend\dto\HotelVerificationUpdate.class
 com\stayvida\backend\dto\UserListDTO.class
@@ -91,8 +97,10 @@ com\stayvida\backend\service\OwnerDashboardService$8.class
 com\stayvida\backend\model\Register.class
 com\stayvida\backend\repository\HotelRepository.class
 com\stayvida\backend\dto\RatingRequest.class
+com\stayvida\backend\repository\LocationRepository.class
 com\stayvida\backend\service\EmailService.class
 com\stayvida\backend\service\ProfileService.class
+com\stayvida\backend\dto\UpdateAmountRequest.class
 com\stayvida\backend\service\OwnerDashboardService$2.class
 com\stayvida\backend\exception\BookingExceptions$OtpRequiredException.class
 com\stayvida\backend\service\OwnerDashboardService$11.class
