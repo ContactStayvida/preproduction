@@ -196,6 +196,7 @@ public class RazorpayPaymentService {
 
                         BigDecimal commision = (BigDecimal) booking.get("commision_Amount");
                         BigDecimal Platformcharges = (BigDecimal) booking.get("platformFee");
+                        BigDecimal platformCommision = commision.add(Platformcharges);
 
                         // 4️⃣ Add to wallet
                         walletService.wallet(
@@ -208,17 +209,9 @@ public class RazorpayPaymentService {
                         walletService.wallet(
                                         hotelId,
                                         bookingId,
-                                        Platformcharges,
+                                        platformCommision,
                                         "DR",
-                                        "PLatformcharges",
-                                        req.getRazorpayPaymentId());
-
-                        walletService.wallet(
-                                        hotelId,
-                                        bookingId,
-                                        commision,
-                                        "DR",
-                                        "Commision",
+                                        "PLatformcharges + COMMISION",
                                         req.getRazorpayPaymentId());
 
                         return "200: payment verified";
