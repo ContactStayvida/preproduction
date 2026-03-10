@@ -341,8 +341,8 @@ public class AdminController {
 
             List<Map<String, Object>> data = dashboardService.getpendinghotels();
 
-            if (data == null || data.isEmpty()) {
-                return ApiResponse.notFound("No hotels found");
+            if (data == null) {
+                data = new ArrayList<>();
             }
 
             // 🖼️ Convert images to Base64 data URLs
@@ -358,12 +358,9 @@ public class AdminController {
 
                     hotel.put("images", value);
                 }
-
             });
 
-            return ApiResponse.success(
-                    data,
-                    "All Hotels fetched successfully");
+            return ResponseEntity.ok(data); // <-- returns [] if empty
 
         } catch (Exception e) {
             e.printStackTrace();
