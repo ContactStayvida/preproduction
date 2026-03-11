@@ -2,6 +2,9 @@ package com.stayvida.backend.service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import com.stayvida.backend.service.JwtUtil;
+import com.stayvida.backend.service.EmailService;
+import com.stayvida.backend.repository.BookingRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,7 +20,9 @@ import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestHeader;
 
+import com.stayvida.backend.dto.BookingEmailDTO;
 import com.stayvida.backend.dto.BookingRequest;
 import com.stayvida.backend.dto.BookingResponse;
 import com.stayvida.backend.dto.LockRoomRequest;
@@ -29,11 +34,18 @@ public class BookingService {
 
     private final JdbcTemplate jdbcTemplate;
     private final WalletService walletService;
+    private final EmailService emailService;
+    private final BookingRepository bookingRepository;
+    private final JwtUtil jwtUtil;
 
-    public BookingService(JdbcTemplate jdbcTemplate, WalletService walletService) {
+    public BookingService(JdbcTemplate jdbcTemplate, WalletService walletService, EmailService emailService,
+            BookingRepository bookingRepository, JwtUtil jwtUtil) {
 
         this.jdbcTemplate = jdbcTemplate;
         this.walletService = walletService;
+        this.emailService = emailService;
+        this.bookingRepository = bookingRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     @Transactional
@@ -208,6 +220,8 @@ public class BookingService {
     // booking service
     @Transactional
     public BookingResponse createBooking(Integer userId, BookingRequest request) {
+
+        // @RequestHeader("Authorization") String authHeader
         BigDecimal roomPrice = null;
         String hotelId = null;
         String roomId = null;

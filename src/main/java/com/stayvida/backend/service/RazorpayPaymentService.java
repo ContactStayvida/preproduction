@@ -13,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.stayvida.backend.Config.RazorpayConfig;
+import com.stayvida.backend.dto.BookingEmailDTO;
 import com.stayvida.backend.dto.RazorpayVerifyRequest;
+import com.stayvida.backend.repository.BookingRepository;
 
 @Service
 public class RazorpayPaymentService {
@@ -21,16 +23,22 @@ public class RazorpayPaymentService {
         private final JdbcTemplate jdbcTemplate;
         private final RazorpayConfig razorpayConfig;
         private final WalletService walletService;
+        private final EmailService emailService;
+        private final BookingRepository bookingRepository;
 
         // ✅ Constructor injection (CORRECT)
         public RazorpayPaymentService(
                         JdbcTemplate jdbcTemplate,
                         RazorpayConfig razorpayConfig,
-                        WalletService walletService) {
+                        WalletService walletService,
+                        EmailService emailService,
+                        BookingRepository bookingRepository) {
 
                 this.jdbcTemplate = jdbcTemplate;
                 this.razorpayConfig = razorpayConfig;
                 this.walletService = walletService;
+                this.emailService = emailService;
+                this.bookingRepository = bookingRepository;
         }
 
         // STEP 1: Create Razorpay Order
@@ -213,6 +221,15 @@ public class RazorpayPaymentService {
                                         "DR",
                                         "PLatformcharges + COMMISION",
                                         req.getRazorpayPaymentId());
+
+                        String email = (String) SecurityContextHolder
+                                        .getContext()
+                                        .getAuthentication()
+                                        .getDetails();
+                        System.out.println("Email: " + email);
+                        BookingEmailDTO dto = bookingRepository.getBookingForEmail(bookingId);
+
+                        emailService.sendBookingConfirmation(email, dto);
 
                         return "200: payment verified";
 
