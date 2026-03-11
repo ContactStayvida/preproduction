@@ -12,35 +12,77 @@ import java.util.Iterator;
 
 public class ImageCompressionUtil {
 
-    private static final long COMPRESS_THRESHOLD = 1024 * 1024; // 1 MB
+    private static final long TARGET_SIZE = 1024 * 1024; // 1 MB
+    private static final int MAX_WIDTH = 1920; // good for web display
 
     public static String processImageToBase64(byte[] originalBytes) throws Exception {
 
-        // If image ≤ 1MB → return as-is
-        if (originalBytes.length <= COMPRESS_THRESHOLD) {
-            return Base64.getEncoder().encodeToString(originalBytes);
-        }
-
         String format = getImageFormat(originalBytes);
 
-        float quality = 0.9f;
-        byte[] compressed = originalBytes;
+        byte[] resizedBytes = resizeIfNeeded(originalBytes, format);
 
-        while (compressed.length > COMPRESS_THRESHOLD && quality > 0.5f) {
+        if (resizedBytes.length <= TARGET_SIZE) {
+            return Base64.getEncoder().encodeToString(resizedBytes);
+        }
+
+        byte[] compressed = compressToTarget(resizedBytes, format);
+
+        return Base64.getEncoder().encodeToString(compressed);
+    }
+
+    private static byte[] resizeIfNeeded(byte[] imageBytes, String format) throws Exception {
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
+        var bufferedImage = ImageIO.read(bais);
+
+        int width = bufferedImage.getWidth();
+
+        // If image is already small enough, skip resizing
+        if (width <= MAX_WIDTH) {
+            return imageBytes;
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        Thumbnails.of(bufferedImage)
+                .width(MAX_WIDTH)
+                .keepAspectRatio(true)
+                .outputFormat(format)
+                .toOutputStream(baos);
+
+        return baos.toByteArray();
+    }
+
+    private static byte[] compressToTarget(byte[] imageBytes, String format) throws Exception {
+
+        float minQuality = 0.5f;
+        float maxQuality = 1.0f;
+
+        byte[] bestResult = imageBytes;
+
+        for (int i = 0; i < 7; i++) { // ~7 iterations gets very close
+
+            float midQuality = (minQuality + maxQuality) / 2;
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-            Thumbnails.of(new ByteArrayInputStream(originalBytes))
-                    .scale(1) // keep original resolution
-                    .outputQuality(quality) // reduce quality gradually
-                    .outputFormat(format) // keep same format
+            Thumbnails.of(new ByteArrayInputStream(imageBytes))
+                    .scale(1)
+                    .outputQuality(midQuality)
+                    .outputFormat(format)
                     .toOutputStream(baos);
 
-            compressed = baos.toByteArray();
-            quality -= 0.05f;
+            byte[] result = baos.toByteArray();
+
+            if (result.length > TARGET_SIZE) {
+                maxQuality = midQuality;
+            } else {
+                bestResult = result;
+                minQuality = midQuality;
+            }
         }
 
-        return Base64.getEncoder().encodeToString(compressed);
+        return bestResult;
     }
 
     private static String getImageFormat(byte[] imageBytes) throws Exception {
@@ -55,6 +97,6 @@ public class ImageCompressionUtil {
             }
         }
 
-        return "jpg"; // fallback
+        return "jpg";
     }
 }

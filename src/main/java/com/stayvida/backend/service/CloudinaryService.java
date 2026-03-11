@@ -1,10 +1,11 @@
-        package com.stayvida.backend.service;
+package com.stayvida.backend.service;
 
-        import com.cloudinary.Cloudinary;
-        import com.cloudinary.utils.ObjectUtils;
-        import org.springframework.stereotype.Service;
-        import org.springframework.web.multipart.MultipartFile;
-        import java.util.Map;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.Map;
+
 @Service
 public class CloudinaryService {
 
@@ -26,11 +27,9 @@ public class CloudinaryService {
         return cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap(
-                        "folder", "stayvida",                // SAVE INSIDE FOLDER
-                        "public_id", fileNameWithoutExt,     // FILE NAME ONLY
+                        "folder", "stayvida", // SAVE INSIDE FOLDER
+                        "public_id", fileNameWithoutExt, // FILE NAME ONLY
                         "resource_type", "image",
-                        "overwrite", true
-                )
-        );
+                        "overwrite", true));
     }
 }
