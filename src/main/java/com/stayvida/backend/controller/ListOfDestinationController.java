@@ -18,45 +18,60 @@ public class ListOfDestinationController {
     public List<Map<String, Object>> getAllLocations() {
 
         String sql = """
-                    SELECT
-                        MIN(h.destination) AS location,
-                        MIN(r.price) AS lowest_price,
-                        GROUP_CONCAT(DISTINCT h.images SEPARATOR '|||') AS all_images,
-                        COUNT(DISTINCT h.hotel_ID) AS hotel_count
-                    FROM hotels h
-                    LEFT JOIN rooms r ON h.hotel_ID = r.hotel_ID
-                    WHERE h.status = 'Verified'
-                    GROUP BY LOWER(LEFT(h.destination, 3))
-                    ORDER BY lowest_price ASC
-                """;
+                                    SELECT
+                    h.destination AS location,
+                    rp.lowest_price,
+                    h.images,
+                    h.hotel_ID
+                FROM hotels h
+                LEFT JOIN (
+                    SELECT hotel_ID, MIN(price) AS lowest_price
+                    FROM rooms
+                    GROUP BY hotel_ID
+                ) rp ON h.hotel_ID = rp.hotel_ID
+                WHERE h.status = 'Verified'
+                ORDER BY rp.lowest_price ASC;
+                                """;
 
         List<Map<String, Object>> results = jdbcTemplate.queryForList(sql);
-        List<Map<String, Object>> response = new ArrayList<>();
+
+        Map<String, Map<String, Object>> locationMap = new LinkedHashMap<>();
 
         for (Map<String, Object> row : results) {
 
-            Map<String, Object> locationData = new LinkedHashMap<>();
+            String location = row.get("location").toString();
+            Object priceObj = row.get("price");
+            Object imageObj = row.get("images");
 
-            locationData.put("location", row.get("location"));
-            locationData.put("lowestPrice", row.get("lowest_price"));
-            locationData.put("hotelCount", row.get("hotel_count"));
+            locationMap.putIfAbsent(location, new LinkedHashMap<>());
 
-            // 👇 Convert images to array
-            List<String> images = new ArrayList<>();
-            Object allImagesObj = row.get("all_images");
+            Map<String, Object> locationData = locationMap.get(location);
 
-            if (allImagesObj != null) {
-                String[] imageArray = allImagesObj.toString().split("\\|\\|\\|");
+            locationData.putIfAbsent("location", location);
+            locationData.putIfAbsent("lowestPrice", priceObj);
+            locationData.putIfAbsent("hotelCount", 0);
+            locationData.putIfAbsent("images", new ArrayList<String>());
 
-                for (String img : imageArray) {
-                    images.add("data:image/jpeg;base64," + img);
+            // update lowest price
+            if (priceObj != null) {
+                Number price = (Number) priceObj;
+                Number current = (Number) locationData.get("lowestPrice");
+
+                if (current == null || price.doubleValue() < current.doubleValue()) {
+                    locationData.put("lowestPrice", price);
                 }
             }
 
-            locationData.put("images", images);
-            response.add(locationData);
+            // increment hotel count
+            locationData.put("hotelCount", ((Integer) locationData.get("hotelCount")) + 1);
+
+            // add image
+            if (imageObj != null) {
+                List<String> images = (List<String>) locationData.get("images");
+                images.add("data:image/jpeg;base64," + imageObj.toString());
+            }
         }
 
-        return response;
+        return new ArrayList<>(locationMap.values());
     }
 }
