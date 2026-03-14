@@ -1,6 +1,7 @@
 package com.stayvida.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stayvida.backend.dto.Ad;
 import com.stayvida.backend.dto.HotelDTO;
 import com.stayvida.backend.dto.HotelSearchRequest;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
@@ -19,6 +20,7 @@ import com.stayvida.backend.service.CloudinaryService;
 import com.stayvida.backend.service.ImageCompressionUtil;
 // import com.stayvida.backend.service.RoomService;
 import com.stayvida.backend.service.WalletService;
+import com.stayvida.backend.service.AdminDashboardService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,6 +56,8 @@ public class HotelController {
     private HotelRepository hotelRepository;
     @Autowired
     private RoomRepository roomRepository;
+    @Autowired
+    private AdminDashboardService adminDashboardService;
     // @Autowired
     // private RoomService roomService;
 
@@ -141,6 +145,19 @@ public class HotelController {
             e.printStackTrace();
             return ApiResponse.serverError("An unexpected error occurred: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/ad")
+    public Ad getCurrentAd() {
+        return adminDashboardService.getCurrentAd();
+    }
+
+    @PostMapping("/{adId}/click")
+    public String registerClick(@PathVariable String adId) {
+
+        adminDashboardService.incrementClick(adId);
+
+        return "Click registered";
     }
 
     @GetMapping("/featurelist")

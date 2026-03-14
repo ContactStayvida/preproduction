@@ -26,6 +26,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stayvida.backend.dto.Ad;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
 import com.stayvida.backend.dto.UpdateAmountRequest;
 import com.stayvida.backend.dto.UserListDTO;
@@ -980,5 +981,43 @@ public class AdminController {
         List<Map<String, Object>> data = adminDashboardService.getAllCharges();
 
         return ResponseEntity.ok(data);
+    }
+
+    @PostMapping("/create-ad")
+    public String createAd(
+            @RequestParam MultipartFile image,
+            @RequestParam String hotelId) throws Exception {
+
+        adminDashboardService.createAd(image.getBytes(), hotelId);
+
+        return "Ad created successfully";
+    }
+
+    @PutMapping("/{adId}/active")
+    public String enableDisableAd(
+            @PathVariable String adId,
+            @RequestParam boolean active) {
+
+        adminDashboardService.enableDisableAd(adId, active);
+
+        return "Ad status updated";
+    }
+
+    @GetMapping("/all-ads")
+    public List<Ad> getAllAds() {
+        return adminDashboardService.getAllAds();
+    }
+
+    // @GetMapping("/current")
+    // public Ad getCurrentAd() {
+    // return adminDashboardService.getCurrentAd();
+    // }
+
+    @DeleteMapping("ad-delete/{adId}")
+    public String deleteAd(@PathVariable String adId) {
+
+        adminDashboardService.deleteAd(adId);
+
+        return "Ad deleted";
     }
 }

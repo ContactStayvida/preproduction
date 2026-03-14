@@ -78,7 +78,7 @@ public class SecurityConfig {
                                                                 "/api/hotels/upload-image",
                                                                 "/api/hotel/*/rooms",
                                                                 "/api/hotels/*/rooms",
-                                                                "/api/hotels/**",
+                                                                // "/api/hotels/**",
                                                                 "/api/hotels/update-verification",
                                                                 "/otplogin/**",
                                                                 "/api/rating/create",
@@ -97,7 +97,9 @@ public class SecurityConfig {
                                                                 "/error",
                                                                 "/api/payments/**",
                                                                 "/api/profile/{bookingId}/details",
-                                                                "/api/locations")
+                                                                "/api/locations",
+                                                                "/api/hotels/ad",
+                                                                "/api/hotels/{adId}/click")
                                                 .permitAll()
                                                 .anyRequest().authenticated()
 

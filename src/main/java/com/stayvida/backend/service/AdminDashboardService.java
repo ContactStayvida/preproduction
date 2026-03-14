@@ -4,7 +4,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.stayvida.backend.dto.Ad;
 import com.stayvida.backend.dto.UpdateAmountRequest;
+import com.stayvida.backend.repository.AdRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -14,14 +16,17 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class AdminDashboardService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final AdRepository adRepository;
 
-    public AdminDashboardService(JdbcTemplate jdbcTemplate) {
+    public AdminDashboardService(JdbcTemplate jdbcTemplate, AdRepository adRepository) {
         this.jdbcTemplate = jdbcTemplate;
+        this.adRepository = adRepository;
     }
 
     public BigDecimal getCurrentMonthRevenue() {
@@ -336,5 +341,61 @@ public class AdminDashboardService {
                 """;
 
         return jdbcTemplate.queryForList(sql);
+    }
+
+    public void createAd(byte[] imageBytes, String hotelId) throws Exception {
+
+        // compress image
+        String base64Image = ImageCompressionUtil.processImageToBase64(imageBytes);
+
+        // disable currently active ads
+        adRepository.disableAllActiveAds();
+
+        Ad ad = new Ad();
+        ad.setAdId(generateAdId());
+        ad.setBannerImage(base64Image);
+        ad.setHotelId(hotelId);
+        ad.setClickCount(0);
+        ad.setActive(true);
+
+        adRepository.createAd(ad);
+    }
+
+    public List<Ad> getAllAds() {
+        return adRepository.getAllAds();
+    }
+
+    public Ad getCurrentAd() {
+        return adRepository.getCurrentAd();
+    }
+
+    public void deleteAd(String adId) {
+        adRepository.deleteAd(adId);
+    }
+
+    public void enableDisableAd(String adId, boolean active) {
+
+        if (active) {
+
+            // turn off every ad first
+            adRepository.disableAllActiveAds();
+
+            // then enable the requested ad
+            adRepository.setAdActive(adId, true);
+
+        } else {
+
+            // only disable this ad
+            adRepository.setAdActive(adId, false);
+        }
+    }
+
+    private String generateAdId() {
+        return "AD_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    public void incrementClick(String adId) {
+
+        adRepository.incrementClickCount(adId);
     }
 }

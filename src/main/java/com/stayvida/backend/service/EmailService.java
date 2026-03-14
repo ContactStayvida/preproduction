@@ -51,8 +51,7 @@ public class EmailService {
             helper.setSubject("StayVida Booking Confirmation");
 
             String html = """
-                                        <html>
-
+                    <html>
                     <body style="font-family:Arial;background:#f5f5f5;padding:20px;">
 
                         <table width="100%%" cellpadding="0" cellspacing="0">
@@ -102,11 +101,8 @@ public class EmailService {
                                                     <td>📅 <b>Check-Out:</b> %s</td>
                                                 </tr>
                                             </table>
-
                                             <br>
-
                                             <h3 style="margin-bottom:10px;">👤 Guest Details</h3>
-
                                             <table width="100%%" cellpadding="6"
                                                 style="background:#fafafa;border-left:4px solid #28a745;border-radius:6px;">
                                                 <tr>
@@ -116,72 +112,51 @@ public class EmailService {
                                                     <td>📞 <b>Phone:</b> %s</td>
                                                 </tr>
                                             </table>
-
                                             <hr style="border:none;border-top:1px solid #eee;margin:25px 0;">
-
                                             <h3 style="margin-bottom:10px;">💳 Payment Summary</h3>
-
                                             <table width="100%%" cellpadding="6">
-
                                                 <tr>
                                                     <td>🧾 Platform Fee</td>
                                                     <td align="right">₹%.2f</td>
                                                 </tr>
-
                                                 <tr>
                                                     <td>📊 Taxes</td>
                                                     <td align="right">%.0f%%</td>
                                                 </tr>
-
                                                 <tr style="font-weight:bold;font-size:18px;">
                                                     <td>💰 Total Amount</td>
                                                     <td align="right">₹%.2f</td>
                                                 </tr>
-
                                                 <tr>
                                                     <td style="color:green;">✅ Paid Amount</td>
                                                     <td align="right" style="color:green;">₹%.2f</td>
                                                 </tr>
-
                                                 <tr>
                                                     <td style="color:red;">⏳ Pending Amount</td>
                                                     <td align="right" style="color:red;">₹%.2f</td>
                                                 </tr>
-
                                                 <tr>
                                                     <td>💳 <b>Payment Type</b></td>
                                                     <td align="right">%s</td>
                                                 </tr>
-
                                                 <tr>
                                                     <td>📌 <b>Payment Status</b></td>
                                                     <td align="right">%s</td>
                                                 </tr>
-
                                             </table>
-
                                             <div style="text-align:center;margin-top:30px;">
-
                                                 <a href=""
                                                     style="background:#28a745;color:white;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;">
                                                     🔎 View Booking
                                                 </a>
-
                                             </div>
-
-
-
                                         </td>
                             </tr>
-
                         </table>
-
                         </td>
                         </tr>
                         </table>
-
                     </body>
-
                     </html>
                                         """
                     .formatted(
