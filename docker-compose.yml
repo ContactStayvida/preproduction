@@ -1,16 +1,44 @@
+# services:
+#   backend:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     ports:
+#       - "8080:8080"
+#     env_file:
+#       - .env
+#     environment:
+#       - UPLOAD_DIR=/app/uploads
+#     volumes:
+#       - uploads_data:/app/uploads
+
+# volumes:
+#   uploads_data:
+version: "3.8"
+
 services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: dockerfile
+    container_name: stayvida_backend
+
     ports:
       - "8080:8080"
+
     env_file:
       - .env
+
     environment:
       - UPLOAD_DIR=/app/uploads
+
     volumes:
       - uploads_data:/app/uploads
+
+    restart: always
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   uploads_data:
