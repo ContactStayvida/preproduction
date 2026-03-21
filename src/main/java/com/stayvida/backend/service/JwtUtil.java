@@ -17,8 +17,8 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
-    // @Value("${jwt.expiration}")
-    // private long expiration;
+    @Value("${jwt.expiration}")
+    private long expiration;
 
     private Key key;
 
@@ -27,32 +27,42 @@ public class JwtUtil {
         key = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateToken(String email) {
+    public String generateToken(String email, int ID, String role) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("ID", ID)
+                .claim("role", role)
                 .setIssuedAt(new Date())
-                // .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-
     public boolean validateToken(String token) {
-    try {
-        Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
-        return true;
-    } catch (Exception e) {
-        return false;
+        try {
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
-}
 
-public String extractEmail(String token) {
-    return Jwts.parserBuilder()
-            .setSigningKey(key)
-            .build()
-            .parseClaimsJws(token)
-            .getBody()
-            .getSubject();
-}
+    public String extractEmail(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    public Object extractClaim(String token, String claimName) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get(claimName);
+    }
 
 }

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.model.Hotel;
-
+import com.stayvida.backend.model.Charges;
 // import java.sql.ResultSet;
 // import java.sql.SQLException;
 import java.time.LocalDate;
@@ -22,28 +22,46 @@ public class HotelRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    public List<Charges> getCharges() {
+        String sql = "SELECT charges_ID, type, value FROM amount";
+        List<Charges> charges = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Charges charge = new Charges();
+            charge.setCharge_ID(rs.getInt("charges_ID"));
+            charge.setType(rs.getString("type"));
+            charge.setValue(rs.getDouble("value"));
+            return charge;
+        });
+        return charges;
+    }
 
-    // Main search method with availability check
-    public List<Hotel> searchHotels(String destination, String checkIn, String checkOut, int adultCapacity, int childrenCapacity) {
+    // 🧭 Search hotels by location, availability & fetch average rating dynamically
+    public List<Hotel> searchHotels(String destination, String checkIn, String checkOut, int adultCapacity,
+            int childrenCapacity) {
         String sql = """
-            SELECT h.*, 
-                   (SELECT MIN(price) FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price 
-            FROM hotels h 
-            WHERE h.destination = ? AND h.status = 'Verified'
-        """;
+                SELECT h.*,
+                       (SELECT MIN(price) FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price,
+                       (SELECT AVG(rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating
+                FROM hotels h
+                WHERE LOWER(SUBSTRING(h.destination, 1, 3)) = ?
+                  AND h.status = 'Verified';
+                    """;
 
-        // Parse dates once
         LocalDate checkInDate = LocalDate.parse(checkIn);
         LocalDate checkOutDate = LocalDate.parse(checkOut);
 
-        // Fetch all hotels matching destination
         List<Hotel> allHotels = jdbcTemplate.query(sql, (rs, rowNum) -> {
             Hotel hotel = new Hotel();
-            hotel.setId(rs.getInt("hotel_ID"));
+            hotel.setId(rs.getString("hotel_ID"));
             hotel.setName(rs.getString("name"));
             hotel.setType(rs.getString("type"));
             hotel.setDestination(rs.getString("destination"));
-            hotel.setRating(rs.getDouble("rating"));
+
+            // ⬇️ Use average rating (from rating table) instead of hotels.rating
+            Double avgRating = rs.getDouble("avg_rating");
+            if (rs.wasNull())
+                avgRating = 0.0;
+            hotel.setRating(avgRating);
+
             hotel.setForEvent(rs.getBoolean("isForEvent"));
             hotel.setPrice(rs.getDouble("lowest_price"));
             hotel.setImage(rs.getString("images"));
@@ -60,76 +78,66 @@ public class HotelRepository {
         }
 
         return availableHotels;
-        // return allHotels;
     }
 
-    // Helper to parse JSON string to List<String>
+    // 📘 Helper to parse JSON string → List<String>
     private List<String> parseJsonArray(String json) {
-        if (json == null || json.isEmpty()) return new ArrayList<>();
+        if (json == null || json.isEmpty())
+            return new ArrayList<>();
         try {
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(json, new TypeReference<List<String>>() {});
+            return mapper.readValue(json, new TypeReference<List<String>>() {
+            });
         } catch (Exception e) {
             e.printStackTrace();
             return new ArrayList<>();
         }
     }
 
-    public boolean isHotelAvailable(int hotelId, LocalDate checkIn, LocalDate checkOut) {
-    String sql = """
-        SELECT COUNT(*) 
-        FROM rooms r
-        WHERE r.hotel_ID = ?
-        AND (
-            -- Case 1: Room has no active overlapping booking
-            NOT EXISTS (
-                SELECT 1 
-                FROM bookings b
-                WHERE b.room_ID = r.room_ID
-                  AND b.booking_Status <> 'Cancelled'
-                  AND b.checkIn < ? 
-                  AND b.checkOut > ?
-            )
-            -- Case 2: Room has a cancelled booking in that range (can be reused)
-            OR EXISTS (
-                SELECT 1 
-                FROM bookings b
-                WHERE b.room_ID = r.room_ID
-                  AND b.booking_Status = 'Cancelled'
-                  AND b.checkIn < ? 
-                  AND b.checkOut > ?
-            )
-        )
-    """;
+    // ✅ Check hotel availability
+    // ✅ Check hotel availability
+    public boolean isHotelAvailable(String hotelId, LocalDate checkIN, LocalDate checkOut) {
+        String sql = """
+                SELECT COUNT(*)
+                FROM rooms r
+                WHERE r.hotel_ID = ?
+                  AND r.isEnable = true
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM bookings b
+                        WHERE b.room_ID = r.room_ID
+                          AND b.booking_Status NOT IN ('Cancelled', 'CheckedOut')
+                          AND NOT (
+                                b.checkOut < ?  -- booking ends before requested check-in
+                             OR b.checkIn > ?   -- booking starts after requested check-out
+                          )
+                  )
+                """;
 
-    Integer availableRoomCount = jdbcTemplate.queryForObject(
-        sql,
-        Integer.class,
-        hotelId,
-        checkOut, checkIn,   // for NOT EXISTS
-        checkOut, checkIn    // for EXISTS (cancelled)
-    );
+        Integer availableRoomCount = jdbcTemplate.queryForObject(
+                sql, Integer.class,
+                hotelId,
+                checkIN, checkOut);
 
-    return availableRoomCount != null && availableRoomCount > 0;
-}
+        return availableRoomCount != null && availableRoomCount > 0;
+    }
 
-
-    public int updateVerificationStatus(int hotelId, String status, String remark) {
+    public int updateVerificationStatus(String hotelId, String status, String remark) {
         String sql = "UPDATE hotels SET status = ?, remark = ? WHERE hotel_ID = ?";
         return jdbcTemplate.update(sql, status, remark, hotelId);
     }
 
     // Add this method to get top 3 hotels by rating
     public List<Hotel> getTop3HotelsByRating() {
-        String sql = "SELECT h.*, (SELECT MIN(r.price)     FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price FROM hotels h ORDER BY h.rating DESC LIMIT 3";
+        String sql = "SELECT h.*, (SELECT MIN(r.price)     FROM rooms r WHERE r.hotel_ID = h.hotel_ID) AS lowest_price,(SELECT AVG(rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating  FROM hotels h WHERE h.status = 'Verified' ORDER BY avg_rating DESC LIMIT 3 ";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Hotel hotel = new Hotel();
-            hotel.setId(rs.getInt("hotel_ID"));
+            hotel.setId(rs.getString("hotel_ID"));
             hotel.setName(rs.getString("name"));
             hotel.setType(rs.getString("type"));
             hotel.setDestination(rs.getString("destination"));
-            hotel.setRating(rs.getDouble("rating"));
+            hotel.setRating(rs.getDouble("avg_rating"));
             hotel.setForEvent(rs.getBoolean("isForEvent"));
             hotel.setPrice(rs.getDouble("lowest_price")); // adjust if column name differs
             hotel.setImage(rs.getString("images"));
@@ -137,7 +145,5 @@ public class HotelRepository {
             return hotel;
         });
     }
-
-
 
 }

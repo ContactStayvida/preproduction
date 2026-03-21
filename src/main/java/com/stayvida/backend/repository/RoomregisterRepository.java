@@ -44,30 +44,45 @@ public class RoomregisterRepository {
         return roomId;
     }
 
-    public String saveRoomWithJson(int hotelId, String roomType, String featuresJson,
-                                   String imagesJson, int price, int maxAdults,
-                                   int maxChildren, int bedCount) {
+    public String saveRoomWithJson(String hotelId, String roomNumber, String roomType, String featuresJson,
+            String imagesJson, int price, int maxAdults,
+            int maxChildren, int bedCount) {
         String roomId = generateUniqueRoomId(); // unique 4-char ID
         Timestamp now = new Timestamp(System.currentTimeMillis());
 
         String sql = "INSERT INTO rooms (" +
-                "room_ID, hotel_ID, room_Type, features, images, price, max_adults, max_children, bed_count, createdAt, updatedAt" +
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "room_ID, hotel_ID, room_NO, room_Type, features, images, price, max_adults, max_children, bed_count, createdAt, updatedAt"
+                +
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         jdbcTemplate.update(sql, ps -> {
             ps.setString(1, roomId);
-            ps.setInt(2, hotelId);
-            ps.setString(3, roomType);
-            ps.setString(4, featuresJson);
-            ps.setString(5, imagesJson);
-            ps.setDouble(6, price);
-            ps.setInt(7, maxAdults);
-            ps.setInt(8, maxChildren);
-            ps.setInt(9, bedCount);
-            ps.setTimestamp(10, now);
+            ps.setString(2, hotelId);
+            ps.setString(3, roomNumber);
+            ps.setString(4, roomType);
+            ps.setString(5, featuresJson);
+            ps.setString(6, imagesJson);
+            ps.setDouble(7, price);
+            ps.setInt(8, maxAdults);
+            ps.setInt(9, maxChildren);
+            ps.setInt(10, bedCount);
             ps.setTimestamp(11, now);
+            ps.setTimestamp(12, now);
         });
 
         return roomId;
     }
+
+    public boolean roomExists(String hotelId, String roomNumber) {
+        String sql = "SELECT COUNT(*) FROM rooms WHERE hotel_ID = ? AND room_NO = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, hotelId, roomNumber);
+        return count != null && count > 0;
+    }
+
+    public String getHotelID(int ownerId) {
+        String sql = "SELECT hotel_ID FROM hotels WHERE owner_ID = ?";
+        return jdbcTemplate.queryForObject(sql, String.class, ownerId);
+
+    }
+
 }

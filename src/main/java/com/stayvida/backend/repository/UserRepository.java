@@ -1,6 +1,10 @@
 package com.stayvida.backend.repository;
 
+import com.stayvida.backend.dto.UserListDTO;
 import com.stayvida.backend.model.User;
+
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -15,9 +19,8 @@ public class UserRepository {
     private final RowMapper<User> userRowMapper = (rs, rowNum) -> {
         User user = new User();
         // ✅ Make sure this matches your actual DB column name
-        user.setId(rs.getLong("user_ID")); 
+        user.setId(rs.getInt("user_ID"));
         user.setEmail(rs.getString("email"));
-        user.setUsername(rs.getString("username"));
         user.setPassword(rs.getString("password"));
         user.setRole(rs.getString("role"));
         return user;
@@ -30,39 +33,66 @@ public class UserRepository {
                     .stream()
                     .findFirst()
                     .orElse(null);
-                    
+
         } catch (Exception e) {
             System.out.println("⚠️ findByEmail error: " + e.getMessage());
             return null;
         }
-        
+
     }
 
     public void saveOrUpdate(User user) {
-    String sql = """
-        INSERT INTO users (username, email, password, role, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-            username = VALUES(username),
-            password = VALUES(password),
-            updatedAt = VALUES(updatedAt)
-        """;
+        // Check if user already exists
+        User existingUser = findByEmail(user.getEmail());
 
-    jdbcTemplate.update(sql,
-            user.getUsername(),
-            user.getEmail(),
-            user.getPassword(),
-            user.getRole(),
-            java.time.LocalDateTime.now(),
-            java.time.LocalDateTime.now());
+        if (existingUser != null) {
+            // 🚫 User already exists → don’t insert or update
+            System.out.println("ℹ️ User already exists: " + user.getEmail());
+            user.setId(existingUser.getuserID());
+            return;
+        }
 
-    // ✅ Fetch latest record after saving (ensures correct ID)
-    User savedUser = findByEmail(user.getEmail());
-    if (savedUser != null) {
-        user.setId(savedUser.getuserID());
-    } else {
-        System.out.println("⚠️ User not found after saveOrUpdate: " + user.getEmail());
+        // ➕ Insert new user
+        String insertSql = """
+                INSERT INTO users (email, password, role, createdAt, updatedAt)
+                VALUES ( ?, ?, ?, ?, ?)
+                """;
+
+        jdbcTemplate.update(insertSql,
+                user.getEmail(),
+                user.getPassword(),
+                user.getRole(),
+                java.time.LocalDateTime.now(),
+                java.time.LocalDateTime.now());
+
+        // ✅ Fetch the inserted record to update user ID
+        User savedUser = findByEmail(user.getEmail());
+        if (savedUser != null) {
+            user.setId(savedUser.getuserID());
+        }
     }
-}
+
+    public List<UserListDTO> fetchUserList() {
+
+        String sql = """
+                    SELECT
+                        u.user_ID,
+                        u.email,
+                        u.role,
+                        p.phone_number,
+                        p.name,
+                        u.createdAt
+                    FROM users u
+                    LEFT JOIN profile p ON u.user_ID = p.user_ID
+                """;
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new UserListDTO(
+                rs.getInt("user_ID"),
+                rs.getString("name"),
+                rs.getString("email"),
+                rs.getString("role"),
+                rs.getString("phone_number"),
+                rs.getTimestamp("createdAt")));
+    }
 
 }

@@ -1,0 +1,6 @@
+docker build -t ghcr.io/tanaymithari21/stayvida-backend:latest .     //build docker file
+docker push ghcr.io/tanaymithari21/stayvida-backend:latest     //push to github container registry
+docker login ghcr.io -u tanaymithari21     //login to github container registry
+docker logout ghcr.io -u tanaymithari21     //logout from github container registry
+// use github token for login to github container registry
+ghcr.io/tanaymithari21/stayvida-backend:latest //image url

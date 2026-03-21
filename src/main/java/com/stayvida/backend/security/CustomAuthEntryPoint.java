@@ -13,11 +13,11 @@ public class CustomAuthEntryPoint implements AuthenticationEntryPoint {
 
     @Override
     public void commence(HttpServletRequest request,
-                         HttpServletResponse response,
-                         AuthenticationException authException)
+            HttpServletResponse response,
+            AuthenticationException authException)
             throws IOException {
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.getWriter().write("{\"error\": \"Unauthorized or invalid token.\" \n \t\"state\":\"401\"}");
+        response.getWriter().write("{\"error\": \"Unauthorized or invalid token.\" ,\n \t\"state\":\"401\"}");
     }
 }

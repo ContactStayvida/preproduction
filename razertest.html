@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Razorpay Test</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+
+<body>
+    <button id="payBtn">Pay Now</button>
+
+    <script>
+        document.getElementById("payBtn").onclick = function () {
+
+            var options = {
+                key: "rzp_test_RwGtJwDWISfJGf", // TEST KEY ID
+                amount: 396008,      // paise (IMPORTANT)
+                currency: "INR",
+                name: "StayVida",
+                description: "Hotel Booking Payment",
+                order_id: "order_SPxxRlU7IZWh3c",
+
+                handler: function (response) {
+
+                    const payload = {
+                        razorpayOrderId: response.razorpay_order_id,
+                        razorpayPaymentId: response.razorpay_payment_id,
+                        razorpaySignature: response.razorpay_signature
+                    };
+
+                    console.log("Razorpay Order ID: " + response.razorpay_order_id);
+                    console.log("Razorpay Payment ID: " + response.razorpay_payment_id);
+                    console.log("Razorpay Signature: " + response.razorpay_signature);
+
+                    fetch("http://localhost:8080/api/payments/razorpay/verify", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-api-key": "sf2b4hMNAQBNZI3zR0VtXeTUp5463YpV"
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(res => res.text())
+                        .then(data => console.log("Backend:", data))
+                        .catch(err => console.error(err));
+
+
+
+                }
+
+            };
+
+            var rzp = new Razorpay(options);
+            rzp.open();
+
+        };
+    </script>
+
+    <p>
+
+    </p>
+</body>
+
+</html>

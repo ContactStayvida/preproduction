@@ -2,124 +2,195 @@ package com.stayvida.backend.repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stayvida.backend.dto.GroupedRoomDTO;
 import com.stayvida.backend.dto.HotelDTO;
 import com.stayvida.backend.dto.RoomDTO;
+import com.stayvida.backend.model.Charges;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Repository
 public class RoomRepository {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private HotelRepository hotelRepository;
 
-    private static final String BASE_URL = "http://localhost:8080/image/";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public HotelDTO getRoomsByHotelId(int hotelId, String checkIn, String checkOut) {
+    public HotelDTO getRoomsByHotelId(String hotelId, String checkIn, String checkOut) {
         LocalDate checkInDate = LocalDate.parse(checkIn);
         LocalDate checkOutDate = LocalDate.parse(checkOut);
+        String PhoneNo;
 
         // --- Fetch Hotel Info ---
         String hotelSql = """
-                SELECT hotel_ID, name, description, rating, destination,
-                       onArrivalPayment, isForEvent, tags, images
-                FROM hotels
-                WHERE hotel_ID = ?
+                SELECT h.hotel_ID, h.name, h.description,
+                (SELECT AVG(rt.rating_Value) FROM rating rt WHERE rt.hotel_ID = h.hotel_ID) AS avg_rating,
+                h.destination, h.onArrivalPayment, h.isForEvent,
+                h.country_code,h.phone_no,
+                h.tags, h.images, h.amenities
+                FROM hotels h
+                WHERE h.hotel_ID = ?
                 """;
 
-        HotelDTO hotel = jdbcTemplate.queryForObject(hotelSql, new Object[]{hotelId}, (ResultSet rs, int rowNum) -> {
-            HotelDTO dto = new HotelDTO();
-            dto.setHotelId(rs.getInt("hotel_ID"));
-            dto.setName(rs.getString("name"));
-            dto.setDescription(rs.getString("description"));
-            dto.setRating(rs.getDouble("rating"));
-            dto.setDestination(rs.getString("destination"));
-            dto.setOnArrivalPayment(rs.getBoolean("onArrivalPayment"));
-            dto.setForEvent(rs.getBoolean("isForEvent"));
+        HotelDTO hotel = jdbcTemplate.queryForObject(
+                hotelSql,
+                new Object[] { hotelId },
+                (ResultSet rs, int rowNum) -> {
 
-            // --- Parse tags ---
-            String tagsJson = rs.getString("tags");
-            if (tagsJson != null && !tagsJson.isEmpty()) {
-                try {
-                    dto.setTags(objectMapper.readValue(tagsJson, new TypeReference<List<String>>() {}));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+                    HotelDTO dto = new HotelDTO();
+                    dto.setHotelId(rs.getString("hotel_ID"));
+                    dto.setName(rs.getString("name"));
+                    dto.setDescription(rs.getString("description"));
+                    dto.setRating(rs.getDouble("avg_rating"));
+                    dto.setDestination(rs.getString("destination"));
+                    dto.setOnArrivalPayment(rs.getBoolean("onArrivalPayment"));
+                    dto.setForEvent(rs.getBoolean("isForEvent"));
 
-            // --- Parse hotel images ---
-            String imagesStr = rs.getString("images");
-            if (imagesStr != null && !imagesStr.isEmpty()) {
-                List<String> imgs = new ArrayList<>();
-                try {
-                    imgs = objectMapper.readValue(imagesStr, new TypeReference<List<String>>() {});
-                } catch (Exception e) {
-                    String[] parts = imagesStr.split("\\s*,\\s*");
-                    for (String p : parts) {
-                        if (!p.isEmpty()) imgs.add(p);
+                    // ✅ ADD THIS
+                    dto.setPhoneNo(rs.getString("country_code") + "-" + rs.getString("phone_no"));
+
+                    // tags
+                    String tagsJson = rs.getString("tags");
+                    if (tagsJson != null && !tagsJson.isEmpty()) {
+                        try {
+                            dto.setTags(objectMapper.readValue(
+                                    tagsJson, new TypeReference<List<String>>() {
+                                    }));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
-                }
-                imgs = imgs.stream()
-                        .filter(img -> img != null && !img.isEmpty())
-                        .map(img -> BASE_URL + img)
-                        .toList();
-                dto.setImages(imgs);
-            }
-            return dto;
-        });
+
+                    // images
+                    String imagesStr = rs.getString("images");
+                    if (imagesStr != null && !imagesStr.isEmpty()) {
+                        List<String> imgs = new ArrayList<>();
+                        try {
+                            imgs = objectMapper.readValue(
+                                    imagesStr, new TypeReference<List<String>>() {
+                                    });
+                        } catch (Exception e) {
+                            String[] parts = imagesStr.split("\\s*,\\s*");
+                            for (String p : parts) {
+                                if (!p.isEmpty())
+                                    imgs.add(p);
+                            }
+                        }
+                        dto.setImages(
+                                imgs.stream().filter(i -> i != null && !i.isEmpty()).toList());
+                    }
+
+                    // amenities
+                    String amenitiesJson = rs.getString("amenities");
+                    if (amenitiesJson != null && !amenitiesJson.isEmpty()) {
+                        try {
+                            dto.setAmenities(objectMapper.readValue(
+                                    amenitiesJson, new TypeReference<List<String>>() {
+                                    }));
+                        } catch (Exception e) {
+                            String[] parts = amenitiesJson.split("\\s*,\\s*");
+                            List<String> list = new ArrayList<>();
+                            for (String a : parts) {
+                                if (!a.isEmpty())
+                                    list.add(a);
+                            }
+                            dto.setAmenities(list);
+                        }
+                    }
+
+                    return dto;
+                });
 
         // --- Fetch Only Available Rooms ---
         String roomSql = """
-            SELECT r.room_ID, r.hotel_ID, r.room_Type, r.features, r.images,
-                   r.price, r.max_adults, r.max_children, r.bed_count
-            FROM rooms r
-            WHERE r.hotel_ID = ?
-              AND (
-                  -- Available if no active overlapping booking
-                  NOT EXISTS (
-                      SELECT 1 FROM bookings b
+                                        SELECT
+                    r.room_ID,
+                    r.room_NO,
+                    r.hotel_ID,
+                    r.room_Type,
+                    r.features,
+                    r.images,
+                    r.price,
+                    r.max_adults,
+                    r.max_children,
+                    r.bed_count
+                FROM rooms r
+                WHERE r.hotel_ID = ?
+                  AND r.isEnable = true
+                  AND ? >= CURRENT_DATE           -- param check-in must be after today
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM bookings b
                       WHERE b.room_ID = r.room_ID
-                        AND b.booking_Status <> 'Cancelled'
-                        AND b.checkIn < ?
-                        AND b.checkOut > ?
-                  )
-                  -- Or booking is cancelled within the range
-                  OR EXISTS (
-                      SELECT 1 FROM bookings b
-                      WHERE b.room_ID = r.room_ID
-                        AND (b.booking_Status = 'Cancelled' OR b.booking_Status = 'CheckedOut')
-                        AND b.checkIn < ?
-                        AND b.checkOut > ?
-                  )
-              )
-            """;
+                        AND b.booking_Status NOT IN ('Cancelled', 'CheckedOut')
+                        AND NOT (
+                              ? >= b.checkOut
+                           OR ? <= b.checkIn
+                        )
+                  );
+                """;
 
+        Map<String, BigDecimal> charges = fetchCharges();
+        // 3️⃣ Price calculation
+        BigDecimal platformCharges = charges.get("platform_charges"); // platform charges
+        BigDecimal taxRate = charges.get("tax"); // tax rate
+        // BigDecimal price = rs.getBigDecimal("price");
+        BigDecimal advanceRate = charges.get("Advance");
+        BigDecimal platformChargesWithTax = platformCharges
+                .add(platformCharges.multiply(taxRate))
+                .setScale(2, RoundingMode.HALF_UP);// platform charges with tax
+
+        long stayDuration = ChronoUnit.DAYS.between(checkInDate, checkOutDate);
+        // BigDecimal totalAmount = price.multiply(new
+        // BigDecimal(stayDuration)).add(platformChargesWithTax);
+        // System.out.println("platformCharges: " + platformCharges);
+        // System.out.println("taxPercent: " + taxPercent);
         List<RoomDTO> rooms = jdbcTemplate.query(
                 roomSql,
-                new Object[]{hotelId, checkOutDate, checkInDate, checkOutDate, checkInDate},
+                new Object[] { hotelId, checkInDate, checkInDate, checkOutDate },
                 (ResultSet rs, int rowNum) -> {
                     RoomDTO room = new RoomDTO(
-                            rs.getString("room_ID"),
-                            rs.getInt("hotel_ID"),
                             rs.getString("room_Type"),
-                            rs.getDouble("price"),
+                            rs.getBigDecimal("price"), // base room price
+                            platformChargesWithTax, // platform charges with tax
+                            taxRate, // tax rate
+                            advanceRate, // advance rate
+                            rs.getBigDecimal("price")
+                                    .multiply(BigDecimal.valueOf(stayDuration))
+                                    .add(platformChargesWithTax)
+                                    .setScale(2, RoundingMode.HALF_UP), // total amount
+                            rs.getBigDecimal("price")
+                                    .multiply(BigDecimal.valueOf(stayDuration)).multiply(advanceRate)
+                                    .add(platformChargesWithTax)
+                                    .setScale(2, RoundingMode.HALF_UP), // advance amount
+                            stayDuration, // stay duration
                             rs.getInt("max_adults"),
                             rs.getInt("max_children"),
-                            rs.getInt("bed_count")
-                    );
+                            rs.getInt("bed_count"));
 
                     // --- Parse features ---
                     String featuresJson = rs.getString("features");
                     if (featuresJson != null && !featuresJson.isEmpty()) {
                         try {
-                            room.setFeatures(objectMapper.readValue(featuresJson, new TypeReference<List<String>>() {}));
+                            room.setFeatures(objectMapper.readValue(featuresJson, new TypeReference<List<String>>() {
+                            }));
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -129,10 +200,11 @@ public class RoomRepository {
                     String roomImagesJson = rs.getString("images");
                     if (roomImagesJson != null && !roomImagesJson.isEmpty()) {
                         try {
-                            List<String> imgs = objectMapper.readValue(roomImagesJson, new TypeReference<List<String>>() {});
+                            List<String> imgs = objectMapper.readValue(roomImagesJson,
+                                    new TypeReference<List<String>>() {
+                                    });
                             imgs = imgs.stream()
                                     .filter(img -> img != null && !img.isEmpty())
-                                    .map(img -> BASE_URL + img)
                                     .toList();
                             room.setRoomImages(imgs);
                         } catch (Exception e) {
@@ -143,7 +215,48 @@ public class RoomRepository {
                     return room;
                 });
 
-        hotel.setRooms(rooms);
+        Map<String, List<RoomDTO>> grouped = rooms.stream().collect(
+                Collectors.groupingBy(
+                        room -> room.getType() + "|" + room.getPrice()));
+        List<GroupedRoomDTO> groupedRooms = new ArrayList<>();
+
+        for (Map.Entry<String, List<RoomDTO>> entry : grouped.entrySet()) {
+
+            RoomDTO sample = entry.getValue().get(0);
+
+            GroupedRoomDTO dto = new GroupedRoomDTO();
+            dto.setType(sample.getType()); // ← THIS
+            dto.setPrice(sample.getPrice());
+            dto.setPlatformCharges(sample.getPlatformCharges());
+            dto.setTaxRate(sample.getTaxRate());
+            dto.setAdvanceRate(sample.getAdvanceRate());
+            dto.setTotalAmount(sample.getTotalAmount());
+            dto.setAdvanceAmount(sample.getAdvanceAmount());
+            dto.setAdultsMax(sample.getAdultsMax());
+            dto.setChildrenMax(sample.getChildrenMax());
+            dto.setBedCount(sample.getBedCount());
+            dto.setFeatures(sample.getFeatures());
+            dto.setRoomImages(sample.getRoomImages());
+
+            groupedRooms.add(dto);
+        }
+
+        hotel.setRooms(groupedRooms);
+
         return hotel;
     }
+
+    private Map<String, BigDecimal> fetchCharges() {
+
+        String sql = "SELECT `type`, `value` FROM amount";
+
+        return jdbcTemplate.query(sql, rs -> {
+            Map<String, BigDecimal> map = new HashMap<>();
+            while (rs.next()) {
+                map.put(rs.getString("type"), rs.getBigDecimal("value"));
+            }
+            return map;
+        });
+    }
+
 }

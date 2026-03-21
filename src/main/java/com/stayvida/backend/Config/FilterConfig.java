@@ -1,4 +1,5 @@
 package com.stayvida.backend.Config;
+
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,9 +17,12 @@ public class FilterConfig {
     public FilterRegistrationBean<ApiKeyFilter> apiKeyFilterRegistration() {
         FilterRegistrationBean<ApiKeyFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(apiKeyFilter);
-        registration.addUrlPatterns("/otplogin/*"
-                                    // "/login"
-                                    ); // Apply to only  endpoints
+        registration.addUrlPatterns(
+                // "/otplogin/*",
+                // "/api/contact/*",
+                // "/api/admin/*"
+                // // "/login"
+                "/*"); // Apply to only endpoints
         return registration;
     }
 }
