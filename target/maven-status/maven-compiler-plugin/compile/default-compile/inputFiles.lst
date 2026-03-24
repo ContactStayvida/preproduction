@@ -26,7 +26,9 @@ E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\controller\OwnerDa
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\controller\ProfileController.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\controller\RatingController.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\controller\RazorpayPaymentController.java
+E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\dto\Ad.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\dto\AuthRequest.java
+E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\dto\BookingEmailDTO.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\dto\BookingRequest.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\dto\BookingResponse.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\dto\GroupedRoomDTO.java
@@ -59,6 +61,8 @@ E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\model\Register.jav
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\model\Room.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\model\Tag.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\model\User.java
+E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\repository\AdRepository.java
+E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\repository\BookingRepository.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\repository\FeaturedListRepository.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\repository\HotelRepository.java
 E:\work\SV-Website-Backend\src\main\java\com\stayvida\backend\repository\ledgerRepository.java
