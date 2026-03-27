@@ -484,8 +484,9 @@ public class OwnerDashboardController {
 
             List<Map<String, Object>> data = dashboardService.getallrooms(ownerId);
 
-            if (data == null || data.isEmpty()) {
-                return ApiResponse.notFound("No rooms found");
+            // ✅ Ensure never null
+            if (data == null) {
+                data = List.of();
             }
 
             // 🖼️ Convert images to Base64 data URLs
@@ -498,12 +499,12 @@ public class OwnerDashboardController {
                             .map(img -> {
                                 String value = img.toString().trim();
 
-                                // Already prefixed → keep it
+                                // If already prefixed → keep it
                                 if (value.startsWith("data:image")) {
                                     return value;
                                 }
 
-                                // Assume DB contains pure Base64
+                                // Otherwise add prefix
                                 return "data:image/jpeg;base64," + value;
                             })
                             .toList();
@@ -512,9 +513,10 @@ public class OwnerDashboardController {
                 }
             });
 
+            // ✅ Always return success (even if empty)
             return ApiResponse.success(
                     data,
-                    "All Rooms fetched successfully");
+                    data.isEmpty() ? "No rooms found" : "All Rooms fetched successfully");
 
         } catch (Exception e) {
             e.printStackTrace();

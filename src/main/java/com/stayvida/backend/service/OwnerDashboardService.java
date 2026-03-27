@@ -1452,54 +1452,65 @@ public class OwnerDashboardService {
                     SELECT r2.room_ID
                     FROM rooms r2
                     INNER JOIN hotels h2 ON h2.hotel_ID = r2.hotel_ID
-                    WHERE h2.owner_ID = ? and r2.isEnable = true
+                    WHERE h2.owner_ID = ? AND r2.isEnable = true
                     ORDER BY r2.room_NO DESC
                 ) sorted ON sorted.room_ID = r.room_ID
                 INNER JOIN hotels h ON h.hotel_ID = r.hotel_ID
                 """;
 
-        return jdbcTemplate.query(sql, new Object[] { ownerId }, (rs, rowNum) -> {
+        List<Map<String, Object>> result = jdbcTemplate.query(
+                sql,
+                new Object[] { ownerId },
+                (rs, rowNum) -> {
 
-            Map<String, Object> map = new LinkedHashMap<>();
+                    Map<String, Object> map = new LinkedHashMap<>();
 
-            map.put("room_ID", rs.getString("room_ID"));
-            map.put("room_NO", rs.getInt("room_NO"));
-            map.put("room_Type", rs.getString("room_Type"));
-            map.put("hotel_ID", rs.getString("hotel_ID"));
-            String featuresJson = rs.getString("features");
-            if (featuresJson != null && !featuresJson.isEmpty()) {
-                try {
-                    map.put("features", objectMapper.readValue(
-                            featuresJson, new TypeReference<List<String>>() {
-                            }));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            map.put("price", rs.getInt("price"));
-            map.put("Status", rs.getString("Status"));
-            map.put("isEnable", rs.getBoolean("isEnable"));
-            map.put("createdAt", rs.getTimestamp("createdAt").toLocalDateTime());
+                    map.put("room_ID", rs.getString("room_ID"));
+                    map.put("room_NO", rs.getInt("room_NO"));
+                    map.put("room_Type", rs.getString("room_Type"));
+                    map.put("hotel_ID", rs.getString("hotel_ID"));
 
-            // ✅ Parse JSON array
-            String imagesJson = rs.getString("images");
+                    String featuresJson = rs.getString("features");
+                    if (featuresJson != null && !featuresJson.isEmpty()) {
+                        try {
+                            map.put("features", mapper.readValue(
+                                    featuresJson,
+                                    new TypeReference<List<String>>() {
+                                    }));
+                        } catch (Exception e) {
+                            map.put("features", List.of());
+                        }
+                    } else {
+                        map.put("features", List.of());
+                    }
 
-            if (imagesJson != null && !imagesJson.isBlank()) {
-                try {
-                    List<String> images = mapper.readValue(
-                            imagesJson,
-                            new TypeReference<List<String>>() {
-                            });
-                    map.put("images", images);
-                } catch (Exception e) {
-                    map.put("images", List.of()); // fallback
-                }
-            } else {
-                map.put("images", List.of());
-            }
+                    map.put("price", rs.getInt("price"));
+                    map.put("Status", rs.getString("Status"));
+                    map.put("isEnable", rs.getBoolean("isEnable"));
+                    map.put("createdAt", rs.getTimestamp("createdAt").toLocalDateTime());
 
-            return map;
-        });
+                    // ✅ Images parsing
+                    String imagesJson = rs.getString("images");
+
+                    if (imagesJson != null && !imagesJson.isBlank()) {
+                        try {
+                            List<String> images = mapper.readValue(
+                                    imagesJson,
+                                    new TypeReference<List<String>>() {
+                                    });
+                            map.put("images", images);
+                        } catch (Exception e) {
+                            map.put("images", List.of());
+                        }
+                    } else {
+                        map.put("images", List.of());
+                    }
+
+                    return map;
+                });
+
+        // ✅ Ensure never null (extra safe)
+        return result != null ? result : List.of();
     }
 
     // overloding get allrooms for admin dashbord

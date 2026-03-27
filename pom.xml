@@ -178,10 +178,10 @@
 
 
 
-		<dependency>
-    <groupId>com.microsoft.sqlserver</groupId>
-    <artifactId>mssql-jdbc</artifactId> <!-- Match your JDK version -->
-</dependency>
+		<!-- <dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>  Match your JDK version 
+		</dependency> -->
 
 		<dependency>
 			<groupId>me.paulschwarz</groupId>
