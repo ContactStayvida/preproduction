@@ -263,6 +263,9 @@ public class OwnerDashboardService {
         String sql = "UPDATE bookings b INNER JOIN hotels h ON b.hotel_ID = h.hotel_ID SET b.booking_Status = ?, b.updatedAt = NOW() WHERE b.booking_ID = ? AND h.owner_ID = ?";
 
         int rows = jdbcTemplate.update(sql, newStatus, bookingId, ownerId);
+        if (rows == 0) {
+            return false; // 🚀 stop everything here
+        }
 
         if (newStatus.equals("CheckedOut")) {
 
@@ -280,8 +283,8 @@ public class OwnerDashboardService {
             String sql2 = "UPDATE bookings SET payment_Status= 'Completed', payment_amount = ? WHERE booking_ID = ?";
             jdbcTemplate.update(sql2, completpayment, bookingId);
             String paymentId = "PAY-" + System.currentTimeMillis();
-            String sql4 = "INSERT INTO payments (user_ID,payment_ID, booking_ID,amount, payment_Method,payment_Status, currency,createdAt,updatedAt) VALUES (?,?, ?, ?, 'PayAtHotel','Success', 'INR', NOW(), NOW(),)";
-            jdbcTemplate.update(sql4, userId, paymentId, bookingId, paymentLeft);
+            String sql4 = "INSERT INTO payments (user_ID,payment_ID, booking_ID,amount, payment_Method,payment_Status, currency,createdAt,updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            jdbcTemplate.update(sql4, userId, paymentId, bookingId, paymentLeft, "PayAtHotel", "Success", "INR");
 
             walletService.wallet(
                     hotelId,
