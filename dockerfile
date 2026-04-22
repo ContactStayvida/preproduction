@@ -1,19 +1,19 @@
-# FROM eclipse-temurin:21-jdk
+FROM eclipse-temurin:21-jdk
 
-# WORKDIR /app
+WORKDIR /app
 
-# COPY . .
+COPY . .
 
-# # ✅ Give executable permission to mvnw
-# RUN chmod +x mvnw
+# ✅ Give executable permission to mvnw
+RUN chmod +x mvnw
 
-# # ✅ Build the project
-# RUN ./mvnw clean package -DskipTests
+# ✅ Build the project
+RUN ./mvnw clean package -DskipTests
 
-# # Expose the app port
-# EXPOSE 8080
+# Expose the app port
+EXPOSE 8080
 
-# # ✅ Replace with your actual JAR file
+# ✅ Replace with your actual JAR file
 # CMD ["java", "-jar", "target/backend-0.0.1-SNAPSHOT.jar"]
 
 FROM eclipse-temurin:21-jdk-jammy
