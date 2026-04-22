@@ -14,14 +14,14 @@ RUN ./mvnw clean package -DskipTests
 EXPOSE 8080
 
 # ✅ Replace with your actual JAR file
-# CMD ["java", "-jar", "target/backend-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "target/backend-0.0.1-SNAPSHOT.jar"]
 
-FROM eclipse-temurin:21-jdk-jammy
+#FROM eclipse-temurin:21-jdk-jammy
 
-WORKDIR /app
+#WORKDIR /app
 
-COPY target/backend-0.0.1-SNAPSHOT.jar app.jar
+#COPY target/backend-0.0.1-SNAPSHOT.jar app.jar
 
-EXPOSE 8080
+#EXPOSE 8080
 
-ENTRYPOINT ["java", "-Xms256m", "-Xmx512m", "-jar", "app.jar"]
+#ENTRYPOINT ["java", "-Xms256m", "-Xmx512m", "-jar", "app.jar"]
