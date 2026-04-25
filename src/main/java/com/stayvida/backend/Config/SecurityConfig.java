@@ -99,7 +99,8 @@ public class SecurityConfig {
                                                                 "/api/profile/{bookingId}/details",
                                                                 "/api/locations",
                                                                 "/api/hotels/ad",
-                                                                "/api/hotels/{adId}/click")
+                                                                "/api/hotels/{adId}/click",
+                                                                "/")
                                                 .permitAll()
                                                 .anyRequest().authenticated()
 
