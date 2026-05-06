@@ -17,48 +17,32 @@ public class SupabaseAuthService {
 
     @Value("${supabase.key}")
     private String supabaseKey;
+    @Value("${supabase.key}")
+    private String anonKey;
+
+    @Value("${supabase.jwt.secret}")
+    private String jwtSecret;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
     // 🔹 Signup user
-    public ResponseEntity<?> signUp(AuthRequest request) {
-        try {
-            String authUrl = supabaseAuthUrl + "/signup";
+    public ResponseEntity<String> signup(String email, String password) {
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("apikey", supabaseKey);
+        String url = supabaseAuthUrl + "/signup";
 
-            Map<String, Object> body = Map.of(
-                    "email", request.getEmail(),
-                    "password", request.getPassword(),
-                    "data", Map.of( // 👈 user_metadata
-                            "display_name", request.getAdminName(),
-                            "role", request.getRole()));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("apikey", anonKey);
+        // headers.set("Authorization", "Bearer " + anonKey);
 
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+        Map<String, String> body = Map.of(
+                "email", email,
+                "password", password);
 
-            ResponseEntity<String> response = restTemplate.exchange(authUrl, HttpMethod.POST, entity, String.class);
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
 
-            return ResponseEntity.status(response.getStatusCode())
-                    .body(Map.of(
-                            "message", "User registered successfully using Supabase Auth"));
-
-        } catch (Exception ex) {
-            String message = ex.getMessage();
-
-            if (message != null && message.contains("user_already_exists")) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(Map.of("message", "User already exists"));
-            }
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "error", "Supabase signup failed",
-                            "message", message));
-        }
+        return restTemplate.postForEntity(url, request, String.class);
     }
-
     // // 🔹 Login user
     // public ResponseEntity<?> signIn(AuthRequest request) {
     // String url = supabaseAuthUrl + "/token?grant_type=password";
@@ -84,33 +68,22 @@ public class SupabaseAuthService {
     // }
     // }
 
-    public ResponseEntity<?> signIn(AuthRequest request) {
+    public ResponseEntity<String> signIn(String email, String password) {
+
         String url = supabaseAuthUrl + "/token?grant_type=password";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("apikey", supabaseKey);
+        headers.set("apikey", anonKey);
+        // headers.set("Authorization", "Bearer " + anonKey);
 
-        Map<String, Object> body = Map.of(
-                "email", request.getEmail(),
-                "password", request.getPassword());
+        Map<String, String> body = Map.of(
+                "email", email,
+                "password", password);
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
 
-        try {
-            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.POST, entity, JsonNode.class);
-
-            return ResponseEntity
-                    .status(response.getStatusCode())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(response.getBody());
-
-        } catch (HttpStatusCodeException ex) {
-            return ResponseEntity
-                    .status(ex.getStatusCode())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(ex.getResponseBodyAsString());
-        }
+        return restTemplate.postForEntity(url, request, String.class);
     }
 
 }

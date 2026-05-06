@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")//superbase auth routes for admin dashboard
+@RequestMapping("/api/auth") // superbase auth routes for admin dashboard
 public class AuthController {
 
     @Autowired
@@ -15,11 +15,11 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<?> register(@RequestBody AuthRequest request) {
-        return authService.signUp(request);
+        return authService.signup(request.getEmail(), request.getPassword());
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
-        return authService.signIn(request);
+        return authService.signIn(request.getEmail(), request.getPassword());
     }
 }
