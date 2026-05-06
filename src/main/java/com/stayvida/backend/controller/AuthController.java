@@ -15,11 +15,11 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<?> register(@RequestBody AuthRequest request) {
-        return authService.signUp(request.getEmail(), request.getPassword());
+        return authService.signUp(request);
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
-        return authService.signIn(request.getEmail(), request.getPassword());
+        return authService.signIn(request);
     }
 }
