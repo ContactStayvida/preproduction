@@ -3,6 +3,8 @@ package com.stayvida.backend.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import com.stayvida.backend.dto.AuthRequest;
@@ -107,14 +109,14 @@ public class SupabaseAuthService {
         String url = supabaseAuthUrl + "/token?grant_type=password";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.set("apikey", anonKey);
-        Map<String, String> body = Map.of(
-                "email", email,
-                "password", password);
 
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
-        System.out.println("login stub hit");
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("email", email);
+        body.add("password", password);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
         return restTemplate.postForEntity(url, request, String.class);
     }
