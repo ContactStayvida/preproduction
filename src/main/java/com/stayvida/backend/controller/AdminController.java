@@ -27,6 +27,8 @@ import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.dto.Ad;
+import com.stayvida.backend.dto.CreateExecutiveRequest;
+import com.stayvida.backend.dto.ExecutiveListDTO;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
 import com.stayvida.backend.dto.UpdateAmountRequest;
 import com.stayvida.backend.dto.UserListDTO;
@@ -854,7 +856,7 @@ public class AdminController {
         return ApiResponse.success(data, "Room details fetched successfully");
     }
 
-    @GetMapping("/users")
+    @GetMapping("/users") // fetch userlist
     public ResponseEntity<List<UserListDTO>> getUsers() {
 
         List<UserListDTO> users = userService.getUserList();
@@ -1019,5 +1021,17 @@ public class AdminController {
         adminDashboardService.deleteAd(adId);
 
         return "Ad deleted";
+    }
+
+    @PostMapping("/create-executive")
+    public ResponseEntity<?> createExecutive(@RequestBody CreateExecutiveRequest request) {
+        String response = adminDashboardService.createExecutive(request.getUserId());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/executive-list")
+    public ResponseEntity<?> getExecutiveList() {
+        List<ExecutiveListDTO> users = adminDashboardService.getExecutiveList();
+        return ResponseEntity.ok(users);
     }
 }

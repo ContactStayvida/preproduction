@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.stayvida.backend.dto.Ad;
+import com.stayvida.backend.dto.ExecutiveListDTO;
 import com.stayvida.backend.dto.UpdateAmountRequest;
+import com.stayvida.backend.dto.UserListDTO;
 import com.stayvida.backend.repository.AdRepository;
 
 import java.math.BigDecimal;
@@ -27,6 +29,57 @@ public class AdminDashboardService {
     public AdminDashboardService(JdbcTemplate jdbcTemplate, AdRepository adRepository) {
         this.jdbcTemplate = jdbcTemplate;
         this.adRepository = adRepository;
+    }
+
+    public List<ExecutiveListDTO> getExecutiveList() {
+        return fetchExecutiveList();
+    }
+
+    public List<ExecutiveListDTO> fetchExecutiveList() {
+
+        String sql = """
+                    SELECT
+                        p.user_ID,
+                        u.email,
+                        u.role,
+                        p.phone_number,
+                        p.name,
+                        e.referral_code
+                    FROM executive e
+                    LEFT JOIN profile p ON e.user_ID = p.user_ID
+                    LEFT JOIN users u ON e.user_ID = u.user_ID
+                """;
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            ExecutiveListDTO dto = new ExecutiveListDTO();
+            dto.setUserId(rs.getInt("user_ID"));
+            dto.setEmail(rs.getString("email"));
+            dto.setRole(rs.getString("role"));
+            dto.setPhoneNumber(rs.getString("phone_number"));
+            dto.setName(rs.getString("name"));
+            dto.setReferralCode(rs.getString("referral_code"));
+            return dto;
+        });
+    }
+
+    public String createExecutive(int userId) {
+
+        // 1. Generate referral code
+        String referralCode = "STAYVIDA_" + userId;
+
+        // 2. Check if already exists (avoid PK conflict)
+        String checkSql = "SELECT COUNT(*) FROM executive WHERE user_id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId);
+
+        if (count != null && count > 0) {
+            return "Executive already exists for user_id: " + userId;
+        }
+
+        // 3. Insert into table
+        String insertSql = "INSERT INTO executive (user_id, referral_code) VALUES (?, ?)";
+        jdbcTemplate.update(insertSql, userId, referralCode);
+
+        return "Executive created successfully";
     }
 
     public BigDecimal getCurrentMonthRevenue() {
