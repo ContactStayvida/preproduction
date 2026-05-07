@@ -8,6 +8,7 @@ public class ExecutiveListDTO {
     private String phoneNumber;
     private String name;
     private String referralCode;
+    private boolean isEnable;
 
     // Getters
     public int getUserId() {
@@ -34,6 +35,10 @@ public class ExecutiveListDTO {
         return referralCode;
     }
 
+    public boolean getIsEnable() {
+        return isEnable;
+    }
+
     // setter
     public void setUserId(int userId) {
         this.userId = userId;
@@ -57,5 +62,9 @@ public class ExecutiveListDTO {
 
     public void setReferralCode(String referralCode) {
         this.referralCode = referralCode;
+    }
+
+    public void setIsEnable(boolean isEnable) {
+        this.isEnable = isEnable;
     }
 }

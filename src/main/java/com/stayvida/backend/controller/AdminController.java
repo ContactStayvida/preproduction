@@ -31,6 +31,7 @@ import com.stayvida.backend.dto.CreateExecutiveRequest;
 import com.stayvida.backend.dto.ExecutiveListDTO;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
 import com.stayvida.backend.dto.UpdateAmountRequest;
+import com.stayvida.backend.dto.UpdateExecutiveStatusRequest;
 import com.stayvida.backend.dto.UserListDTO;
 import com.stayvida.backend.model.Amenity;
 import com.stayvida.backend.model.Feature;
@@ -1033,5 +1034,16 @@ public class AdminController {
     public ResponseEntity<?> getExecutiveList() {
         List<ExecutiveListDTO> users = adminDashboardService.getExecutiveList();
         return ResponseEntity.ok(users);
+    }
+
+    @PatchMapping("/update-executive-status")
+    public ResponseEntity<?> updateExecutiveStatus(
+            @RequestBody UpdateExecutiveStatusRequest request) {
+
+        String response = adminDashboardService.updateExecutiveStatus(
+                request.getUserId(),
+                request.isStatus());
+
+        return ResponseEntity.ok(response);
     }
 }

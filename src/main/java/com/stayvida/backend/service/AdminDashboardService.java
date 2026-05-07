@@ -44,7 +44,8 @@ public class AdminDashboardService {
                         u.role,
                         p.phone_number,
                         p.name,
-                        e.referral_code
+                        e.referral_code,
+                        e.is_enable
                     FROM executive e
                     LEFT JOIN profile p ON e.user_ID = p.user_ID
                     LEFT JOIN users u ON e.user_ID = u.user_ID
@@ -58,8 +59,54 @@ public class AdminDashboardService {
             dto.setPhoneNumber(rs.getString("phone_number"));
             dto.setName(rs.getString("name"));
             dto.setReferralCode(rs.getString("referral_code"));
+            dto.setIsEnable(rs.getBoolean("is_enable"));
             return dto;
         });
+    }
+
+    public String updateExecutiveStatus(int userId, boolean newStatus) {
+
+        // 1. Check if executive exists
+        String checkSql = """
+                    SELECT is_enable
+                    FROM executive
+                    WHERE user_id = ?
+                """;
+
+        List<Boolean> result = jdbcTemplate.query(
+                checkSql,
+                (rs, rowNum) -> rs.getBoolean("is_enable"),
+                userId);
+
+        // 2. If not found
+        if (result.isEmpty()) {
+            throw new RuntimeException("Executive not found with user_id: " + userId);
+        }
+
+        boolean currentStatus = result.get(0);
+
+        // 3. Prevent enabling already enabled user
+        if (currentStatus && newStatus) {
+            throw new RuntimeException("Executive is already enabled");
+        }
+
+        // 4. Prevent disabling already disabled user
+        if (!currentStatus && !newStatus) {
+            throw new RuntimeException("Executive is already disabled");
+        }
+
+        // 5. Update status
+        String updateSql = """
+                    UPDATE executive
+                    SET is_enable = ?
+                    WHERE user_id = ?
+                """;
+
+        jdbcTemplate.update(updateSql, newStatus, userId);
+
+        return newStatus
+                ? "Executive enabled successfully"
+                : "Executive disabled successfully";
     }
 
     public String createExecutive(int userId) {
