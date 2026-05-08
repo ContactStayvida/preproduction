@@ -29,9 +29,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stayvida.backend.dto.Ad;
 import com.stayvida.backend.dto.CreateExecutiveRequest;
 import com.stayvida.backend.dto.ExecutiveListDTO;
+import com.stayvida.backend.dto.ExecutivePaymentResponse;
 import com.stayvida.backend.dto.HotelVerificationUpdate;
 import com.stayvida.backend.dto.UpdateAmountRequest;
 import com.stayvida.backend.dto.UpdateExecutiveStatusRequest;
+import com.stayvida.backend.dto.UpdatePaymentStatusRequest;
 import com.stayvida.backend.dto.UserListDTO;
 import com.stayvida.backend.model.Amenity;
 import com.stayvida.backend.model.Feature;
@@ -1043,6 +1045,22 @@ public class AdminController {
         String response = adminDashboardService.updateExecutiveStatus(
                 request.getUserId(),
                 request.isStatus());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/update-payment-status")
+    public ResponseEntity<?> updatePaymentStatus(
+            @RequestBody UpdatePaymentStatusRequest request) {
+
+        adminDashboardService.updatePaymentStatus(request.getBookingId());
+        return ResponseEntity.ok("Payment status updated to PAID");
+    }
+
+    @GetMapping("/executive-payments-list")
+    public ResponseEntity<List<ExecutivePaymentResponse>> getAllExecutivePayments() {
+
+        List<ExecutivePaymentResponse> response = adminDashboardService.getAllExecutivePayments();
 
         return ResponseEntity.ok(response);
     }
