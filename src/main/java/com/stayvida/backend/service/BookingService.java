@@ -48,6 +48,22 @@ public class BookingService {
         this.jwtUtil = jwtUtil;
     }
 
+    public Boolean validateCode(String code) {
+
+        String sql = """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM executive
+                        WHERE referral_code = ?
+                        AND is_enable = TRUE
+                    )
+                """;
+
+        Integer result = jdbcTemplate.queryForObject(sql, Integer.class, code);
+
+        return result != null && result == 1;
+    }
+
     @Transactional
     public LockRoomResponse lockRoom(LockRoomRequest request) {
 
@@ -217,6 +233,56 @@ public class BookingService {
         });
     }
 
+    public void createExecutivePayment(
+            String bookingId,
+            BigDecimal paymentAmount,
+            String paymentStatus,
+            String referralCode) {
+
+        // 0. If referral code is null → just skip
+        if (referralCode == null || referralCode.isBlank()) {
+            return;
+        }
+
+        // 1. Fetch user_ID
+        String fetchUserSql = "SELECT user_ID FROM executive WHERE referral_code = ?";
+
+        List<Integer> userList = jdbcTemplate.query(
+                fetchUserSql,
+                (rs, rowNum) -> rs.getInt("user_ID"),
+                referralCode);
+
+        if (userList.isEmpty()) {
+            return; // or log warning, but DON'T break booking
+        }
+
+        int userId = userList.get(0);
+
+        // 2. Prevent duplicate booking entry
+        String checkSql = "SELECT COUNT(*) FROM executive_referral_payments WHERE booking_ID = ?";
+
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, bookingId);
+
+        if (count != null && count > 0) {
+            return;
+        }
+
+        // 3. Insert
+        String insertSql = """
+                    INSERT INTO executive_referral_payments
+                    (booking_ID, user_ID, referral_code, payment_amount, payment_status)
+                    VALUES (?, ?, ?, ?, ?)
+                """;
+
+        jdbcTemplate.update(
+                insertSql,
+                bookingId,
+                userId,
+                referralCode,
+                paymentAmount,
+                paymentStatus);
+    }
+
     // booking service
     @Transactional
     public BookingResponse createBooking(Integer userId, BookingRequest request) {
@@ -227,6 +293,8 @@ public class BookingService {
         String roomId = null;
         Integer roomNo = null;
         String paymentType = request.getPaymentType();
+        String code = request.getCode();
+
         try {
             // 1️⃣ Validate room lock
             String lockSql = """
@@ -321,7 +389,12 @@ public class BookingService {
                 request.getCountryCode(),
                 request.getPhoneNo(),
                 commissionAmount);
-        System.out.println(commissionAmount);
+        // System.out.println(commissionAmount);
+        BigDecimal amt = roomPrice.multiply(new BigDecimal("0.05"));
+        if (code != null && !code.isEmpty()) {
+            createExecutivePayment(bookingId, amt, "PENDING", code);
+        }
+
         // 5️⃣ Remove room lock
         jdbcTemplate.update(
                 "DELETE FROM room_locks WHERE room_id = ?",

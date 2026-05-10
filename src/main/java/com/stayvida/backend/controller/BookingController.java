@@ -14,7 +14,10 @@ import com.stayvida.backend.dto.BookingRequest;
 import com.stayvida.backend.dto.BookingResponse;
 import com.stayvida.backend.dto.LockRoomRequest;
 import com.stayvida.backend.dto.LockRoomResponse;
+import com.stayvida.backend.dto.ValidateCodeRequest;
 import com.stayvida.backend.service.BookingService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/booking")
@@ -29,8 +32,7 @@ public class BookingController {
     }
 
     @PostMapping("/lock-room")
-    public ResponseEntity<LockRoomResponse> lockRoom(
-            @RequestBody LockRoomRequest request) {
+    public ResponseEntity<LockRoomResponse> lockRoom(@RequestBody LockRoomRequest request) {
 
         // Integer ownerId = (int) SecurityContextHolder
         // .getContext()
@@ -54,4 +56,10 @@ public class BookingController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/validate-code")
+    public ResponseEntity<Boolean> validateCode(@RequestBody ValidateCodeRequest request) {
+        return ResponseEntity.ok(bookingService.validateCode(request.getCode()));
+    }
+
 }

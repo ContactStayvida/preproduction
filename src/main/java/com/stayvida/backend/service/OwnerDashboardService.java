@@ -423,11 +423,12 @@ public class OwnerDashboardService {
                     b.platformFee,
                     b.is_refundable,
                     b.name,
-                    b.phone_no
+                    b.phone_no,
+                    b.commision_Amount
                 FROM bookings b
                 JOIN hotels h ON b.hotel_ID = h.hotel_ID
                 LEFT JOIN rooms r ON r.room_ID = b.room_ID
-                ORDER BY b.checkIn DESC
+                ORDER BY b.checkIn ASC
                 """;
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
@@ -453,6 +454,7 @@ public class OwnerDashboardService {
             map.put("name", rs.getString("name"));// customer name
             map.put("payment left", paymentLeft);// left to pay
             map.put("gross amount", grossAmount);// total amount to be paid by customer including tax and all
+            map.put("commisionAmount", rs.getDouble("commision_Amount"));// commision amount
             return map;
         });
     }

@@ -6,12 +6,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.stayvida.backend.dto.Ad;
 import com.stayvida.backend.dto.ExecutiveListDTO;
+import com.stayvida.backend.dto.ExecutivePaymentResponse;
 import com.stayvida.backend.dto.UpdateAmountRequest;
 import com.stayvida.backend.dto.UserListDTO;
 import com.stayvida.backend.repository.AdRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -62,6 +64,72 @@ public class AdminDashboardService {
             dto.setIsEnable(rs.getBoolean("is_enable"));
             return dto;
         });
+    }
+
+    public List<ExecutivePaymentResponse> getAllExecutivePayments() {
+
+        String sql = """
+                    SELECT sr_no, booking_ID, user_ID, referral_code,
+                           payment_amount, payment_status,
+                           created_at, updated_at
+                    FROM executive_referral_payments
+                    ORDER BY created_at DESC
+                """;
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+
+            ExecutivePaymentResponse res = new ExecutivePaymentResponse();
+
+            res.setSrNo(rs.getInt("sr_no"));
+            res.setBookingId(rs.getString("booking_ID"));
+            res.setUserId(rs.getInt("user_ID"));
+            res.setReferralCode(rs.getString("referral_code"));
+            res.setPaymentAmount(rs.getBigDecimal("payment_amount"));
+            res.setPaymentStatus(rs.getString("payment_status"));
+
+            Timestamp created = rs.getTimestamp("created_at");
+            Timestamp updated = rs.getTimestamp("updated_at");
+
+            res.setCreatedAt(created != null ? created.toLocalDateTime() : null);
+            res.setUpdatedAt(updated != null ? updated.toLocalDateTime() : null);
+
+            return res;
+        });
+    }
+
+    public void updatePaymentStatus(String bookingId) {
+
+        // 1. Check current status
+        String checkSql = """
+                    SELECT payment_status
+                    FROM executive_referral_payments
+                    WHERE booking_ID = ?
+                """;
+
+        List<String> statusList = jdbcTemplate.query(
+                checkSql,
+                (rs, rowNum) -> rs.getString("payment_status"),
+                bookingId);
+
+        if (statusList.isEmpty()) {
+            throw new RuntimeException("No payment record found for booking ID: " + bookingId);
+        }
+
+        String currentStatus = statusList.get(0);
+
+        // 2. Prevent double update
+        if ("PAID".equalsIgnoreCase(currentStatus)) {
+            throw new RuntimeException("Payment is already PAID for booking ID: " + bookingId);
+        }
+
+        // 3. Update status
+        String updateSql = """
+                    UPDATE executive_referral_payments
+                    SET payment_status = 'PAID'
+                    WHERE booking_ID = ?
+                """;
+
+        jdbcTemplate.update(updateSql, bookingId);
     }
 
     public String updateExecutiveStatus(int userId, boolean newStatus) {
