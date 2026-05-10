@@ -293,7 +293,7 @@ public class BookingService {
         String roomId = null;
         Integer roomNo = null;
         String paymentType = request.getPaymentType();
-        String referralCode = request.getReferralCode();
+        String code = request.getCode();
 
         try {
             // 1️⃣ Validate room lock
@@ -391,8 +391,8 @@ public class BookingService {
                 commissionAmount);
         // System.out.println(commissionAmount);
         BigDecimal amt = roomPrice.multiply(new BigDecimal("0.05"));
-        if (referralCode != null && !referralCode.isEmpty()) {
-            createExecutivePayment(bookingId, amt, "PENDING", referralCode);
+        if (code != null && !code.isEmpty()) {
+            createExecutivePayment(bookingId, amt, "PENDING", code);
         }
 
         // 5️⃣ Remove room lock

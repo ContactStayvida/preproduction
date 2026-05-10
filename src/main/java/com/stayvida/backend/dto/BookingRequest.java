@@ -13,16 +13,16 @@ public class BookingRequest {
     private String phoneNo;
     private String checkIn;
     private String checkOut;
-    private String referralCode;
+    private String code;
 
     // getters & setters
 
-    public String getReferralCode() {
-        return referralCode;
+    public String getCode() {
+        return code;
     }
 
-    public void setReferralCode(String referralCode) {
-        this.referralCode = referralCode;
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public String getEmail() {
