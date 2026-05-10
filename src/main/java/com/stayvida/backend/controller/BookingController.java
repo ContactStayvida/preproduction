@@ -58,8 +58,8 @@ public class BookingController {
     }
 
     @GetMapping("/validate-code")
-    public ResponseEntity<Boolean> validateCode(@RequestBody ValidateCodeRequest request) {
-        return ResponseEntity.ok(bookingService.validateCode(request.getCode()));
+    public ResponseEntity<Boolean> validateCode(@RequestParam String code) {
+        return ResponseEntity.ok(bookingService.validateCode(code));
     }
 
 }
