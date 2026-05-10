@@ -40,7 +40,7 @@ public class BookingController {
 
         // Integer ownerId = (int) SecurityContextHolder
         // .getContext()
-        // .getAuthentication()
+        // .getAuthenticati on()
         // .getPrincipal();
 
         LockRoomResponse response = bookingService.lockRoom(request);
