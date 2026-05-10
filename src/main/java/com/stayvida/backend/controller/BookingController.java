@@ -5,6 +5,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+
+import java.util.HashMap;
+import java.util.Map;
+
 // import org.springframework.boot.autoconfigure.pulsar.PulsarProperties.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -58,8 +62,12 @@ public class BookingController {
     }
 
     @GetMapping("/validate-code")
-    public ResponseEntity<Boolean> validateCode(@RequestBody ValidateCodeRequest request) {
-        return ResponseEntity.ok(bookingService.validateCode(request.getCode()));
+    public ResponseEntity<Map<String, Boolean>> validateCode(@RequestParam String Code) {
+        Boolean isValid = bookingService.validateCode(Code);
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("valid", isValid);
+
+        return ResponseEntity.ok(response);
     }
 
 }
